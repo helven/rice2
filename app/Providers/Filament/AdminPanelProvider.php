@@ -17,6 +17,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Config;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -26,7 +27,12 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(\App\Filament\Pages\Auth\Login::class)
+            // Conditional login based on config
+            ->when(Config::get('app.username_login', false), function (Panel $panel) {
+                $panel->login(\App\Filament\Pages\Auth\Login::class);
+            }, function (Panel $panel) {
+                $panel->login(); // Use default login if config is false or not set
+            })
             ->colors([
                 'primary' => Color::Amber,
             ])
