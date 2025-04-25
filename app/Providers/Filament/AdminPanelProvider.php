@@ -11,6 +11,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets;
+use Filament\Support\Assets\Css;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -18,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Illuminate\Support\Facades\Config;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -27,6 +29,9 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->assets([
+                Css::make('custom-style', asset('css/filament/filament/custom_theme.css')),
+            ])
             // Conditional login based on config
             ->when(Config::get('app.username_login', false), function (Panel $panel) {
                 $panel->login(\App\Filament\Pages\Auth\Login::class);
