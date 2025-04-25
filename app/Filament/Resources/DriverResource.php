@@ -80,6 +80,7 @@ class DriverResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->where('status', '!=', 11))
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
@@ -95,22 +96,40 @@ class DriverResource extends Resource
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(true),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(true),
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(), // Added Delete action
+                Tables\Actions\Action::make('delete')
+                    ->label('Delete')
+                    ->color('danger')
+                    ->icon('heroicon-o-trash')
+                    ->requiresConfirmation()
+                    ->action(function (Driver $record): void {
+                        $record->status = 11;
+                        $record->save();
+                    })
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('delete')
+                        ->label('Delete')
+                        ->color('danger')
+                        ->icon('heroicon-o-trash')
+                        ->requiresConfirmation()
+                        ->action(function ($records) {
+                            $records->each(function ($record) {
+                                $record->status = 11;
+                                $record->save();
+                            });
+                        })
                 ]),
             ]);
     }

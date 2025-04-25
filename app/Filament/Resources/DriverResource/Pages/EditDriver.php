@@ -13,7 +13,18 @@ class EditDriver extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\Action::make('delete')
+                ->label('Delete')
+                ->color('danger')
+                ->icon('heroicon-o-trash')
+                ->requiresConfirmation()
+                ->action(function () {
+                    $record = $this->getRecord();
+                    $record->status = 11;
+                    $record->save();
+                    
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
         ];
     }
 }
