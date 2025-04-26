@@ -31,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->brandLogo(asset('images/logo.png'))
             ->assets([
-                Css::make('custom-style', asset('css/filament/filament/custom.css')),
+                Css::make('custom-style', asset('css/filament/custom.css')),
             ])
             // Conditional login based on config
             ->when(Config::get('app.username_login', false), function (Panel $panel) {
