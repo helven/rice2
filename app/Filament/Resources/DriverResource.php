@@ -17,12 +17,38 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Grid;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Navigation\NavigationItem;
 
 class DriverResource extends Resource
 {
-    protected static ?string $model = Driver::class;
+    protected static ?string $navigationGroup = 'Drivers';
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
+    protected static ?string $navigationLabel = 'Manage Drivers';
+    protected static ?int $navigationSort = 1;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group'; // Changed icon for relevance
+    public static function getNavigationItems(): array
+    {
+        return [
+            ...parent::getNavigationItems(),
+            NavigationItem::make('Manage Drivers')
+                ->icon('heroicon-o-truck')
+                ->group(static::getNavigationGroup())
+                ->sort(static::getNavigationSort() + 1)
+                ->url(static::getUrl('index')),
+            NavigationItem::make('Create Driver')
+                ->icon('heroicon-o-plus')
+                ->group(static::getNavigationGroup())
+                ->sort(static::getNavigationSort() + 1)
+                ->url(static::getUrl('create')),
+            NavigationItem::make('Export Drivers')
+                ->icon('heroicon-o-arrow-down-on-square-stack')
+                ->group(static::getNavigationGroup())
+                ->sort(static::getNavigationSort() + 2)
+                ->url(static::getUrl('create')),
+        ];
+    }
+    
+    protected static ?string $model = Driver::class;
 
     public static function form(Form $form): Form
     {
