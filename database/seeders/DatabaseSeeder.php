@@ -28,148 +28,148 @@ class DatabaseSeeder extends Seeder
 
         \DB::table('attr_status')->insert([
             'key'   => 'active',
-            'value' => 'Active'
+            'label' => 'Active'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'inactive',
-            'value' => 'Inactive'
+            'label' => 'Inactive'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'pending',
-            'value' => 'Pending'
+            'label' => 'Pending'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'banned',
-            'value' => 'Banned'
+            'label' => 'Banned'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'frozen',
-            'value' => 'Frozen'
+            'label' => 'Frozen'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'expired',
-            'value' => 'Expired'
+            'label' => 'Expired'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'hidden',
-            'value' => 'Hidden'
+            'label' => 'Hidden'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'published',
-            'value' => 'Published'
+            'label' => 'Published'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'unpublished',
-            'value' => 'Unublished'
+            'label' => 'Unublished'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'closed',
-            'value' => 'Closed'
+            'label' => 'Closed'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'deleted',
-            'value' => 'Deleted'
+            'label' => 'Deleted'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'unpaid',
-            'value' => 'Unpaid'
+            'label' => 'Unpaid'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'paid',
-            'value' => 'Paid'
+            'label' => 'Paid'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'completed',
-            'value' => 'Completed'
+            'label' => 'Completed'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'Waiting Approval',
-            'value' => 'Waiting Approval'
+            'label' => 'Waiting Approval'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'approved',
-            'value' => 'Approved'
+            'label' => 'Approved'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'rejected',
-            'value' => 'Rejected'
+            'label' => 'Rejected'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'canceled',
-            'value' => 'Canceled'
+            'label' => 'Canceled'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'redeemed',
-            'value' => 'Redeemed'
+            'label' => 'Redeemed'
         ]);
         \DB::table('attr_status')->insert([
             'key'   => 'dispute',
-            'value' => 'Dispute'
+            'label' => 'Dispute'
         ]);
 
         \DB::table('attr_state')->insert([
             'key'   => 'johor',
-            'value' => 'Johor'
+            'label' => 'Johor'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'kedah',
-            'value' => 'Kedah'
+            'label' => 'Kedah'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'kelantan',
-            'value' => 'Kelantan'
+            'label' => 'Kelantan'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'kuala_lumpur',
-            'value' => 'Kuala Lumpur'
+            'label' => 'Kuala Lumpur'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'labuan',
-            'value' => 'Labuan'
+            'label' => 'Labuan'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'melaka',
-            'value' => 'Melaka'
+            'label' => 'Melaka'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'negeri_sembilan',
-            'value' => 'Negeri Sembilan'
+            'label' => 'Negeri Sembilan'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'pahang',
-            'value' => 'Pahang'
+            'label' => 'Pahang'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'perak',
-            'value' => 'Perak'
+            'label' => 'Perak'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'perlis',
-            'value' => 'Perlis'
+            'label' => 'Perlis'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'pulau_pinang',
-            'value' => 'Pulau Pinang'
+            'label' => 'Pulau Pinang'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'putra_jaya',
-            'value' => 'Putrajaya'
+            'label' => 'Putrajaya'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'sabah',
-            'value' => 'Sabah'
+            'label' => 'Sabah'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'sarawak',
-            'value' => 'Sarawak'
+            'label' => 'Sarawak'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'selangor',
-            'value' => 'Selangor'
+            'label' => 'Selangor'
         ]);
         \DB::table('attr_state')->insert([
             'key'   => 'terengganu',
-            'value' => 'Terengganu'
+            'label' => 'Terengganu'
         ]);
     }
 }

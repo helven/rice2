@@ -80,7 +80,11 @@ class DriverResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->where('status', '!=', 11))
+            ->modifyQueryUsing(fn (Builder $query) => 
+                $query->where('drivers.status', '!=', '11')
+                    ->leftJoin('attr_status', 'drivers.status', '=', 'attr_status.id')
+                    ->select('drivers.*', 'attr_status.label as status_label')
+            )
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
@@ -93,14 +97,13 @@ class DriverResource extends Resource
                 TextColumn::make('ic_no')
                     ->label('IC No')
                     ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(true),
                 TextColumn::make('updated_at')
+                    ->label('Last Modified')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(true),
+                TextColumn::make('status_label')
+                    ->label('Status'),
             ])
             ->filters([
                 //

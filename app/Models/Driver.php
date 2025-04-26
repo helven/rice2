@@ -14,13 +14,17 @@ class Driver extends Model
         'contact',
         'ic_name',
         'ic_no',
-        'address', // Added address field
+        'address',
         'route',
         'status',
     ];
 
-    // If 'route' is stored as JSON, cast it to an array
     protected $casts = [
         'route' => 'array',
     ];
+
+    public function attr_status()
+    {
+        return $this->belongsTo(AttrStatus::class, 'status', 'id');
+    }
 }

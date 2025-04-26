@@ -1,0 +1,21 @@
+header.fi-sidebar-header > div {
+    height: 100% !important;
+}
+header.fi-sidebar-header > div > a {
+    align-items: center;
+    display: flex;
+    height: 100% !important;
+
+}
+.fi-logo {
+    height: 85% !important;
+}
+/* Custom Button and Input border radius */
+button, div.fi-input-wrp.rounded-lg {
+    border-radius: 0.25rem !important;
+}
+
+
+td.fi-ta-actions-cell {
+    background-image: linear-gradient(rgba(0, 179, 230, 0.05), rgba(0, 179, 230, 0.05));
+}
