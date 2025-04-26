@@ -63,6 +63,10 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->navigationGroups([
+                'Orders',
+                'Drivers',
+            ])
             ->authMiddleware([
                 Authenticate::class,
             ]);
