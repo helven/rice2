@@ -8,7 +8,7 @@ header.fi-sidebar-header > div > a {
 
 }
 .fi-logo {
-    height: 85% !important;
+    height: 100% !important;
 }
 /* Custom Button and Input border radius */
 button, div.fi-input-wrp.rounded-lg {
