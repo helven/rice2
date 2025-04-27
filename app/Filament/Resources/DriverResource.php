@@ -107,9 +107,8 @@ class DriverResource extends Resource
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => 
-                $query->where('drivers.status', '!=', '11')
-                    ->leftJoin('attr_status', 'drivers.status', '=', 'attr_status.id')
-                    ->select('drivers.*', 'attr_status.label as status_label')
+                $query->where('status', '!=', '11')
+                    ->with('attr_status')  // Eager load the relationship
             )
             ->columns([
                 TextColumn::make('name')
@@ -128,7 +127,7 @@ class DriverResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(true),
-                TextColumn::make('status_label')
+                TextColumn::make('attr_status.label')  // Use the relationship
                     ->label('Status'),
             ])
             ->filters([
