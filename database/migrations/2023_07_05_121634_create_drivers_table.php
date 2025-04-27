@@ -14,13 +14,15 @@ return new class extends Migration
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
             $table->integer('status')->default(1);
-            $table->string('name')->default('32');
-            $table->string('contact')->default('32');
-            $table->string('ic_name')->default('32');
-            $table->string('ic_no')->default('32');
+            $table->string('name')->default('');
+            $table->string('contact')->default('');
+            $table->string('ic_name')->default('');
+            $table->string('ic_no')->default('');
             $table->text('address')->nullable();
             $table->text('route')->nullable();
             $table->timestamps();
+
+            $table->index('status');
         });
     }
 

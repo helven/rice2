@@ -1,4 +1,5 @@
 <?php
+// php artisan db:seed --class=DriverSeeder
 
 namespace Database\Factories;
 
