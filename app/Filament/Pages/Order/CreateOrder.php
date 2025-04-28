@@ -89,12 +89,18 @@ class CreateOrder extends Page implements HasForms
                                         ->mapWithKeys(function ($address) {
                                             $address->address_1 = trim($address->address_1);
                                             $address->address_2 = trim($address->address_2);
-                                            ob_start();?>
+                                            /*ob_start();?>
 <div>
-    <span class="font-bold"><?php echo $address->name;?></span>
-    <?php echo ($address->is_default)?"<span class='text-xs italic'>(default)":""."<span>";?>
+    <span class='font-bold'><?php echo $address->name;?></span>
+    <?php echo ($address->is_default)?"<span class='text-xs italic'>(default)</span>":"";?><br />
+    <span class='text-sm'><?php echo $address->address_1;?></span>
 </div>
-<div class='text-sm'><?php echo $address->address_1;?></div>
+                                            <?php*/
+
+ob_start();?>
+<b><?php echo $address->name;?></b> <?php echo ($address->is_default)?"(default)":"";?>
+<div><?php echo $address->address_1;?></div>
+
                                             <?php
                                             $displayAddress = ob_get_clean();
                                             return [$address->id => $displayAddress];
@@ -105,7 +111,6 @@ class CreateOrder extends Page implements HasForms
                         ->label('Delivery Date')
                         ->placeholder('Delivery Date')
                         ->required()
-                        //->hourMode(12)
                         ->minDate(now())
                         ->timezone('Asia/Kuala_Lumpur')
                         ->displayFormat('Y/m/d')
