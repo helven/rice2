@@ -1,10 +1,16 @@
 <x-filament::page>
-    <div class="flex flex-col gap-4">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="text-lg font-medium">Order Details</h2>
-                <p class="text-gray-500">Enter the order information below</p>
+    <form wire:submit="create" class="fi-form grid gap-y-6" enctype="multipart/form-data">
+        {{ $this->form }}
+
+        <div class="fi-form-actions">
+            <div class="fi-ac gap-3 flex flex-wrap items-center justify-start">
+                <x-filament::button
+                    type="submit"
+                    class="mt-4"
+                >
+                    Create Order
+                </x-filament::button>
             </div>
         </div>
-    </div>
+    </form>
 </x-filament::page>
