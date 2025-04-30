@@ -9,5 +9,6 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateDriver extends CreateRecord
 {
     protected static string $resource = DriverResource::class;
-    protected static ?string $navigationLabel = 'Create Driver';
+    protected static ?string $navigationLabel = 'New Driver';
+    protected static ?string $title = 'New Driver';
 }

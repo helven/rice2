@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\DriverResource\Pages;
 use App\Filament\Resources\DriverResource\RelationManagers;
 use App\Models\Driver;
+
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Grid;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Navigation\NavigationItem;
 
@@ -35,7 +37,7 @@ class DriverResource extends Resource
                 ->group(static::getNavigationGroup())
                 ->sort(static::getNavigationSort() + 1)
                 ->url(static::getUrl('index')),
-            NavigationItem::make('Create Driver')
+            NavigationItem::make('New Driver')
                 ->icon('heroicon-o-plus')
                 ->group(static::getNavigationGroup())
                 ->sort(static::getNavigationSort() + 1)
@@ -47,7 +49,7 @@ class DriverResource extends Resource
                 ->url(static::getUrl('create')),
         ];
     }
-    
+
     protected static ?string $model = Driver::class;
 
     public static function form(Form $form): Form
@@ -58,31 +60,26 @@ class DriverResource extends Resource
                     ->schema([
                         TextInput::make('name')
                             ->required()
-                            ->maxLength(32),
+                            ->maxLength(255),
                         TextInput::make('contact')
                             ->label('Contact No')
                             ->tel()
                             ->required()
-                            ->maxLength(32),
+                            ->maxLength(255),
                     ]),
                 Grid::make(2)
                     ->schema([
                         TextInput::make('ic_name')
                             ->label('IC Name')
                             ->required()
-                            ->maxLength(32),
+                            ->maxLength(255),
                         TextInput::make('ic_no')
                             ->label('IC No')
                             ->required()
-                            ->maxLength(15)
-                            ->mask('999999-99-9999')
-                            ->regex('/^\d{6}-\d{2}-\d{4}$/')
-                            ->placeholder('123456-78-9012')
-                            ->helperText('Format: 123456-78-9012'),
+                            ->maxLength(255),
                     ]),
                 Textarea::make('address')
                     ->required()
-                    ->rows(5)
                     ->columnSpanFull(),
                 Repeater::make('route')
                     ->label('Routes')
@@ -106,32 +103,44 @@ class DriverResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => 
-                $query->where('status', '!=', '11')
-                    ->with('attr_status')  // Eager load the relationship
-            )
+            ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status_id', [1, 2]))
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('contact')
                     ->label('Contact No')
                     ->searchable(),
                 TextColumn::make('ic_name')
                     ->label('IC Name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('ic_no')
                     ->label('IC No')
-                    ->searchable(),
-                TextColumn::make('updated_at')
-                    ->label('Last Modified')
-                    ->dateTime()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('status.label')
+                    ->label('Status')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(true),
-                TextColumn::make('attr_status.label')  // Use the relationship
-                    ->label('Status'),
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->dateTime('Y-m-d H:i:s')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
             ])
             ->filters([
-                //
+                SelectFilter::make('status_id')
+                    ->label('Status')
+                    ->options([
+                        1 => 'Active',
+                        2 => 'Inactive'
+                    ])
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -140,26 +149,25 @@ class DriverResource extends Resource
                     ->color('danger')
                     ->icon('heroicon-o-trash')
                     ->requiresConfirmation()
-                    ->action(function (Driver $record): void {
-                        $record->status = 11;
-                        $record->save();
+                    ->action(function (Driver $record) {
+                        $record->update(['status_id' => 11]);
                     })
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('delete')
-                        ->label('Delete')
+                        ->label('Delete selected')
                         ->color('danger')
                         ->icon('heroicon-o-trash')
                         ->requiresConfirmation()
                         ->action(function ($records) {
                             $records->each(function ($record) {
-                                $record->status = 11;
-                                $record->save();
+                                $record->update(['status_id' => 11]);
                             });
                         })
                 ]),
-            ]);
+            ])
+            ->defaultSort('name', 'asc');
     }
 
     public static function getRelations(): array
