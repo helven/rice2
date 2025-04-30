@@ -3,7 +3,6 @@
 namespace App\Filament\Pages\Order;
 
 use App\Models\Order;
-
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -114,9 +113,17 @@ class ListOrder extends Page implements HasTable
     {
         return [
             Action::make('create')
-                ->label('Create Order')
+                ->label('New Order')
                 ->url('/admin/orders/create')
                 ->icon('heroicon-m-plus'),
+        ];
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            '/admin/orders' => 'Orders',
+            '' => 'Manage Orders',
         ];
     }
 }

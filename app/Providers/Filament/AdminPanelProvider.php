@@ -40,7 +40,8 @@ class AdminPanelProvider extends PanelProvider
                 $panel->login(); // Use default login if config is false or not set
             })
             ->colors([
-                'primary' => Color::hex('#00C7FF')
+                'primary' => Color::hex('#00C7FF'),
+                'secondary' => Color::hex('#d4d4d8')
             ])
             ->discoverResources(app_path('Filament/Resources'), 'App\\Filament\\Resources')
             ->discoverPages(app_path('Filament/Pages'), 'App\\Filament\\Pages')

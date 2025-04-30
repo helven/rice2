@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Filament\Pages\Order;
-
 use Illuminate\Support\HtmlString;
 
 use App\Models\CustomerAddressBook;
@@ -34,39 +33,47 @@ use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Meal;
+use App\Models\Order;
 
-class CreateOrder extends Page
+class EditOrder extends Page
 {
     use InteractsWithForms;
-    
+
     protected static ?string $navigationGroup = 'Orders';
-    protected static ?string $navigationIcon = 'heroicon-o-plus';
-    protected static ?string $navigationLabel = 'New Order';
-    protected static ?string $title = 'New Order';
-    protected static ?string $slug = 'orders/create';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-pencil';
+    protected static ?string $title = 'Edit Order';
+    protected static ?string $slug = 'orders/{id}/edit';
+    protected static bool $shouldRegisterNavigation = false;
     
-    protected static string $view = 'filament.pages.order.create-order';
+    protected static string $view = 'filament.pages.order.edit-order';
 
     public array $data = [];
+    public ?Order $order = null;
 
-    public function mount(): void
+    public function mount($id): void
     {
+        $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backupDriver'])->findOrFail($id);
+        
         $this->form->fill([
-            'customer_id' => '',
-            'address_id' => '',
-            'delivery_start_date' => '',
-            'delivery_end_date' => '',
-            'delivery_date_range' => '',
-            'meal_id' => '',
-            'meals' => [['normal_rice' => 0, 'small_rice' => 0, 'no_rice' => 0, 'vegi' => 0]],
-            'total_amount' => 0.00,
-            'notes' => '',
-            'arrival_time' => '',
-            'driver_id' => '',
-            'driver_route' => '',
-            'backup_driver_id' => '',
-            'backup_driver_route' => ''
+            'customer_id' => $this->order->customer_id,
+            'address_id' => $this->order->address_id,
+            'delivery_date' => $this->order->delivery_date,
+            'notes' => $this->order->notes,
+            'total_amount' => $this->order->total_amount,
+            'arrival_time' => $this->order->delivery_date->format('H:i'),
+            'driver_id' => $this->order->driver_id,
+            'driver_route' => $this->order->driver_route,
+            'backup_driver_id' => $this->order->backup_driver_id,
+            'backup_driver_route' => $this->order->backup_driver_route,
+            'meals' => $this->order->meals->map(function($meal) {
+                return [
+                    'meal_id' => $meal->meal_id,
+                    'normal_rice' => $meal->normal_rice,
+                    'small_rice' => $meal->small_rice,
+                    'no_rice' => $meal->no_rice,
+                    'vegi' => $meal->vegi,
+                ];
+            })->toArray(),
         ]);
     }
 
@@ -134,7 +141,8 @@ ob_start();?>
                                         });
                                 })
                         ]),
-                    DateRangePicker::make('delivery_date_range')
+
+                    DateTimePicker::make('delivery_date')
                         ->label('Delivery Date')
                         ->required()
                         ->minDate(\Carbon\Carbon::now())
@@ -293,99 +301,68 @@ ob_start();?>
         ];
     }
 
-    public function create()
+    public function save()
     {
-        // Validate the form data
         $data = $this->form->getState();
         
-        $this->validate([
-            'data.customer_id' => ['required', 'exists:customers,id'],
-            'data.address_id' => ['required', 'exists:customer_address_books,id'],
-            'data.delivery_date_range' => ['required', 'string'],
-            'data.arrival_time' => ['required'],
-            'data.driver_id' => ['required', 'exists:drivers,id'],
-            'data.driver_route' => ['required', 'string'],
-            'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
-            'data.backup_driver_route' => ['nullable', 'string'],
-            'data.meals' => ['required', 'array', 'min:1'],
-            'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
-            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:100'],
-        ]);
-        
-        // Parse the date range
-        [$startDate, $endDate] = explode(' - ', $data['delivery_date_range']);
-        $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
-        $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
-        
-        // Create a collection of dates between start and end
-        $dates = collect();
-        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-            $dates->push($date->copy());
-        }
-        
-        // Begin transaction
-        \DB::beginTransaction();
-        
         try {
-            // Create an order for each date
-            foreach ($dates as $date) {
-                $order = \App\Models\Order::create([
-                    'customer_id' => $data['customer_id'],
-                    'address_id' => $data['address_id'],
-                    'delivery_date' => $date->setTimeFromTimeString($data['arrival_time']),
-                    'total_amount' => $data['total_amount'],
-                    'notes' => $data['notes'],
-                    'driver_id' => $data['driver_id'],
-                    'driver_route' => $data['driver_route'],
-                    'backup_driver_id' => $data['backup_driver_id'] ?? 0,
-                    'backup_driver_route' => $data['backup_driver_route'] ?? '',
-                ]);
+            \DB::beginTransaction();
+            
+            // Update the order
+            $this->order->update([
+                'customer_id' => $data['customer_id'],
+                'address_id' => $data['address_id'],
+                'delivery_date' => \Carbon\Carbon::parse($data['delivery_date'])
+                    ->setTimeFromTimeString($data['arrival_time']),
+                'notes' => $data['notes'],
+                'driver_id' => $data['driver_id'],
+                'driver_route' => $data['driver_route'],
+                'backup_driver_id' => $data['backup_driver_id'] ?? null,
+                'backup_driver_route' => $data['backup_driver_route'] ?? '',
+            ]);
 
-                // Create order meals
-                foreach ($data['meals'] as $meal) {
-                    \App\Models\OrderMeal::create([
-                        'order_id' => $order->id,
-                        'meal_id' => $meal['meal_id'],
-                        'normal_rice' => $meal['normal_rice'],
-                        'small_rice' => $meal['small_rice'],
-                        'no_rice' => $meal['no_rice'],
-                        'vegi' => $meal['vegi'],
-                    ]);
-                }
+            // Update or create meals
+            $this->order->meals()->delete(); // Remove existing meals
+            foreach ($data['meals'] as $meal) {
+                $this->order->meals()->create([
+                    'meal_id' => $meal['meal_id'],
+                    'normal_rice' => $meal['normal_rice'],
+                    'small_rice' => $meal['small_rice'],
+                    'no_rice' => $meal['no_rice'],
+                    'vegi' => $meal['vegi'],
+                ]);
             }
             
             \DB::commit();
             
-            // Redirect to orders list with success message
             Notification::make()
                 ->success()
-                ->title('Orders created successfully')
+                ->title('Order updated successfully')
                 ->send();
                 
             $this->redirect('/admin/orders');
+            
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
                 ->danger()
-                ->title('Error creating orders')
+                ->title('Error updating order')
                 ->body($e->getMessage())
                 ->send();
         }
     }
 
-    public static function shouldRegisterNavigation(): bool
-    {
-        return true;
-    }
-
     public function getBreadcrumbs(): array
     {
+        $record = $this->getRecord();
         return [
-            '/admin/orders' => 'Orders',
-            '' => 'New Order',
+            '/admin/drivers' => 'Drivers',
+            '' => $record->name ?? 'Edit Driver',
         ];
+    }
+
+    protected function getRecord(): ?Order
+    {
+        return $this->order;
     }
 }
