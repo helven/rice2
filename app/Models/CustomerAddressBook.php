@@ -10,7 +10,7 @@ class CustomerAddressBook extends Model
     use HasFactory;
 
     protected $fillable = [
-        'status',
+        'status_id',
         'is_default',
         'customer_id',
         'name',
@@ -20,8 +20,8 @@ class CustomerAddressBook extends Model
         'address_2',
         'postal_code',
         'city',
-        'state',
-        'country'
+        'state_id',
+        'country_id'
     ];
 
     protected $casts = [

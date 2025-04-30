@@ -16,15 +16,15 @@ class Driver extends Model
         'ic_no',
         'address',
         'route',
-        'status',
+        'status_id',
     ];
 
     protected $casts = [
         'route' => 'array',
     ];
 
-    public function attr_status()
+    public function status()
     {
-        return $this->belongsTo(AttrStatus::class, 'status', 'id');
+        return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
     }
 }

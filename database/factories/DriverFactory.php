@@ -29,7 +29,7 @@ class DriverFactory extends Factory
             'ic_no' => fake()->unique()->numerify('######-##-####'),
             'address' => fake()->address(),
             'route' => $routes,
-            'status' => fake()->randomElement([1, 2]),
+            'status_id' => fake()->randomElement([1, 2]),
         ];
     }
 }

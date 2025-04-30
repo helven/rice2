@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('customer_address_books', function (Blueprint $table) {
             $table->id();
-            $table->integer('status')->default(1);
+            $table->integer('status_id')->default(1);
             $table->boolean('is_default')->default(false);
             $table->unsignedInteger('customer_id'); // Changed from foreignId
             $table->string('name')->default('');
@@ -23,12 +23,12 @@ return new class extends Migration
             $table->string('address_2')->default('')->nullable();
             $table->string('postal_code')->default('');
             $table->string('city')->default('');
-            $table->integer('state')->default(0);
-            $table->integer('country')->default(0);
+            $table->integer('state_id')->default(0);
+            $table->integer('country_id')->default(0);
             $table->timestamps();
 
             // Index for faster queries
-            $table->index('status');
+            $table->index('status_id');
             $table->index('customer_id');
             $table->index(['customer_id', 'is_default']);
         });

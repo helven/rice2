@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
-            $table->integer('status')->default(1);
+            $table->integer('status_id')->default(1);
             $table->string('name')->default('');
             $table->string('contact')->default('');
             $table->string('ic_name')->default('');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('route')->nullable();
             $table->timestamps();
 
-            $table->index('status');
+            $table->index('status_id');
         });
     }
 

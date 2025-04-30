@@ -21,7 +21,7 @@ class CustomerFactory extends Factory
         return [
             'name' => fake()->name(),
             'contact' => fake()->phoneNumber(),
-            'status' => fake()->randomElement([1, 2]),
+            'status_id' => fake()->randomElement([1, 2]),
         ];
     }
 

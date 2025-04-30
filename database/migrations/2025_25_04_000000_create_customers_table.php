@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->integer('status')->default(1);
+            $table->integer('status_id')->default(1);
             $table->string('name')->default('');
             $table->string('contact')->default('');
             $table->timestamps();
+
+            $table->index('status_id');
         });
     }
 

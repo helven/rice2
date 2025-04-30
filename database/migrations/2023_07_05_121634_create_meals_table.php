@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('meals', function (Blueprint $table) {
             $table->id();
-            $table->integer('status')->default(1);
-            $table->string('name')->default('32');
-            $table->string('code')->default('32');
+            $table->integer('status_id')->default(1);
+            $table->string('name')->default('');
+            $table->string('code')->default('');
             $table->timestamps();
 
-            $table->index('status');
+            $table->index('status_id');
         });
     }
 
