@@ -27,4 +27,13 @@ class EditDriver extends EditRecord
                 }),
         ];
     }
+
+    public function getBreadcrumbs(): array
+    {
+        $record = $this->getRecord();
+        return [
+            '/admin/drivers' => 'Drivers',
+            '' => $record->name ?? 'Edit Driver',
+        ];
+    }
 }

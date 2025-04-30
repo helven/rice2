@@ -14,7 +14,17 @@ class ListDrivers extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('New Driver')
+                ->icon('heroicon-m-plus'),
+        ];
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            '/admin/drivers' => 'Drivers',
+            '' => 'Manage Drivers',
         ];
     }
 }
