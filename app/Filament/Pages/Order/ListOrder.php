@@ -23,6 +23,7 @@ class ListOrder extends Page implements HasTable
     protected static ?string $navigationLabel = 'Manage Orders';
     protected static ?string $title = 'Manage Orders';
     protected static ?string $slug = 'orders';
+    protected static bool $shouldRegisterNavigation = true;
     protected static ?int $navigationSort = 1;
     
     protected static string $view = 'filament.pages.order.list-order';
@@ -102,11 +103,6 @@ class ListOrder extends Page implements HasTable
     protected function query(): Builder
     {
         return Order::query()->whereIn('status_id', [1, 2]);
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return true;
     }
 
     protected function getHeaderActions(): array
