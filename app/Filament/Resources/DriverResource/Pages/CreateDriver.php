@@ -19,4 +19,13 @@ class CreateDriver extends CreateRecord
             '' => 'New Driver',
         ];
     }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction()->label('Submit'),
+            $this->getCreateAnotherFormAction()->label('Submit & Create another'),
+            $this->getCancelFormAction()->label('Cancel'),
+        ];
+    }
 }

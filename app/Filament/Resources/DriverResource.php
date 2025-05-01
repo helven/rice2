@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
@@ -56,47 +57,55 @@ class DriverResource extends Resource
     {
         return $form
             ->schema([
-                Grid::make(2)
+                Section::make('Driver Information')
+                    ->collapsible()
                     ->schema([
-                        TextInput::make('name')
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('contact')
+                                    ->label('Contact No')
+                                    ->tel()
+                                    ->required()
+                                    ->maxLength(255),
+                            ]),
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('ic_name')
+                                    ->label('IC Name')
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('ic_no')
+                                    ->label('IC No')
+                                    ->required()
+                                    ->maxLength(255),
+                            ]),
+                        Textarea::make('address')
                             ->required()
-                            ->maxLength(255),
-                        TextInput::make('contact')
-                            ->label('Contact No')
-                            ->tel()
-                            ->required()
-                            ->maxLength(255),
+                            ->columnSpanFull(),
                     ]),
-                Grid::make(2)
+                Section::make('Route Information')
+                    ->collapsible()
                     ->schema([
-                        TextInput::make('ic_name')
-                            ->label('IC Name')
-                            ->required()
-                            ->maxLength(255),
-                        TextInput::make('ic_no')
-                            ->label('IC No')
-                            ->required()
-                            ->maxLength(255),
-                    ]),
-                Textarea::make('address')
-                    ->required()
-                    ->columnSpanFull(),
-                Repeater::make('route')
-                    ->label('Routes')
-                    ->schema([
-                        TextInput::make('route_name')
-                            ->label('Route')
-                            ->required()
-                            ->default(function (Forms\Get $get) {
-                                $items = $get('../../route') ?? [];
-                                return sprintf('Route %d', count($items));
-                            }),
+                        Repeater::make('route')
+                            ->label('Routes')
+                            ->schema([
+                                TextInput::make('route_name')
+                                    ->label('Route')
+                                    ->required()
+                                    ->default(function (Forms\Get $get) {
+                                        $items = $get('../../route') ?? [];
+                                        return sprintf('Route %d', count($items));
+                                    }),
+                            ])
+                            ->addActionLabel('Add Route')
+                            ->columns(1)
+                            ->columnSpanFull()
+                            ->defaultItems(1)
+                            ->required(),
                     ])
-                    ->addActionLabel('Add Route')
-                    ->columns(1)
-                    ->columnSpanFull()
-                    ->defaultItems(1)
-                    ->required(),
             ]);
     }
 

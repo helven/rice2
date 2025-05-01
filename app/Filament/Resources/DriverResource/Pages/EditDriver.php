@@ -28,6 +28,14 @@ class EditDriver extends EditRecord
         ];
     }
 
+    protected function getFormActions(): array
+    {
+        return [
+            $this->saveAction()->label('Update Driver'),
+            $this->cancelAction()->label('Back'),
+        ];
+    }
+
     public function getBreadcrumbs(): array
     {
         $record = $this->getRecord();
