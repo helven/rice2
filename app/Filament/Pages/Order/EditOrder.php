@@ -59,13 +59,6 @@ class EditOrder extends Page
             'customer_id' => $this->order->customer_id,
             'address_id' => $this->order->address_id,
             'delivery_date' => $this->order->delivery_date,
-            'notes' => $this->order->notes,
-            'total_amount' => $this->order->total_amount,
-            'arrival_time' => $this->order->arrival_time,
-            'driver_id' => $this->order->driver_id,
-            'driver_route' => $this->order->driver_route,
-            'backup_driver_id' => $this->order->backup_driver_id,
-            'backup_driver_route' => $this->order->backup_driver_route,
             'meals' => $this->order->meals->map(function($meal) {
                 return [
                     'meal_id' => $meal->meal_id,
@@ -75,6 +68,14 @@ class EditOrder extends Page
                     'vegi' => $meal->vegi,
                 ];
             })->toArray(),
+            'total_amount' => $this->order->total_amount,
+            'notes' => $this->order->notes,
+            'arrival_time' => $this->order->arrival_time,
+            'driver_id' => $this->order->driver_id,
+            'driver_route' => $this->order->driver_route,
+            'backup_driver_id' => $this->order->backup_driver_id,
+            'backup_driver_route' => $this->order->backup_driver_route,
+            'driver_notes' => $this->order->driver_notes,
         ]);
     }
 
@@ -304,6 +305,9 @@ ob_start();?>
                                 })
                                 ->disabled(fn (callable $get): bool => blank($get('driver_id')))
                         ]),
+                        Textarea::make('driver_notes')
+                            ->label('Notes')
+                            ->rows(5)
                 ]),
         ];
     }
@@ -345,6 +349,7 @@ ob_start();?>
                 'driver_route' => $data['driver_route'],
                 'backup_driver_id' => $data['backup_driver_id'] ?? null,
                 'backup_driver_route' => $data['backup_driver_route'] ?? '',
+                'driver_notes' => $data['driver_notes'],
             ]);
 
             // Update or create meals

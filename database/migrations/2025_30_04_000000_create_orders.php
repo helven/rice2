@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('driver_route')->default('');
             $table->unsignedInteger('backup_driver_id')->default(0);
             $table->string('backup_driver_route')->default('');
+            $table->text('driver_notes')->nullable();
             $table->timestamps();
 
             $table->index('status_id');

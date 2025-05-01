@@ -20,6 +20,7 @@ class Order extends Model
         'driver_route',
         'backup_driver_id',
         'backup_driver_route',
+        'driver_notes'
     ];
 
     protected $casts = [

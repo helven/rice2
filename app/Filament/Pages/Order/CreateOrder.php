@@ -59,7 +59,6 @@ class CreateOrder extends Page
             'delivery_start_date' => '',
             'delivery_end_date' => '',
             'delivery_date_range' => '',
-            'meal_id' => '',
             'meals' => [['normal_rice' => 0, 'small_rice' => 0, 'no_rice' => 0, 'vegi' => 0]],
             'total_amount' => 0.00,
             'notes' => '',
@@ -67,7 +66,8 @@ class CreateOrder extends Page
             'driver_id' => '',
             'driver_route' => '',
             'backup_driver_id' => '',
-            'backup_driver_route' => ''
+            'backup_driver_route' => '',
+            'driver_notes' => '',
         ]);
     }
 
@@ -296,6 +296,9 @@ ob_start();?>
                                 })
                                 ->disabled(fn (callable $get): bool => blank($get('driver_id')))
                         ]),
+                        Textarea::make('driver_notes')
+                            ->label('Notes')
+                            ->rows(5)
                 ]),
         ];
     }
@@ -349,6 +352,7 @@ ob_start();?>
                     'driver_route' => $data['driver_route'],
                     'backup_driver_id' => $data['backup_driver_id'] ?? 0,
                     'backup_driver_route' => $data['backup_driver_route'] ?? '',
+                    'driver_notes' => $data['driver_notes'],
                 ]);
 
                 // Create order meals
