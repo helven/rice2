@@ -41,7 +41,11 @@ class AdminPanelProvider extends PanelProvider
             })
             ->colors([
                 'primary' => Color::hex('#00C7FF'),
-                'secondary' => Color::hex('#d4d4d8')
+                'secondary' => Color::hex('#d4d4d8'),
+                // Custom colors
+                'purple' => Color::hex('#9333ea'),
+                'orange' => Color::hex('#ea580c'),
+                'pink' => Color::hex('#ec4899'),
             ])
             ->discoverResources(app_path('Filament/Resources'), 'App\\Filament\\Resources')
             ->discoverPages(app_path('Filament/Pages'), 'App\\Filament\\Pages')
