@@ -241,7 +241,7 @@ ob_start();?>
                                 ->options(Driver::query()->pluck('name', 'id'))
                                 ->reactive()
                                 ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('route', null);
+                                    $set('driver_route', null);
                                 }),
                             Select::make('driver_route')
                                 ->label('Route')
@@ -274,7 +274,7 @@ ob_start();?>
                                 ->options(Driver::query()->pluck('name', 'id'))
                                 ->reactive()
                                 ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('route', null);
+                                    $set('backup_driver_route', null);
                                 }),
                             Select::make('backup_driver_route')
                                 ->label('Route')
@@ -313,16 +313,19 @@ ob_start();?>
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date_range' => ['required', 'string'],
             'data.arrival_time' => ['required'],
-            'data.driver_id' => ['required', 'exists:drivers,id'],
-            'data.driver_route' => ['required', 'string'],
-            'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
-            'data.backup_driver_route' => ['nullable', 'string'],
             'data.meals' => ['required', 'array', 'min:1'],
             'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
             'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:100'],
             'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:100'],
             'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:100'],
             'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:100'],
+            'data.total_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'data.notes' => ['nullable', 'string'],
+            'data.driver_id' => ['required', 'exists:drivers,id'],
+            'data.driver_route' => ['required', 'string'],
+            'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
+            'data.backup_driver_route' => ['nullable', 'string'],
+            'data.driver_notes' => ['nullable', 'string'],
         ]);
         
         // Parse the date range
@@ -345,9 +348,9 @@ ob_start();?>
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
                     'delivery_date' => $date->toDateString(),
-                    'arrival_time' => $data['arrival_time'],
                     'total_amount' => $data['total_amount'],
                     'notes' => $data['notes'],
+                    'arrival_time' => $data['arrival_time'],
                     'driver_id' => $data['driver_id'],
                     'driver_route' => $data['driver_route'],
                     'backup_driver_id' => $data['backup_driver_id'] ?? 0,
