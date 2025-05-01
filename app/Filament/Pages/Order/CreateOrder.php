@@ -59,7 +59,7 @@ class CreateOrder extends Page
             'delivery_start_date' => '',
             'delivery_end_date' => '',
             'delivery_date_range' => '',
-            'meals' => [['normal_rice' => 0, 'small_rice' => 0, 'no_rice' => 0, 'vegi' => 0]],
+            'meals' => [['meal_id' => '', 'normal_rice' => 0, 'small_rice' => 0, 'no_rice' => 0, 'vegi' => 0]], // Added meal_id
             'total_amount' => 0.00,
             'notes' => '',
             'arrival_time' => '',
@@ -388,6 +388,74 @@ ob_start();?>
                 ->body($e->getMessage())
                 ->send();
         }
+    }
+
+    public function getFormattedData()
+    {
+        $customer = Customer::find($this->data['customer_id'] ?? null);
+        $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
+        $meals = Meal::whereIn('id', collect($this->data['meals'])->pluck('meal_id'))->get()->keyBy('id');
+
+        $temp_meals = [];
+        foreach($this->data['meals'] as $meal) {
+            if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
+                $temp_meals[] = [
+                    'meal_id' => $meal['meal_id'],
+                    'name' => $meals[$meal['meal_id']]->name,
+                    'normal_rice' => $meal['normal_rice'],
+                    'small_rice' => $meal['small_rice'],
+                    'no_rice' => $meal['no_rice'],
+                    'vegi' => $meal['vegi'],
+                    'qty' => $meal['normal_rice'] + $meal['small_rice'] + $meal['no_rice'] + $meal['vegi'],
+                ];
+            }
+        }
+
+        $display_address = '';
+        if($address){
+            ob_start();?>
+<?php echo $address->name;?><br />
+<?php echo $address->address_1;?><br />
+<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
+<?php echo $address->postcode;?> <?php echo $address->city;?>
+<?php
+            $display_address = trim(ob_get_clean());
+        }
+        
+        $delivery_dates = '';
+
+        // Parse the date range
+        if($this->data['delivery_date_range'] !== '') {
+            [$startDate, $endDate] = explode(' - ', $this->data['delivery_date_range']);
+            $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
+            $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
+
+            // Create a collection of dates between start and end
+            for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+                $delivery_dates .= ($delivery_dates != ''?', ':'').$date->format('Y-m-d');
+            }
+        }
+
+        return [
+            'customer_id' => $this->data['customer_id'],
+            'customer_name' => $customer?->name ?? '',
+            'address_id' => $this->data['address_id'],
+            'address' => $address ? $display_address : '',
+            'delivery_date' => $delivery_dates,
+            'meals' => $temp_meals,
+            'total_amount' => $this->data['total_amount'] ?? '0.00',
+            'notes' => $this->data['notes'] ?? '',
+            'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time']) 
+                ? date('h:i A', strtotime($this->data['arrival_time'])) 
+                : '',
+            'driver_id' => $this->data['driver_id'] ?? '',
+            'driver_name' => Driver::find($this->data['driver_id'] ?? null)?->name ?? '',
+            'driver_route' => $this->data['driver_route'] ?? '',
+            'backup_driver_id' => $this->data['backup_driver_id'] ?? '',
+            'backup_driver_name' => Driver::find($this->data['backup_driver_id'] ?? null)?->name ?? '',
+            'backup_driver_route' => $this->data['backup_driver_route'] ?? '',
+            'driver_notes' => $this->data['driver_notes'] ?? '',
+        ];
     }
 
     public function getBreadcrumbs(): array

@@ -48,10 +48,10 @@
             wire:ignore.self
         >
             <x-slot name="heading">
-                Test Modal Header
+                Confirm Order
             </x-slot>
 
-            This is a test modal content
+            @include('filament.pages.order.partials.confirm-modal')
 
             <x-slot name="footerActions">
                 <x-filament::button
