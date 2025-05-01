@@ -38,12 +38,13 @@ use App\Models\Meal;
 class CreateOrder extends Page
 {
     use InteractsWithForms;
-    
+
     protected static ?string $navigationGroup = 'Orders';
     protected static ?string $navigationIcon = 'heroicon-o-plus';
     protected static ?string $navigationLabel = 'New Order';
     protected static ?string $title = 'New Order';
     protected static ?string $slug = 'orders/create';
+    protected static bool $shouldRegisterNavigation = true;
     protected static ?int $navigationSort = 2;
     
     protected static string $view = 'filament.pages.order.create-order';
@@ -138,7 +139,7 @@ ob_start();?>
                         ->label('Delivery Date')
                         ->required()
                         ->minDate(\Carbon\Carbon::now())
-                        ->timezone('Asia/Kuala_Lumpur')
+                        //->timezone('Asia/Kuala_Lumpur')
             ]),
             Section::make('Add Order')
                 ->collapsible()
@@ -223,7 +224,7 @@ ob_start();?>
                                 ->label('Arrival Time')
                                 ->placeholder('Select Arrival Time')
                                 ->required()
-                                ->timezone('Asia/Kuala_Lumpur')
+                                //->timezone('Asia/Kuala_Lumpur')
                                 ->withoutDate()
                                 ->displayFormat('h:i A') // 12-hour with AM/PM (K = AM/PM)
                                 ->format('H:i')
@@ -303,7 +304,7 @@ ob_start();?>
     {
         // Validate the form data
         $data = $this->form->getState();
-        
+
         $this->validate([
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
@@ -331,17 +332,17 @@ ob_start();?>
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             $dates->push($date->copy());
         }
-        
-        // Begin transaction
-        \DB::beginTransaction();
-        
+
         try {
+            // Begin transaction
+            \DB::beginTransaction();
             // Create an order for each date
             foreach ($dates as $date) {
                 $order = \App\Models\Order::create([
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
-                    'delivery_date' => $date->setTimeFromTimeString($data['arrival_time']),
+                    'delivery_date' => $date->toDateString(),
+                    'arrival_time' => $data['arrival_time'],
                     'total_amount' => $data['total_amount'],
                     'notes' => $data['notes'],
                     'driver_id' => $data['driver_id'],
@@ -380,11 +381,6 @@ ob_start();?>
                 ->body($e->getMessage())
                 ->send();
         }
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return true;
     }
 
     public function getBreadcrumbs(): array

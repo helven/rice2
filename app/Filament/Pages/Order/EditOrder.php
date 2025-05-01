@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Filament\Pages\Order;
+
 use Illuminate\Support\HtmlString;
 
 use App\Models\CustomerAddressBook;
@@ -60,7 +61,7 @@ class EditOrder extends Page
             'delivery_date' => $this->order->delivery_date,
             'notes' => $this->order->notes,
             'total_amount' => $this->order->total_amount,
-            'arrival_time' => $this->order->delivery_date->format('H:i'),
+            'arrival_time' => $this->order->arrival_time,
             'driver_id' => $this->order->driver_id,
             'driver_route' => $this->order->driver_route,
             'backup_driver_id' => $this->order->backup_driver_id,
@@ -231,7 +232,7 @@ ob_start();?>
                                 ->label('Arrival Time')
                                 ->placeholder('Select Arrival Time')
                                 ->required()
-                                ->timezone('Asia/Kuala_Lumpur')
+                                //->timezone('Asia/Kuala_Lumpur')
                                 ->withoutDate()
                                 ->displayFormat('h:i A') // 12-hour with AM/PM (K = AM/PM)
                                 ->format('H:i')
@@ -309,9 +310,28 @@ ob_start();?>
 
     public function save()
     {
+        // Validate the form data
         $data = $this->form->getState();
         
+        $this->validate([
+            'data.customer_id' => ['required', 'exists:customers,id'],
+            'data.address_id' => ['required', 'exists:customer_address_books,id'],
+            'data.delivery_date_range' => ['required', 'string'],
+            'data.arrival_time' => ['required'],
+            'data.driver_id' => ['required', 'exists:drivers,id'],
+            'data.driver_route' => ['required', 'string'],
+            'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
+            'data.backup_driver_route' => ['nullable', 'string'],
+            'data.meals' => ['required', 'array', 'min:1'],
+            'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
+            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:100'],
+            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:100'],
+            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:100'],
+            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:100'],
+        ]);
+        
         try {
+            // Begin transaction
             \DB::beginTransaction();
             
             // Update the order

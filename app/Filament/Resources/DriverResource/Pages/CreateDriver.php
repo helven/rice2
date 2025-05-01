@@ -23,8 +23,8 @@ class CreateDriver extends CreateRecord
     protected function getFormActions(): array
     {
         return [
-            $this->getCreateFormAction()->label('Submit'),
-            $this->getCreateAnotherFormAction()->label('Submit & Create another'),
+            $this->getCreateFormAction()->label('Save'),
+            $this->getCreateAnotherFormAction()->label('Save & Create another'),
             $this->getCancelFormAction()->label('Cancel'),
         ];
     }
