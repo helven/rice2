@@ -150,7 +150,13 @@ ob_start();?>
                         ->reorderable(false)
                         ->deletable(true)
                         ->cloneable()
-                        ->addActionLabel('Add Meal')
+                        ->addAction(
+                            fn ($action) => $action
+                                ->label('Add Meal')
+                                ->extraAttributes([
+                                    'class' => '',
+                                ])
+                        )
                         ->schema([
                             Grid::make(5)
                                 ->schema([

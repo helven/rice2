@@ -8,10 +8,10 @@
                     type="submit"
                     class="mt-4"
                 >
-                    Create Order
+                    Submit
                 </x-filament::button>
 
-                <x-filament::button tag="a" href="/admin/orders" color="secondary">
+                <x-filament::button tag="a" href="/admin/orders" color="gray">
                     Cancel
                 </x-filament::button>
             </div>
