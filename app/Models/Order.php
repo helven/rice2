@@ -15,6 +15,7 @@ class Order extends Model
         'delivery_date',
         'total_amount',
         'notes',
+        'arrival_time',
         'driver_id',
         'driver_route',
         'backup_driver_id',
