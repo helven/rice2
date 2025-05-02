@@ -12,6 +12,7 @@ use Filament\Tables\Actions\Action as TableAction;
 use Filament\Actions\Action;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListOrder extends Page implements HasTable
@@ -42,24 +43,72 @@ class ListOrder extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
-                    ->dateTime('Y-m-d H:i:s')
-                    ->sortable(),
-                TextColumn::make('total_amount')
-                    ->label('Total Amount')
-                    ->money('MYR')
+                    ->dateTime('Y-m-d')
                     ->sortable(),
                 TextColumn::make('driver.name')
                     ->label('Driver')
                     ->searchable(),
+                TextColumn::make('total_amount')
+                    ->label('Total Amount')
+                    ->numeric(2, '.', ',')
+                    ->prefix('RM ')
+                    ->sortable(),
                 TextColumn::make('payment_status.label')
                     ->label('Payment')
+                    ->formatStateUsing(function (Order $record): string {
+                        $status = $record->payment_status->label ?? '';
+                        $method = $record->payment_method->label ?? '';
+                        return $method ? "{$status} <span class='text-gray-950'>({$method})</span>" : $status;
+                    })
+                    ->html()
                     ->searchable()
                     ->sortable()
                     ->color(function (Order $record): string {
-                        if ($record->status_id === 13) return 'success';
-                        if ($record->status_id === 12) return 'warning';
+                        if ($record->payment_status_id === 13) return 'success';
+                        if ($record->payment_status_id === 12) return 'warning';
                         return 'gray';
-                    }),
+                    })
+                    ->action(
+                        TableAction::make('editPaymentStatus')
+                            ->form([
+                                Select::make('payment_status_id')
+                                    ->label('Payment Status')
+                                    ->native()
+                                    ->selectablePlaceholder(false)
+                                    ->required()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        if ((string)$state === '12') {
+                                            $set('payment_method_id', null);
+                                        }
+                                    })
+                                    ->options([
+                                        12 => 'Unpaid',
+                                        13 => 'Paid',
+                                    ])
+                                    ->default(function (Order $record): int {
+                                        return $record->payment_status_id;
+                                    }),
+                                Select::make('payment_method_id')
+                                    ->label('Payment Method')
+                                    ->native()
+                                    ->placeholder('Select Payment Method')
+                                    ->relationship('payment_method', 'label')
+                                    ->required(fn (callable $get): bool => (string)$get('payment_status_id') === '13')
+                                    ->default(function (Order $record): ?int {
+                                        return $record->payment_method_id;
+                                    })
+                                    ->disabled(fn (callable $get) => (string)$get('payment_status_id') === '12')
+                            ])
+                            ->action(function (Order $record, array $data): void {
+                                $data['payment_method_id'] = (string)$data['payment_status_id'] === '12' ? null : $data['payment_method_id'];
+                                $record->update([
+                                    'payment_status_id' => $data['payment_status_id'],
+                                    'payment_method_id' => $data['payment_method_id'],
+                                ]);
+                            })
+                            ->icon('heroicon-m-pencil-square')
+                    ),
                 TextColumn::make('status.label')
                     ->label('Status')
                     ->searchable()
@@ -69,17 +118,18 @@ class ListOrder extends Page implements HasTable
                         if ($record->status_id === 1) return 'success';
                         if ($record->status_id === 2) return 'warning';
                         return 'gray';
-                    }),
+                    })
+                    ->toggleable(true),
                 TextColumn::make('created_at')
-                    ->label('Ordered Date')
-                    ->dateTime('Y-m-d H:i:s')
+                    ->label('Ordered On')
+                    ->dateTime('Y-m-d H:i')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(true),
                 TextColumn::make('updated_at')
                     ->label('Last Modified')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(true),
             ])
             ->filters([
                 SelectFilter::make('payment_status_id')
