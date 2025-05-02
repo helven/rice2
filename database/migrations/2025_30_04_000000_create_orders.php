@@ -18,11 +18,12 @@ return new class extends Migration
             $table->unsignedInteger('address_id');
             $table->integer('status_id')->default(1);
             $table->integer('payment_status_id')->default(12);
-            $table->integer('payment_method_id')->default(0);
+            $table->integer('payment_method_id')->default(12);
             $table->datetime('delivery_date');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->text('notes')->nullable();
             $table->time('arrival_time')->default('00:00:00');
+            $table->time('dropoff_time')->default('00:00:00');
             $table->unsignedInteger('driver_id')->default(0);
             $table->string('driver_route')->default('');
             $table->unsignedInteger('backup_driver_id')->default(0);
