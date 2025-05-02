@@ -78,7 +78,13 @@ class MealResource extends Resource
                 TextColumn::make('status.label')
                     ->label('Status')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color(function (Meal $record): string {
+                        if ($record->status_id === 1) return 'success';
+                        if ($record->status_id === 2) return 'warning';
+                        return 'gray';
+                    }),
                 TextColumn::make('created_at')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()

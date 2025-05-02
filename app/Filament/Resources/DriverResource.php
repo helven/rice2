@@ -27,7 +27,7 @@ class DriverResource extends Resource
     protected static ?string $navigationGroup = 'Drivers';
     protected static ?string $navigationIcon = 'heroicon-o-truck';
     protected static ?string $navigationLabel = 'Manage Drivers';
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationItems(): array
     {
@@ -42,11 +42,6 @@ class DriverResource extends Resource
                 ->icon('heroicon-o-plus')
                 ->group(static::getNavigationGroup())
                 ->sort(static::getNavigationSort() + 1)
-                ->url(static::getUrl('create')),
-            NavigationItem::make('Export Drivers')
-                ->icon('heroicon-o-arrow-down-on-square-stack')
-                ->group(static::getNavigationGroup())
-                ->sort(static::getNavigationSort() + 2)
                 ->url(static::getUrl('create')),
         ];
     }
@@ -64,23 +59,23 @@ class DriverResource extends Resource
                             ->schema([
                                 TextInput::make('name')
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(64),
                                 TextInput::make('contact')
                                     ->label('Contact No')
                                     ->tel()
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(64),
                             ]),
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('ic_name')
                                     ->label('IC Name')
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(64),
                                 TextInput::make('ic_no')
                                     ->label('IC No')
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(64),
                             ]),
                         Textarea::make('address')
                             ->required()
@@ -132,13 +127,20 @@ class DriverResource extends Resource
                 TextColumn::make('status.label')
                     ->label('Status')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color(function (Driver $record): string {
+                        if ($record->status_id === 1) return 'success';
+                        if ($record->status_id === 2) return 'warning';
+                        return 'gray';
+                    }),
                 TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Last Modified')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),

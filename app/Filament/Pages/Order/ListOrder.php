@@ -48,22 +48,29 @@ class ListOrder extends Page implements HasTable
                     ->label('Total Amount')
                     ->money('MYR')
                     ->sortable(),
+                TextColumn::make('driver.name')
+                    ->label('Driver')
+                    ->searchable(),
                 TextColumn::make('status.label')
                     ->label('Status')
+                    ->searchable()
+                    ->sortable()
                     ->badge()
                     ->color(function (Order $record): string {
                         if ($record->status_id === 1) return 'success';
                         if ($record->status_id === 2) return 'warning';
                         return 'gray';
                     }),
-                TextColumn::make('driver.name')
-                    ->label('Driver')
-                    ->searchable(),
                 TextColumn::make('created_at')
                     ->label('Ordered Date')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('updated_at')
+                    ->label('Last Modified')
+                    ->dateTime('Y-m-d H:i:s')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('status_id')
@@ -72,6 +79,8 @@ class ListOrder extends Page implements HasTable
                         1 => 'Active',
                         2 => 'Inactive',
                     ]),
+                SelectFilter::make('customer')
+                        ->relationship('customer', 'name'),
                 SelectFilter::make('driver')
                     ->relationship('driver', 'name'),
             ])

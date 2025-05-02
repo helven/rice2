@@ -20,7 +20,7 @@ class EditDriver extends EditRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $record = $this->getRecord();
-                    $record->status = 11;
+                    $record->status_id = 11;
                     $record->save();
                     
                     $this->redirect($this->getResource()::getUrl('index'));
