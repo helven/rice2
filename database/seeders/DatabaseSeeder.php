@@ -171,5 +171,22 @@ class DatabaseSeeder extends Seeder
             'key'   => 'terengganu',
             'label' => 'Terengganu'
         ]);
+
+        \DB::table('attr_payment_method')->insert([
+            'key'   => 'bt',
+            'label' => 'BT'
+        ]);
+        \DB::table('attr_payment_method')->insert([
+            'key'   => 'mom',
+            'label' => 'MOM'
+        ]);
+        \DB::table('attr_payment_method')->insert([
+            'key'   => 'my',
+            'label' => 'MY'
+        ]);
+        \DB::table('attr_payment_method')->insert([
+            'key'   => 'un',
+            'label' => 'UN'
+        ]);
     }
 }

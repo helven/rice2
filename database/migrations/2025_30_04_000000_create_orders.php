@@ -17,6 +17,8 @@ return new class extends Migration
             $table->unsignedInteger('customer_id');
             $table->unsignedInteger('address_id');
             $table->integer('status_id')->default(1);
+            $table->integer('payment_status_id')->default(12);
+            $table->integer('payment_method_id')->default(0);
             $table->datetime('delivery_date');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->text('notes')->nullable();

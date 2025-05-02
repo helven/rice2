@@ -51,6 +51,15 @@ class ListOrder extends Page implements HasTable
                 TextColumn::make('driver.name')
                     ->label('Driver')
                     ->searchable(),
+                TextColumn::make('payment_status.label')
+                    ->label('Payment')
+                    ->searchable()
+                    ->sortable()
+                    ->color(function (Order $record): string {
+                        if ($record->status_id === 13) return 'success';
+                        if ($record->status_id === 12) return 'warning';
+                        return 'gray';
+                    }),
                 TextColumn::make('status.label')
                     ->label('Status')
                     ->searchable()
@@ -73,6 +82,12 @@ class ListOrder extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('payment_status_id')
+                    ->label('Payment')
+                    ->options([
+                        13 => 'Paid',
+                        12 => 'Unpaid',
+                    ]),
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options([

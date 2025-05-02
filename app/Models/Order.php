@@ -13,6 +13,8 @@ class Order extends Model
         'customer_id',
         'address_id',
         'status_id',
+        'payment_status_id',
+        'payment_method_id',
         'delivery_date',
         'total_amount',
         'notes',
@@ -32,6 +34,16 @@ class Order extends Model
     public function status()
     {
         return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
+    }
+
+    public function payment_status()
+    {
+        return $this->belongsTo(AttrStatus::class, 'payment_status_id', 'id');
+    }
+
+    public function payment_method()
+    {
+        return $this->belongsTo(AttrPaymentMethod::class, 'payment_method_id', 'id');
     }
 
     public function customer(): BelongsTo
