@@ -56,6 +56,7 @@ class EditOrder extends Page
         $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backupDriver'])->findOrFail($id);
         
         $this->form->fill([
+            'order_no' => $this->order->order_no,
             'customer_id' => $this->order->customer_id,
             'address_id' => $this->order->address_id,
             'delivery_date' => $this->order->delivery_date,
@@ -93,6 +94,9 @@ class EditOrder extends Page
             Section::make('Order Information')
                 ->collapsible()
                 ->schema([
+                    TextInput::make('order_no')
+                        ->required()
+                        ->maxLength(64),
                     Grid::make(2)
                         ->schema([
                             Select::make('customer_id')
@@ -319,6 +323,7 @@ ob_start();?>
         $data = $this->form->getState();
         
         $this->validate([
+            'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date' => ['required', 'string'],
@@ -344,6 +349,7 @@ ob_start();?>
             
             // Update the order
             $this->order->update([
+                'order_no' => $data['order_no'],
                 'customer_id' => $data['customer_id'],
                 'address_id' => $data['address_id'],
                 'delivery_date' => \Carbon\Carbon::parse($data['delivery_date']),
@@ -421,6 +427,7 @@ ob_start();?>
         }
 
         return [
+            'order_no' => $this->data['order_no'],
             'customer_id' => $this->data['customer_id'],
             'customer_name' => $customer?->name ?? '',
             'address_id' => $this->data['address_id'],

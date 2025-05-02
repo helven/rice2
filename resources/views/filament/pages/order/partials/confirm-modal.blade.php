@@ -5,6 +5,7 @@
     <div class="grid grid-cols-2 gap-4">
         <div>
             <div class="font-semibold">Order Information:</div>
+            <div>Order No: {{ $formattedData['order_no'] }}</div>
             <div>Customer: {{ $formattedData['customer_name'] }}</div>
             <div>Address:<br />{!! $formattedData['address'] !!}</div>
             <div>Delivery Date: {{ $formattedData['delivery_date'] }}</div>

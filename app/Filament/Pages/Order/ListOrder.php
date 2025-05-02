@@ -33,8 +33,8 @@ class ListOrder extends Page implements HasTable
         return $table
             ->query($this->query())
             ->columns([
-                TextColumn::make('id')
-                    ->label('Order ID')
+                TextColumn::make('order_no')
+                    ->label('Order No')
                     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('Customer')

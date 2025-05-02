@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
+            $table->string('order_no')->default('');
             $table->unsignedInteger('customer_id');
             $table->unsignedInteger('address_id');
             $table->integer('status_id')->default(1);

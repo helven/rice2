@@ -54,6 +54,7 @@ class CreateOrder extends Page
     public function mount(): void
     {
         $this->form->fill([
+            'order_no' => '',
             'customer_id' => '',
             'address_id' => '',
             'delivery_start_date' => '',
@@ -85,6 +86,9 @@ class CreateOrder extends Page
             Section::make('Order Information')
                 ->collapsible()
                 ->schema([
+                    TextInput::make('order_no')
+                        ->required()
+                        ->maxLength(64),
                     Grid::make(2)
                         ->schema([
                             Select::make('customer_id')
@@ -309,6 +313,7 @@ ob_start();?>
         $data = $this->form->getState();
 
         $this->validate([
+            'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date_range' => ['required', 'string'],
@@ -343,8 +348,10 @@ ob_start();?>
             // Begin transaction
             \DB::beginTransaction();
             // Create an order for each date
+            $order_no_ctr = 1;
             foreach ($dates as $date) {
                 $order = \App\Models\Order::create([
+                    'order_no' => $data['order_no'].'-'.str_pad($order_no_ctr, 2, '0', STR_PAD_LEFT),
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
                     'delivery_date' => $date->toDateString(),
@@ -369,6 +376,8 @@ ob_start();?>
                         'vegi' => $meal['vegi'],
                     ]);
                 }
+
+                $order_no_ctr++;
             }
             
             \DB::commit();
@@ -437,6 +446,7 @@ ob_start();?>
         }
 
         return [
+            'order_no' => $this->data['order_no'],
             'customer_id' => $this->data['customer_id'],
             'customer_name' => $customer?->name ?? '',
             'address_id' => $this->data['address_id'],
