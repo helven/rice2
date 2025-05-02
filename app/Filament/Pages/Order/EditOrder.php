@@ -74,7 +74,7 @@ class EditOrder extends Page
             'arrival_time' => $this->order->arrival_time,
             'driver_id' => $this->order->driver_id,
             'driver_route' => $this->order->driver_route,
-            'backup_driver_id' => $this->order->backup_driver_id,
+            'backup_driver_id' => ($this->order->backup_driver_id !== 0)?$this->order->backup_driver_id:'',
             'backup_driver_route' => $this->order->backup_driver_route,
             'driver_notes' => $this->order->driver_notes,
         ]);
@@ -187,42 +187,67 @@ ob_start();?>
                                         ->label('Normal Rice')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('normal_rice', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
 
                                     TextInput::make('small_rice')
                                         ->label('Small Rice')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('small_rice', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
-                                    
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
+
                                     TextInput::make('no_rice')
                                         ->label('No Rice')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('no_rice', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
                                     
                                     TextInput::make('vegi')
                                         ->label('Vegi')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('vegi', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
                                 ])
                             ]),
                     TextInput::make('total_amount')
                         ->label('Total')
+                        ->placeholder('0.00')
                         ->numeric()
                         ->default(0.00)
                         ->prefix('RM')
                         ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->placeholder('0.00'),
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            $state = (int)ltrim($state, '0') ?: 0;
+                            $set('total_amount', $state);
+                        }),
 
                     Textarea::make('notes')
                         ->label('Notes')
@@ -273,7 +298,6 @@ ob_start();?>
                                     if (!$driver || !$driver->route) {
                                         return [];
                                     }
-
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
                                 ->disabled(fn (callable $get): bool => blank($get('driver_id')))
@@ -321,7 +345,7 @@ ob_start();?>
     {
         // Validate the form data
         $data = $this->form->getState();
-        
+
         $this->validate([
             'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
@@ -383,7 +407,6 @@ ob_start();?>
                 ->send();
 
             $this->redirect('/admin/orders');
-
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
@@ -456,7 +479,7 @@ ob_start();?>
         $record = $this->getRecord();
         return [
             '/admin/drivers' => 'Drivers',
-            '' => $record->name ?? 'Edit Driver',
+            '' => $record->order_no ?? 'Edit Order',
         ];
     }
 

@@ -177,42 +177,67 @@ ob_start();?>
                                         ->label('Normal Rice')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('normal_rice', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
 
                                     TextInput::make('small_rice')
                                         ->label('Small Rice')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('small_rice', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
-                                    
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
+
                                     TextInput::make('no_rice')
                                         ->label('No Rice')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('no_rice', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
                                     
                                     TextInput::make('vegi')
                                         ->label('Vegi')
                                         ->numeric()
                                         ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 100])
+                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            $state = (int)ltrim($state, '0') ?: 0;
+                                            $set('vegi', $state);
+                                        })
                                         ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:100']),
+                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
                                 ])
                             ]),
                     TextInput::make('total_amount')
                         ->label('Total')
+                        ->placeholder('0.00')
                         ->numeric()
                         ->default(0.00)
                         ->prefix('RM')
                         ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->placeholder('0.00'),
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            $state = (int)ltrim($state, '0') ?: 0;
+                            $set('total_amount', $state);
+                        }),
 
                     Textarea::make('notes')
                         ->label('Notes')
@@ -263,7 +288,6 @@ ob_start();?>
                                     if (!$driver || !$driver->route) {
                                         return [];
                                     }
-
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
                                 ->disabled(fn (callable $get): bool => blank($get('driver_id')))
@@ -387,7 +411,7 @@ ob_start();?>
                 ->success()
                 ->title('Orders created successfully')
                 ->send();
-                
+
             $this->redirect('/admin/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -406,7 +430,7 @@ ob_start();?>
         $meals = Meal::whereIn('id', collect($this->data['meals'])->pluck('meal_id'))->get()->keyBy('id');
 
         $temp_meals = [];
-        foreach($this->data['meals'] as $meal) {
+        foreach($this->data['meals'] as $meal){
             if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
                 $temp_meals[] = [
                     'meal_id' => $meal['meal_id'],
