@@ -70,6 +70,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 'Orders',
+                'Customers',
+                'Meals',
                 'Drivers',
             ])
             ->authMiddleware([

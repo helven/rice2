@@ -2,58 +2,53 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\DriverResource\Pages;
-use App\Filament\Resources\DriverResource\RelationManagers;
-use App\Models\Driver;
-
+use App\Filament\Resources\CustomerResource\Pages;
+use App\Models\Customer;
+use App\Models\AttrStatus;
+use App\Models\AttrState;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Navigation\NavigationItem;
 
-class DriverResource extends Resource
+class CustomerResource extends Resource
 {
-    protected static ?string $navigationGroup = 'Drivers';
-    protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationLabel = 'Manage Drivers';
+    protected static ?string $navigationGroup = 'Customers';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $navigationLabel = 'Manage Customers';
 
     public static function getNavigationItems(): array
     {
         return [
             ...parent::getNavigationItems(),
-            NavigationItem::make('Manage Drivers')
-                ->icon('heroicon-o-truck')
+            NavigationItem::make('Manage Customers')
+                ->icon('heroicon-o-users')
                 ->group(static::getNavigationGroup())
                 ->url(static::getUrl('index')),
-            NavigationItem::make('Drop Off List')
-                ->icon('heroicon-o-clipboard-document-list')
-                ->group(static::getNavigationGroup())
-                ->url(static::getUrl('dropoff')),
-            NavigationItem::make('New Driver')
+            NavigationItem::make('New Customer')
                 ->icon('heroicon-o-plus')
                 ->group(static::getNavigationGroup())
                 ->url(static::getUrl('create')),
         ];
     }
 
-    protected static ?string $model = Driver::class;
+    protected static ?string $model = Customer::class;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Driver Information')
+                Section::make('Customer Information')
                     ->collapsible()
                     ->schema([
                         Grid::make(2)
@@ -67,41 +62,45 @@ class DriverResource extends Resource
                                     ->required()
                                     ->maxLength(64),
                             ]),
-                        Grid::make(2)
-                            ->schema([
-                                TextInput::make('ic_name')
-                                    ->label('IC Name')
-                                    ->required()
-                                    ->maxLength(64),
-                                TextInput::make('ic_no')
-                                    ->label('IC No')
-                                    ->required()
-                                    ->maxLength(64),
-                            ]),
-                        Textarea::make('address')
-                            ->required()
-                            ->columnSpanFull(),
                     ]),
-                Section::make('Route Information')
+                Section::make('Address Information')
                     ->collapsible()
                     ->schema([
-                        Repeater::make('route')
-                            ->label('Routes')
+                        Repeater::make('addressBooks')
+                            ->label('Addresses')
+                            ->relationship()
                             ->schema([
-                                TextInput::make('route_name')
-                                    ->label('Route')
+                                TextInput::make('name')
+                                    ->label('Company Name')
                                     ->required()
-                                    ->default(function (Forms\Get $get) {
-                                        $items = $get('../../route') ?? [];
-                                        return sprintf('Route %d', count($items));
-                                    }),
+                                    ->maxLength(64),
+                                TextInput::make('address_1')
+                                    ->label('Address Line 1')
+                                    ->required()
+                                    ->maxLength(128),
+                                TextInput::make('address_2')
+                                    ->label('Address Line 2')
+                                    ->maxLength(128),
+                                Grid::make(3)
+                                    ->schema([
+                                        TextInput::make('postal_code')
+                                            ->label('Postal Code')
+                                            ->required()
+                                            ->maxLength(10),
+                                        TextInput::make('city')
+                                            ->required()
+                                            ->maxLength(64),
+                                        Select::make('state_id')
+                                            ->label('State')
+                                            ->options(AttrState::query()->pluck('label', 'id'))
+                                            ->required()
+                                            ->searchable(),
+                                    ]),
                             ])
-                            ->addActionLabel('Add Route')
-                            ->columns(1)
-                            ->columnSpanFull()
+                            ->addActionLabel('Add Address')
                             ->defaultItems(1)
-                            ->required(),
-                    ])
+                            ->columnSpanFull()
+                    ]),
             ]);
     }
 
@@ -116,25 +115,16 @@ class DriverResource extends Resource
                 TextColumn::make('contact')
                     ->label('Contact No')
                     ->searchable(),
-                TextColumn::make('ic_name')
-                    ->label('IC Name')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(false),
-                TextColumn::make('ic_no')
-                    ->label('IC No')
-                    ->searchable()
-                    ->toggleable(false),
                 TextColumn::make('status.label')
-                    ->label('Status')
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color(function (Driver $record): string {
-                        if ($record->status_id === 1) return 'success';
-                        if ($record->status_id === 2) return 'warning';
-                        return 'gray';
-                    }),
+                        ->label('Status')
+                        ->searchable()
+                        ->sortable()
+                        ->badge()
+                        ->color(function (Customer $record): string {
+                            if ($record->status_id === 1) return 'success';
+                            if ($record->status_id === 2) return 'warning';
+                            return 'gray';
+                        }),
                 TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime('Y-m-d H:i:s')
@@ -161,7 +151,7 @@ class DriverResource extends Resource
                     ->color('danger')
                     ->icon('heroicon-o-trash')
                     ->requiresConfirmation()
-                    ->action(function (Driver $record) {
+                    ->action(function (Customer $record) {
                         $record->update(['status_id' => 11]);
                     })
             ])
@@ -192,10 +182,9 @@ class DriverResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDrivers::route('/'),
-            'create' => Pages\CreateDriver::route('/create'),
-            'edit' => Pages\EditDriver::route('/{record}/edit'),
-            'dropoff' => Pages\ListDropOff::route('/dropoff'),
+            'index' => Pages\ListCustomers::route('/'),
+            'create' => Pages\CreateCustomer::route('/create'),
+            'edit' => Pages\EditCustomer::route('/{record}/edit'),
         ];
     }
 }

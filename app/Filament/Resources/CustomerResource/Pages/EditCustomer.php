@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\DriverResource\Pages;
+namespace App\Filament\Resources\CustomerResource\Pages;
 
-use App\Filament\Resources\DriverResource;
+use App\Filament\Resources\CustomerResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditDriver extends EditRecord
+class EditCustomer extends EditRecord
 {
-    protected static string $resource = DriverResource::class;
+    protected static string $resource = CustomerResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -40,8 +40,8 @@ class EditDriver extends EditRecord
     {
         $record = $this->getRecord();
         return [
-            '/admin/drivers' => 'Drivers',
-            '' => $record->name ?? 'Edit Driver',
+            '/admin/customers' => 'Customers',
+            '' => $record->name ?? 'Edit Customer',
         ];
     }
 }
