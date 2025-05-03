@@ -43,6 +43,11 @@ class DriverResource extends Resource
                 ->group(static::getNavigationGroup())
                 ->sort(static::getNavigationSort() + 1)
                 ->url(static::getUrl('create')),
+            NavigationItem::make('Drop Off List')
+                ->icon('heroicon-o-clipboard-document-list')
+                ->group(static::getNavigationGroup())
+                ->sort(static::getNavigationSort() + 2)
+                ->url(static::getUrl('dropoff')),
         ];
     }
 
@@ -119,11 +124,11 @@ class DriverResource extends Resource
                     ->label('IC Name')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(false),
                 TextColumn::make('ic_no')
                     ->label('IC No')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(false),
                 TextColumn::make('status.label')
                     ->label('Status')
                     ->searchable()
@@ -138,12 +143,12 @@ class DriverResource extends Resource
                     ->label('Created At')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(true),
                 TextColumn::make('updated_at')
                     ->label('Last Modified')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(false),
             ])
             ->filters([
                 SelectFilter::make('status_id')
@@ -194,6 +199,7 @@ class DriverResource extends Resource
             'index' => Pages\ListDrivers::route('/'),
             'create' => Pages\CreateDriver::route('/create'),
             'edit' => Pages\EditDriver::route('/{record}/edit'),
+            'dropoff' => Pages\ListDropOff::route('/dropoff'),
         ];
     }
 }

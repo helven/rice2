@@ -13,6 +13,8 @@ use Filament\Support\Assets\Css;
 
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Components\Card;
 use Filament\Forms\Components\CheckboxList;
@@ -28,6 +30,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
 use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
 
@@ -81,7 +84,7 @@ class CreateOrder extends Page
 
     protected function getFormSchema(): array
     {
-        DateTimePicker::configureUsing(fn (DateTimePicker $component) => $component->native(false));
+        //DateTimePicker::configureUsing(fn (DateTimePicker $component) => $component->native(false));
         return [
             Section::make('Order Information')
                 ->collapsible()
@@ -274,7 +277,7 @@ ob_start();?>
                                 }),
                             Select::make('driver_route')
                                 ->label('Route')
-                                ->placeholder('Select Route') 
+                                ->placeholder('Select Route')
                                 ->required()
                                 ->searchable()
                                 ->options(function (callable $get) {
@@ -306,7 +309,7 @@ ob_start();?>
                                 }),
                             Select::make('backup_driver_route')
                                 ->label('Route')
-                                ->placeholder('Select Route') 
+                                ->placeholder('Select Route')
                                 ->searchable()
                                 ->options(function (callable $get) {
                                     $driverId = $get('backup_driver_id');
@@ -319,7 +322,6 @@ ob_start();?>
                                     if (!$driver || !$driver->route) {
                                         return [];
                                     }
-
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
                                 ->disabled(fn (callable $get): bool => blank($get('driver_id')))
@@ -335,7 +337,6 @@ ob_start();?>
     {
         // Validate the form data
         $data = $this->form->getState();
-
         $this->validate([
             'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
@@ -344,10 +345,10 @@ ob_start();?>
             'data.arrival_time' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
             'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
-            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:100'],
+            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.total_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'],
             'data.notes' => ['nullable', 'string'],
             'data.driver_id' => ['required', 'exists:drivers,id'],
@@ -403,9 +404,8 @@ ob_start();?>
 
                 $order_no_ctr++;
             }
-            
+
             \DB::commit();
-            
             // Redirect to orders list with success message
             Notification::make()
                 ->success()

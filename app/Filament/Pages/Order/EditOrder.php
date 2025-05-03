@@ -89,7 +89,7 @@ class EditOrder extends Page
 
     protected function getFormSchema(): array
     {
-        DateTimePicker::configureUsing(fn (DateTimePicker $component) => $component->native(false));
+        //DateTimePicker::configureUsing(fn (DateTimePicker $component) => $component->native(false));
         return [
             Section::make('Order Information')
                 ->collapsible()
@@ -354,10 +354,10 @@ ob_start();?>
             'data.arrival_time' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
             'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
-            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:100'],
-            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:100'],
+            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.total_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'],
             'data.notes' => ['nullable', 'string'],
             'data.driver_id' => ['required', 'exists:drivers,id'],

@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->text('notes')->nullable();
             $table->time('arrival_time')->default('00:00:00');
-            $table->time('dropoff_time')->default('00:00:00');
+            $table->string('dropoff_time', 8)->default('');
             $table->unsignedInteger('driver_id')->default(0);
             $table->string('driver_route')->default('');
             $table->unsignedInteger('backup_driver_id')->default(0);
