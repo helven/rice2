@@ -4,7 +4,30 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     //return view('welcome');
-    return redirect('/backend');
+    return redirect('/'.config('filament.path', 'backend'));
+});
+Route::get('/ok-banana-rice', function () {
+    $key = request()->query('key');
+    $validKey = env('CACHE_TRIGGER_KEY');
+
+    if ($key !== $validKey) {
+        abort(403, 'Unauthorized');
+    }
+
+    // Clear existing caches
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('event:clear');
+
+    // Rebuild caches
+    Artisan::call('config:cache');
+    Artisan::call('route:cache');
+    Artisan::call('event:cache');
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'All caches cleared and rebuilt successfully.',
+    ]);
 });
 
 Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
