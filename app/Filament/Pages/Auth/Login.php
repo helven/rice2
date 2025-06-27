@@ -18,14 +18,16 @@ class Login extends BaseLogin
                     ->label('Username')
                     ->required()
                     ->autocomplete('username')
-                    ->autofocus(),
+                    ->autofocus()
+                    ->extraInputAttributes(['autocapitalize' => 'none', 'autocorrect' => 'off'])
+                    ->validationAttribute('username'),
                 
                 TextInput::make('password')
                     ->label(__('filament-panels::pages/auth/login.form.password.label'))
                     ->password()
+                    ->required()
                     ->revealable(filament()->arePasswordsRevealable())
-                    ->autocomplete('current-password')
-                    ->required(),
+                    ->autocomplete('current-password'),
                 
                 $this->getRememberFormComponent(),
             ]);
@@ -40,7 +42,7 @@ class Login extends BaseLogin
             'password' => $data['password'],
         ], $data['remember'] ?? false)) {
             throw ValidationException::withMessages([
-                'username' => __('filament-panels::pages/auth/login.messages.failed'),
+                'data.username' => __('filament-panels::pages/auth/login.messages.failed'),
             ]);
         }
 
