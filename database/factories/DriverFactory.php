@@ -23,7 +23,7 @@ class DriverFactory extends Factory
         }
 
         return [
-            'name' => fake()->name(),
+            'name' => 'Driver: '.fake()->name(),
             'contact' => fake()->phoneNumber(),
             'ic_name' => fake()->name(),
             'ic_no' => fake()->unique()->numerify('######-##-####'),

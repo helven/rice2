@@ -19,7 +19,7 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'name' => 'Cust: '.fake()->name(),
             'contact' => fake()->phoneNumber(),
             'status_id' => fake()->randomElement([1, 2]),
         ];

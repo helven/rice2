@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
+        Schema::create('malls', function (Blueprint $table) {
             $table->id();
             $table->integer('status_id')->default(1);
             $table->string('name')->default('');
-            $table->string('contact')->default('');
-            $table->string('payment_method_id')->default(0)->nullable();
+            $table->integer('payment_medthod_id')->default(0);
             $table->timestamps();
 
             $table->index('status_id');
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('customers');
+        Schema::dropIfExists('malls');
     }
 };

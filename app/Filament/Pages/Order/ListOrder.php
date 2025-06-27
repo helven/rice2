@@ -184,7 +184,7 @@ class ListOrder extends Page implements HasTable
         return [
             Action::make('create')
                 ->label('New Order')
-                ->url('/backend/orders/create')
+                ->url('/'.config('filament.path', 'backend').'/orders/create')
                 ->icon('heroicon-m-plus'),
         ];
     }
@@ -192,7 +192,7 @@ class ListOrder extends Page implements HasTable
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/orders' => 'Orders',
+            '/'.config('filament.path', 'backend').'/orders' => 'Orders',
             '' => 'Manage Orders',
         ];
     }

@@ -3,10 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CustomerResource\Pages;
-use App\Models\Customer;
-use App\Models\AttrPaymentMethod;
-use App\Models\AttrStatus;
-use App\Models\AttrState;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -21,6 +17,14 @@ use Filament\Forms\Components\Select;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Navigation\NavigationItem;
+
+use App\Models\Area;
+use App\Models\AttrPaymentMethod;
+use App\Models\AttrStatus;
+use App\Models\AttrState;
+use App\Models\Customer;
+use App\Models\Driver;
+use App\Models\Mall;
 
 class CustomerResource extends Resource
 {
@@ -83,31 +87,131 @@ class CustomerResource extends Resource
                                     ->label('Company Name')
                                     ->required()
                                     ->maxLength(64),
+                                Grid::make(2)
+                                    ->schema([
+                                        Select::make('mall_id')
+                                            ->label('Mall')
+                                            ->placeholder('Select Mall')
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(Mall::query()->pluck('name', 'id'))
+                                            ->live()
+                                            ->nullable()
+                                            ->required(function (callable $get) {
+                                                return !filled($get('area_id'));
+                                            })
+                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                if (filled($state)) {
+                                                    $set('area_id', null);
+                                                }
+                                            }),
+                                        Select::make('area_id')
+                                            ->label('Area')
+                                            ->placeholder('Select Area')
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(Area::query()->pluck('name', 'id'))
+                                            ->live()
+                                            ->nullable()
+                                            ->required(function (callable $get) {
+                                                return !filled($get('mall_id'));
+                                            })
+                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                if (filled($state)) {
+                                                    $set('mall_id', null);
+                                                }
+                                            }),
+                                    ]),
                                 TextInput::make('address_1')
                                     ->label('Address Line 1')
                                     ->required()
                                     ->maxLength(128),
                                 TextInput::make('address_2')
                                     ->label('Address Line 2')
-                                    ->maxLength(128),
-                                Grid::make(3)
+                                    ->maxLength(128)
+                                    ->default(''),
+                                //Grid::make(3)
+                                //    ->schema([
+                                //        TextInput::make('postal_code')
+                                //            ->label('Postal Code')
+                                //            ->required()
+                                //            ->maxLength(10),
+                                //        TextInput::make('city')
+                                //            ->required()
+                                //            ->maxLength(64),
+                                //        Select::make('state_id')
+                                //            ->label('State')
+                                //            ->options(AttrState::query()->pluck('label', 'id'))
+                                //            ->required()
+                                //            ->searchable(),
+                                //    ]),
+
+                                Grid::make(2)
                                     ->schema([
-                                        TextInput::make('postal_code')
-                                            ->label('Postal Code')
+                                        Select::make('driver_id')
+                                            ->label('Driver')
+                                            ->placeholder('Select Driver')
                                             ->required()
-                                            ->maxLength(10),
-                                        TextInput::make('city')
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(Driver::query()->pluck('name', 'id'))
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                $set('driver_route', null);
+                                            }),
+                                        Select::make('driver_route')
+                                            ->label('Route')
+                                            ->placeholder('Select Route')
                                             ->required()
-                                            ->maxLength(64),
-                                        Select::make('state_id')
-                                            ->label('State')
-                                            ->options(AttrState::query()->pluck('label', 'id'))
-                                            ->required()
-                                            ->searchable(),
+                                            ->searchable()
+                                            ->options(function (callable $get) {
+                                                $driverId = $get('driver_id');
+                                        
+                                                if (blank($driverId)) {
+                                                    return [];
+                                                }
+                                        
+                                                $driver = \App\Models\Driver::find($driverId);
+                                                if (!$driver || !$driver->route) {
+                                                    return [];
+                                                }
+                                                return collect($driver->route)->pluck('route_name', 'route_name');
+                                            })
+                                            ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                    ]),
+                                    Grid::make(2)
+                                    ->schema([
+                                        Select::make('backup_driver_id')
+                                            ->label('Backup Driver')
+                                            ->placeholder('Select Backup Driver')
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(Driver::query()->pluck('name', 'id'))
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                $set('backup_driver_route', null);
+                                            }),
+                                        Select::make('backup_driver_route')
+                                            ->label('Route')
+                                            ->placeholder('Select Route')
+                                            ->searchable()
+                                            ->options(function (callable $get) {
+                                                $driverId = $get('backup_driver_id');
+                                        
+                                                if (blank($driverId)) {
+                                                    return [];
+                                                }
+                                        
+                                                $driver = \App\Models\Driver::find($driverId);
+                                                if (!$driver || !$driver->route) {
+                                                    return [];
+                                                }
+                                                return collect($driver->route)->pluck('route_name', 'route_name');
+                                            })
+                                            ->disabled(fn (callable $get): bool => blank($get('driver_id')))
                                     ]),
                             ])
                             ->addActionLabel('Add Address')
-                            ->defaultItems(1)
                             ->columnSpanFull()
                     ]),
             ]);

@@ -19,12 +19,18 @@ return new class extends Migration
             $table->string('name')->default('');
             $table->string('contact')->default('');
             $table->string('email')->default('');
+            $table->unsignedInteger('mall_id')->default(0)->nullable();
+            $table->unsignedInteger('area_id')->default(0)->nullable();
             $table->string('address_1')->default('');
             $table->string('address_2')->default('')->nullable();
             $table->string('postal_code')->default('');
             $table->string('city')->default('');
             $table->integer('state_id')->default(0);
             $table->integer('country_id')->default(0);
+            $table->unsignedInteger('driver_id')->default(0)->nullable();
+            $table->string('driver_route')->default(0);
+            $table->unsignedInteger('backup_driver_id')->default(0)->nullable();
+            $table->string('backup_driver_route')->default(0)->nullable();
             $table->timestamps();
 
             // Index for faster queries

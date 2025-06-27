@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -187,6 +186,15 @@ class DatabaseSeeder extends Seeder
         \DB::table('attr_payment_method')->insert([
             'key'   => 'un',
             'label' => 'UN'
+        ]);
+
+        // Call other seeders
+        $this->call([
+            AreaSeeder::class,
+            DriverSeeder::class,
+            CustomerSeeder::class,
+            MallSeeder::class,
+            MealSeeder::class,
         ]);
     }
 }

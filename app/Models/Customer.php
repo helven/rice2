@@ -12,6 +12,7 @@ class Customer extends Model
     protected $fillable = [
         'name',
         'contact',
+        'payment_method_id',
         'status'
     ];
 
