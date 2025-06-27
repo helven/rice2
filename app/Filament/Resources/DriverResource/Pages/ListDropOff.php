@@ -122,7 +122,7 @@ class ListDropOff extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/drivers' => 'Drivers',
+            '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
             '' => 'Drop Off List',
         ];
     }

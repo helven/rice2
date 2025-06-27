@@ -40,7 +40,7 @@ class EditCustomer extends EditRecord
     {
         $record = $this->getRecord();
         return [
-            '/backend/customers' => 'Customers',
+            '/'.config('filament.path', 'backend').'/customers' => 'Customers',
             '' => $record->name ?? 'Edit Customer',
         ];
     }

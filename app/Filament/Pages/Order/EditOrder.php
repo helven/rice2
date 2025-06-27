@@ -406,7 +406,7 @@ ob_start();?>
                 ->title('Order updated successfully')
                 ->send();
 
-            $this->redirect('/backend/orders');
+            $this->redirect('/'.config('filament.path', 'backend').'/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
@@ -478,7 +478,7 @@ ob_start();?>
     {
         $record = $this->getRecord();
         return [
-            '/backend/drivers' => 'Drivers',
+            '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
             '' => $record->order_no ?? 'Edit Order',
         ];
     }

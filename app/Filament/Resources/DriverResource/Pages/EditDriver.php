@@ -40,7 +40,7 @@ class EditDriver extends EditRecord
     {
         $record = $this->getRecord();
         return [
-            '/backend/drivers' => 'Drivers',
+            '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
             '' => $record->name ?? 'Edit Driver',
         ];
     }

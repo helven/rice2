@@ -23,7 +23,7 @@ class ListCustomers extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/customers' => 'Customers',
+            '/'.config('filament.path', 'backend').'/customers' => 'Customers',
             '' => 'Manage Customers',
         ];
     }

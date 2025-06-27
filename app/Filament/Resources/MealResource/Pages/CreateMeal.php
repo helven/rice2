@@ -14,7 +14,7 @@ class CreateMeal extends CreateRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/meals' => 'Meals',
+            '/'.config('filament.path', 'backend').'/meals' => 'Meals',
             '' => 'New Meal',
         ];
     }

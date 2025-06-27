@@ -15,7 +15,7 @@ class CreateCustomer extends CreateRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/customers' => 'Customers',
+            '/'.config('filament.path', 'backend').'/customers' => 'Customers',
             '' => 'New Customer',
         ];
     }

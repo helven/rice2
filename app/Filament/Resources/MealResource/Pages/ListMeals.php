@@ -22,7 +22,7 @@ class ListMeals extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/meals' => 'Meals',
+            '/'.config('filament.path', 'backend').'/meals' => 'Meals',
             '' => 'Manage Meals',
         ];
     }

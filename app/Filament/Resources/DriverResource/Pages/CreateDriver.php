@@ -15,7 +15,7 @@ class CreateDriver extends CreateRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/backend/drivers' => 'Drivers',
+            '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
             '' => 'New Driver',
         ];
     }
