@@ -40,7 +40,7 @@ class EditCustomer extends EditRecord
     {
         $record = $this->getRecord();
         return [
-            '/admin/customers' => 'Customers',
+            '/backend/customers' => 'Customers',
             '' => $record->name ?? 'Edit Customer',
         ];
     }

@@ -62,7 +62,7 @@ class Order extends Model
         return $this->belongsTo(Driver::class);
     }
 
-    public function backupDriver(): BelongsTo
+    public function backup_driver(): BelongsTo
     {
         return $this->belongsTo(Driver::class, 'backup_driver_id');
     }

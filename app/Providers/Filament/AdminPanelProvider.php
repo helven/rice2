@@ -26,7 +26,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('backend')
+            ->path(config('filament.path', 'backend'))
             ->brandLogo(asset('images/logo.png'))
             ->assets([
                 Css::make('custom-style', asset('css/filament/custom.css')),

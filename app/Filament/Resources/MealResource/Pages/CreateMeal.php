@@ -14,7 +14,7 @@ class CreateMeal extends CreateRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/meals' => 'Meals',
+            '/backend/meals' => 'Meals',
             '' => 'New Meal',
         ];
     }

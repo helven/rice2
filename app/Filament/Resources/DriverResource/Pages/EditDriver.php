@@ -40,7 +40,7 @@ class EditDriver extends EditRecord
     {
         $record = $this->getRecord();
         return [
-            '/admin/drivers' => 'Drivers',
+            '/backend/drivers' => 'Drivers',
             '' => $record->name ?? 'Edit Driver',
         ];
     }

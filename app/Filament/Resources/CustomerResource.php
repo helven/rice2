@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CustomerResource\Pages;
 use App\Models\Customer;
+use App\Models\AttrPaymentMethod;
 use App\Models\AttrStatus;
 use App\Models\AttrState;
 use Filament\Forms;
@@ -61,6 +62,14 @@ class CustomerResource extends Resource
                                     ->tel()
                                     ->required()
                                     ->maxLength(64),
+                            ]),
+                        Grid::make(2)
+                            ->schema([
+                                Select::make('payment_method_id')
+                                    ->label('Payment Method')
+                                    ->options(AttrPaymentMethod::query()->pluck('label', 'id'))
+                                    ->required()
+                                    ->searchable()
                             ]),
                     ]),
                 Section::make('Address Information')

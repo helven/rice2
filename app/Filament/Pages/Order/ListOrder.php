@@ -151,7 +151,7 @@ class ListOrder extends Page implements HasTable
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->url(fn (Order $record): string => "/admin/orders/{$record->id}/edit"),
+                    ->url(fn (Order $record): string => "/backend/orders/{$record->id}/edit"),
                 Tables\Actions\DeleteAction::make()
                     ->action(function ($record) {
                         $record->update(['status_id' => 11]);
@@ -184,7 +184,7 @@ class ListOrder extends Page implements HasTable
         return [
             Action::make('create')
                 ->label('New Order')
-                ->url('/admin/orders/create')
+                ->url('/backend/orders/create')
                 ->icon('heroicon-m-plus'),
         ];
     }
@@ -192,7 +192,7 @@ class ListOrder extends Page implements HasTable
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/orders' => 'Orders',
+            '/backend/orders' => 'Orders',
             '' => 'Manage Orders',
         ];
     }

@@ -53,7 +53,7 @@ class EditOrder extends Page
 
     public function mount($id): void
     {
-        $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backupDriver'])->findOrFail($id);
+        $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backup_driver'])->findOrFail($id);
         
         $this->form->fill([
             'order_no' => $this->order->order_no,
@@ -406,7 +406,7 @@ ob_start();?>
                 ->title('Order updated successfully')
                 ->send();
 
-            $this->redirect('/admin/orders');
+            $this->redirect('/backend/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
@@ -478,7 +478,7 @@ ob_start();?>
     {
         $record = $this->getRecord();
         return [
-            '/admin/drivers' => 'Drivers',
+            '/backend/drivers' => 'Drivers',
             '' => $record->order_no ?? 'Edit Order',
         ];
     }

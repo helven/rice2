@@ -31,7 +31,7 @@ class EditMeal extends EditRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/meals' => 'Meals',
+            '/backend/meals' => 'Meals',
             '' => $this->record->name ?? 'Edit Meal',
         ];
     }

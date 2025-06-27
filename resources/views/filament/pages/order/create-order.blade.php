@@ -32,7 +32,7 @@
                     Save
                 </x-filament::button>
 
-                <x-filament::button tag="a" href="/admin/orders" color="gray">
+                <x-filament::button tag="a" href="/backend/orders" color="gray">
                     Cancel
                 </x-filament::button>
             </div>

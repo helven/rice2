@@ -412,7 +412,7 @@ ob_start();?>
                 ->title('Orders created successfully')
                 ->send();
 
-            $this->redirect('/admin/orders');
+            $this->redirect('/'.config('filament.path', 'backend').'/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
@@ -495,7 +495,7 @@ ob_start();?>
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/orders' => 'Orders',
+            '/'.config('filament.path', 'backend').'/orders' => 'Orders',
             '' => 'New Order',
         ];
     }

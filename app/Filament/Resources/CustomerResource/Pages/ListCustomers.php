@@ -23,7 +23,7 @@ class ListCustomers extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/customers' => 'Customers',
+            '/backend/customers' => 'Customers',
             '' => 'Manage Customers',
         ];
     }

@@ -15,7 +15,7 @@ class CreateCustomer extends CreateRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/customers' => 'Customers',
+            '/backend/customers' => 'Customers',
             '' => 'New Customer',
         ];
     }

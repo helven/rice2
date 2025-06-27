@@ -22,7 +22,7 @@ class ListMeals extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            '/admin/meals' => 'Meals',
+            '/backend/meals' => 'Meals',
             '' => 'Manage Meals',
         ];
     }
