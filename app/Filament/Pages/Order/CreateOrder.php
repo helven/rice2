@@ -56,14 +56,16 @@ class CreateOrder extends Page
 
     public function mount(): void
     {
+        // Get first active meal for default
+        $defaultMeal = Meal::where('status_id', 1)->first();
+        $defaultMealId = $defaultMeal ? $defaultMeal->id : '';
+        
         $this->form->fill([
             'order_no' => '',
             'customer_id' => '',
             'address_id' => '',
-            'delivery_start_date' => '',
-            'delivery_end_date' => '',
             'delivery_date_range' => '',
-            'meals' => [['meal_id' => '', 'normal_rice' => 0, 'small_rice' => 0, 'no_rice' => 0, 'vegi' => 0]], // Added meal_id
+            'meals_by_date' => [],
             'total_amount' => 0.00,
             'notes' => '',
             'arrival_time' => '',
@@ -84,7 +86,6 @@ class CreateOrder extends Page
 
     protected function getFormSchema(): array
     {
-        //DateTimePicker::configureUsing(fn (DateTimePicker $component) => $component->native(false));
         return [
             Section::make('Order Information')
                 ->collapsible()
@@ -113,14 +114,11 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->allowHtml()
                                 ->disabled(fn (callable $get): bool => blank($get('customer_id')))
-                                //->dehydrated(fn (callable $get): bool => filled($get('customer_id')))
                                 ->options(function (callable $get) {
                                     $customerId = $get('customer_id');
-        
                                     if (blank($customerId)) {
                                         return [];
                                     }
-        
                                     return CustomerAddressBook::query()
                                         ->where('customer_id', $customerId)
                                         ->where('status_id', 1)
@@ -130,7 +128,7 @@ class CreateOrder extends Page
                                         ->mapWithKeys(function ($address) {
                                             $address->address_1 = trim($address->address_1);
                                             $address->address_2 = trim($address->address_2);
-ob_start();?>
+                                            ob_start();?>
 <div class="hidden"><?php echo "{$address->name}|{$address->city}";?></div>
 <span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";?>
 <div><?php echo $address->address_1;?><br />
@@ -146,18 +144,58 @@ ob_start();?>
                         ->label('Delivery Date')
                         ->required()
                         ->minDate(\Carbon\Carbon::now())
-                        //->timezone('Asia/Kuala_Lumpur')
-            ]),
-            Section::make('Add Order')
-                ->collapsible()
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            if (empty($state)) {
+                                $set('meals_by_date', []);
+                                return;
+                            }
+
+                            [$startDate, $endDate] = explode(' - ', $state);
+                            $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
+                            $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
+
+                            $meals_by_date = [];
+                            for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+                                $meals_by_date[] = [
+                                    'date' => $date->format('Y-m-d'),
+                                    'meals' => [
+                                        [
+                                            'meal_id' => '',
+                                            'normal_rice' => 0,
+                                            'small_rice' => 0,
+                                            'no_rice' => 0,
+                                            'vegi' => 0
+                                        ]
+                                    ]
+                                ];
+                            }
+                            
+                            $set('meals_by_date', $meals_by_date);
+                        })
+                ]),
+
+            Repeater::make('meals_by_date')
+                ->label('')
+                ->reorderable(false)
+                ->deletable(false)
+                ->disableItemCreation()
                 ->schema([
-                    // Repeater for Meal items
+                    Placeholder::make('date_label')
+                        ->label(function (callable $get) {
+                            $currentItem = $get('.');  // Gets the current repeater item's data
+                            return sprintf(
+                                "Order - %s",
+                                \Carbon\Carbon::parse($currentItem['date'])->format('d M Y')
+                            );
+                        }),
                     Repeater::make('meals')
                         ->label('Meals')
                         ->defaultItems(1)
                         ->reorderable(false)
                         ->deletable(true)
                         ->cloneable()
+                        ->columns(6)
                         ->addAction(
                             fn ($action) => $action
                                 ->label('Add Meal')
@@ -166,69 +204,44 @@ ob_start();?>
                                 ])
                         )
                         ->schema([
-                            Grid::make(5)
-                                ->schema([
-                                    Select::make('meal_id')
-                                        ->label('Meal')
-                                        ->placeholder('Select Meal')
-                                        ->required()
-                                        ->searchable()
-                                        ->preload()
-                                        ->options(Meal::query()->pluck('name', 'id')),
+                            Select::make('meal_id')
+                                ->label('Meal')
+                                ->placeholder('Select Meal')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->options(Meal::query()->where('status_id', 1)->pluck('name', 'id'))
+                                ->columnSpan(2),
+                            TextInput::make('normal_rice')
+                                ->label('Normal')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->required(),
+                            TextInput::make('small_rice')
+                                ->label('Small')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->required(),
+                            TextInput::make('no_rice')
+                                ->label('No Rice')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->required(),
+                            TextInput::make('vegi')
+                                ->label('Vegi')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->required()
+                        ]),
 
-                                    TextInput::make('normal_rice')
-                                        ->label('Normal Rice')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('normal_rice', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-
-                                    TextInput::make('small_rice')
-                                        ->label('Small Rice')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('small_rice', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-
-                                    TextInput::make('no_rice')
-                                        ->label('No Rice')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('no_rice', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-                                    
-                                    TextInput::make('vegi')
-                                        ->label('Vegi')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('vegi', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-                                ])
-                            ]),
                     TextInput::make('total_amount')
                         ->label('Total')
                         ->placeholder('0.00')
@@ -245,7 +258,8 @@ ob_start();?>
                     Textarea::make('notes')
                         ->label('Notes')
                         ->rows(5)
-                ]),
+                ])
+                ->columns(1),
             Section::make('Driver Information')
                 ->collapsible()
                 ->schema([
@@ -337,61 +351,50 @@ ob_start();?>
     {
         // Validate the form data
         $data = $this->form->getState();
+        
         $this->validate([
             'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date_range' => ['required', 'string'],
             'data.arrival_time' => ['required'],
-            'data.meals' => ['required', 'array', 'min:1'],
-            'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
-            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.total_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'],
-            'data.notes' => ['nullable', 'string'],
+            'data.meals_by_date' => ['required', 'array', 'min:1'],
             'data.driver_id' => ['required', 'exists:drivers,id'],
             'data.driver_route' => ['required', 'string'],
             'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
             'data.backup_driver_route' => ['nullable', 'string'],
             'data.driver_notes' => ['nullable', 'string'],
         ]);
-        
-        // Parse the date range
-        [$startDate, $endDate] = explode(' - ', $data['delivery_date_range']);
-        $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
-        $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
-        
-        // Create a collection of dates between start and end
-        $dates = collect();
-        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-            $dates->push($date->copy());
-        }
 
         try {
             // Begin transaction
             \DB::beginTransaction();
+            
             // Create an order for each date
             $order_no_ctr = 1;
-            foreach ($dates as $date) {
+            foreach ($data['meals_by_date'] as $date => $dateData) {
+                // Skip if no meals for this date
+                if (empty($dateData['meals'])) {
+                    continue;
+                }
+
                 $order = \App\Models\Order::create([
                     'order_no' => $data['order_no'].'-'.str_pad($order_no_ctr, 2, '0', STR_PAD_LEFT),
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
-                    'delivery_date' => $date->toDateString(),
-                    'total_amount' => $data['total_amount'],
-                    'notes' => $data['notes'],
+                    'delivery_date' => $dateData['date'],
+                    'total_amount' => $dateData['total_amount'],
+                    'notes' => $dateData['notes'] ?? '',
                     'arrival_time' => $data['arrival_time'],
                     'driver_id' => $data['driver_id'],
                     'driver_route' => $data['driver_route'],
-                    'backup_driver_id' => $data['backup_driver_id'] ?? 0,
+                    'backup_driver_id' => $data['backup_driver_id'],
                     'backup_driver_route' => $data['backup_driver_route'] ?? '',
-                    'driver_notes' => $data['driver_notes'],
+                    'driver_notes' => $data['driver_notes'] ?? '',
                 ]);
 
-                // Create order meals
-                foreach ($data['meals'] as $meal) {
+                // Create order meals for this date
+                foreach ($dateData['meals'] as $meal) {
                     \App\Models\OrderMeal::create([
                         'order_id' => $order->id,
                         'meal_id' => $meal['meal_id'],
@@ -406,7 +409,7 @@ ob_start();?>
             }
 
             \DB::commit();
-            // Redirect to orders list with success message
+            
             Notification::make()
                 ->success()
                 ->title('Orders created successfully')
@@ -423,24 +426,52 @@ ob_start();?>
         }
     }
 
+    private function calculateTotalAmount($meals)
+    {
+        $total = 0.00;
+        foreach ($meals as $meal) {
+            $mealData = \App\Models\Meal::find($meal['meal_id']);
+            if ($mealData) {
+                $total += $mealData->price * (
+                    $meal['normal_rice'] + 
+                    $meal['small_rice'] + 
+                    $meal['no_rice'] + 
+                    $meal['vegi']
+                );
+            }
+        }
+        return $total;
+    }
+
     public function getFormattedData()
     {
         $customer = Customer::find($this->data['customer_id'] ?? null);
         $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
-        $meals = Meal::whereIn('id', collect($this->data['meals'])->pluck('meal_id'))->get()->keyBy('id');
-
+        
         $temp_meals = [];
-        foreach($this->data['meals'] as $meal){
-            if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
-                $temp_meals[] = [
-                    'meal_id' => $meal['meal_id'],
-                    'name' => $meals[$meal['meal_id']]->name,
-                    'normal_rice' => $meal['normal_rice'],
-                    'small_rice' => $meal['small_rice'],
-                    'no_rice' => $meal['no_rice'],
-                    'vegi' => $meal['vegi'],
-                    'qty' => $meal['normal_rice'] + $meal['small_rice'] + $meal['no_rice'] + $meal['vegi'],
-                ];
+        
+        // Handle meals_by_date structure (for Create Order)
+        if (isset($this->data['meals_by_date']) && is_array($this->data['meals_by_date'])) {
+            foreach ($this->data['meals_by_date'] as $date => $dateData) {
+                if (isset($dateData['meals'])) {
+                    $meal_ids = collect($dateData['meals'])->pluck('meal_id')->toArray();
+                    $meals = Meal::whereIn('id', $meal_ids)->get()->keyBy('id');
+                    
+                    foreach ($dateData['meals'] as $meal) {
+                        if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
+                            $temp_meals[] = [
+                                'meal_id' => $meal['meal_id'],
+                                'name' => $meals[$meal['meal_id']]->name,
+                                'normal_rice' => $meal['normal_rice'],
+                                'small_rice' => $meal['small_rice'],
+                                'no_rice' => $meal['no_rice'],
+                                'vegi' => $meal['vegi'],
+                                'qty' => intval($meal['normal_rice']) + intval($meal['small_rice']) + 
+                                       intval($meal['no_rice']) + intval($meal['vegi']),
+                            ];
+                        }
+                    }
+                }
             }
         }
 
@@ -472,7 +503,7 @@ ob_start();?>
         return [
             'order_no' => $this->data['order_no'],
             'customer_id' => $this->data['customer_id'],
-            'customer_name' => $customer?->name ?? '',
+            'customer_name' => $customer ? $customer->name : '',
             'address_id' => $this->data['address_id'],
             'address' => $address ? $display_address : '',
             'delivery_date' => $delivery_dates,
@@ -483,10 +514,10 @@ ob_start();?>
                 ? date('h:i A', strtotime($this->data['arrival_time'])) 
                 : '',
             'driver_id' => $this->data['driver_id'] ?? '',
-            'driver_name' => Driver::find($this->data['driver_id'] ?? null)?->name ?? '',
+            'driver_name' => Driver::find($this->data['driver_id'] ?? null) ? Driver::find($this->data['driver_id'] ?? null)->name : '',
             'driver_route' => $this->data['driver_route'] ?? '',
             'backup_driver_id' => $this->data['backup_driver_id'] ?? '',
-            'backup_driver_name' => Driver::find($this->data['backup_driver_id'] ?? null)?->name ?? '',
+            'backup_driver_name' => Driver::find($this->data['backup_driver_id'] ?? null) ? Driver::find($this->data['backup_driver_id'] ?? null)->name : '',
             'backup_driver_route' => $this->data['backup_driver_route'] ?? '',
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
