@@ -16,10 +16,11 @@ return new class extends Migration
             $table->integer('status_id')->default(1);
             $table->unsignedInteger('order_id'); // Changed from foreignId
             $table->unsignedInteger('meal_id');
-            $table->integer('normal_rice')->default(0);
-            $table->integer('small_rice')->default(0);
+            $table->integer('normal')->default(0);
+            $table->integer('big')->default(0);
+            $table->integer('small')->default(0);
+            $table->integer('s_small')->default(0);
             $table->integer('no_rice')->default(0);
-            $table->integer('vegi')->default(0);
             $table->timestamps();
 
             // Index for faster queries

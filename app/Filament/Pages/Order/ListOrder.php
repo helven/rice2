@@ -34,8 +34,9 @@ class ListOrder extends Page implements HasTable
         return $table
             ->query($this->query())
             ->columns([
-                TextColumn::make('order_no')
+                TextColumn::make('id')
                     ->label('Order No')
+                    ->formatStateUsing(fn (string $state): string => str_pad($state, 6, '0', STR_PAD_LEFT))
                     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('Customer')
@@ -45,9 +46,6 @@ class ListOrder extends Page implements HasTable
                     ->label('Delivery Date')
                     ->dateTime('Y-m-d')
                     ->sortable(),
-                TextColumn::make('driver.name')
-                    ->label('Driver')
-                    ->searchable(),
                 TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->numeric(2, '.', ',')
@@ -189,7 +187,7 @@ class ListOrder extends Page implements HasTable
         ];
     }
 
-    public function getBreadcrumbs(): array
+    public function get()
     {
         return [
             '/'.config('filament.path', 'backend').'/orders' => 'Orders',

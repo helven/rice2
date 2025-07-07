@@ -71,4 +71,15 @@ class Order extends Model
     {
         return $this->hasMany(OrderMeal::class);
     }
+
+    /**
+     * Get the formatted order ID with zero padding
+     *
+     * @return string
+     */
+    public function getFormattedIdAttribute(): string
+    {
+        $padding = config('app.order_id_padding', 5);
+        return str_pad($this->id, $padding, '0', STR_PAD_LEFT);
+    }
 }

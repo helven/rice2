@@ -61,7 +61,6 @@ class CreateOrder extends Page
         $defaultMealId = $defaultMeal ? $defaultMeal->id : '';
         
         $this->form->fill([
-            'order_no' => '',
             'customer_id' => '',
             'address_id' => '',
             'delivery_date_range' => '',
@@ -90,9 +89,6 @@ class CreateOrder extends Page
             Section::make('Order Information')
                 ->collapsible()
                 ->schema([
-                    TextInput::make('order_no')
-                        ->required()
-                        ->maxLength(64),
                     Grid::make(2)
                         ->schema([
                             Select::make('customer_id')
@@ -102,10 +98,7 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Customer::query()->pluck('name', 'id'))
-                                ->reactive()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('address_id', null);
-                                }),
+                                ->reactive(),
 
                             Select::make('address_id')
                                 ->label('Delivery Location')
@@ -113,6 +106,7 @@ class CreateOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->allowHtml()
+                                ->reactive()
                                 ->disabled(fn (callable $get): bool => blank($get('customer_id')))
                                 ->options(function (callable $get) {
                                     $customerId = $get('customer_id');
@@ -130,14 +124,53 @@ class CreateOrder extends Page
                                             $address->address_2 = trim($address->address_2);
                                             ob_start();?>
 <div class="hidden"><?php echo "{$address->name}|{$address->city}";?></div>
-<span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";?>
+<span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";
+?>
 <div><?php echo $address->address_1;?><br />
-<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
+<?php echo ($address->address_2)?$address->address_2.'<br />':"";
+?>
 <?php echo $address->postcode;?> <?php echo $address->city;?></div>
 <?php
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
                                         });
+                                })
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    // Load driver information based on selected address
+                                    if ($state) {
+                                        $address = CustomerAddressBook::find($state);
+                                        if ($address) {
+                                            // Use pre-assigned driver information from the address
+                                            if ($address->driver_id) {
+                                                $set('driver_id', $address->driver_id);
+                                                if ($address->driver_route) {
+                                                    $set('driver_route', $address->driver_route);
+                                                }
+                                            } else {
+                                                // Clear driver fields if no driver assigned to address
+                                                $set('driver_id', null);
+                                                $set('driver_route', null);
+                                            }
+                                            
+                                            // Use pre-assigned backup driver information from the address
+                                            if ($address->backup_driver_id) {
+                                                $set('backup_driver_id', $address->backup_driver_id);
+                                                if ($address->backup_driver_route) {
+                                                    $set('backup_driver_route', $address->backup_driver_route);
+                                                }
+                                            } else {
+                                                // Clear backup driver fields if no backup driver assigned to address
+                                                $set('backup_driver_id', null);
+                                                $set('backup_driver_route', null);
+                                            }
+                                        }
+                                    } else {
+                                        // Clear all driver fields if no address selected
+                                        $set('driver_id', null);
+                                        $set('driver_route', null);
+                                        $set('backup_driver_id', null);
+                                        $set('backup_driver_route', null);
+                                    }
                                 })
                         ]),
                     DateRangePicker::make('delivery_date_range')
@@ -162,10 +195,11 @@ class CreateOrder extends Page
                                     'meals' => [
                                         [
                                             'meal_id' => '',
-                                            'normal_rice' => 0,
-                                            'small_rice' => 0,
+                                            'normal' => 0,
+                                            'big' => 0,
+                                            'small' => 0,
+                                            's_small' => 0,
                                             'no_rice' => 0,
-                                            'vegi' => 0
                                         ]
                                     ]
                                 ];
@@ -195,7 +229,7 @@ class CreateOrder extends Page
                         ->reorderable(false)
                         ->deletable(true)
                         ->cloneable()
-                        ->columns(6)
+                        ->columns(7)
                         ->addAction(
                             fn ($action) => $action
                                 ->label('Add Meal')
@@ -212,15 +246,29 @@ class CreateOrder extends Page
                                 ->preload()
                                 ->options(Meal::query()->where('status_id', 1)->pluck('name', 'id'))
                                 ->columnSpan(2),
-                            TextInput::make('normal_rice')
+                            TextInput::make('normal')
                                 ->label('Normal')
                                 ->numeric()
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->required(),
-                            TextInput::make('small_rice')
+                            TextInput::make('big')
+                                ->label('Big')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->required(),
+                            TextInput::make('small')
                                 ->label('Small')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->required(),
+                            TextInput::make('s_small')
+                                ->label('S.Small')
                                 ->numeric()
                                 ->default(0)
                                 ->minValue(0)
@@ -233,13 +281,6 @@ class CreateOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->required(),
-                            TextInput::make('vegi')
-                                ->label('Vegi')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(1000)
-                                ->required()
                         ]),
 
                     TextInput::make('total_amount')
@@ -307,7 +348,7 @@ class CreateOrder extends Page
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                ->disabled(fn (callable $get): bool => blank($get('backup_driver_id')))
                         ]),
                         Grid::make(2)
                         ->schema([
@@ -338,7 +379,7 @@ class CreateOrder extends Page
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                ->disabled(fn (callable $get): bool => blank($get('backup_driver_id')))
                         ]),
                         Textarea::make('driver_notes')
                             ->label('Notes')
@@ -353,7 +394,6 @@ class CreateOrder extends Page
         $data = $this->form->getState();
         
         $this->validate([
-            'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date_range' => ['required', 'string'],
@@ -371,7 +411,6 @@ class CreateOrder extends Page
             \DB::beginTransaction();
             
             // Create an order for each date
-            $order_no_ctr = 1;
             foreach ($data['meals_by_date'] as $date => $dateData) {
                 // Skip if no meals for this date
                 if (empty($dateData['meals'])) {
@@ -379,7 +418,6 @@ class CreateOrder extends Page
                 }
 
                 $order = \App\Models\Order::create([
-                    'order_no' => $data['order_no'].'-'.str_pad($order_no_ctr, 2, '0', STR_PAD_LEFT),
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
                     'delivery_date' => $dateData['date'],
@@ -398,14 +436,13 @@ class CreateOrder extends Page
                     \App\Models\OrderMeal::create([
                         'order_id' => $order->id,
                         'meal_id' => $meal['meal_id'],
-                        'normal_rice' => $meal['normal_rice'],
-                        'small_rice' => $meal['small_rice'],
+                        'normal' => $meal['normal'],
+                        'big' => $meal['big'],
+                        'small' => $meal['small'],
+                        's_small' => $meal['s_small'],
                         'no_rice' => $meal['no_rice'],
-                        'vegi' => $meal['vegi'],
                     ]);
                 }
-
-                $order_no_ctr++;
             }
 
             \DB::commit();
@@ -433,10 +470,11 @@ class CreateOrder extends Page
             $mealData = \App\Models\Meal::find($meal['meal_id']);
             if ($mealData) {
                 $total += $mealData->price * (
-                    $meal['normal_rice'] + 
-                    $meal['small_rice'] + 
-                    $meal['no_rice'] + 
-                    $meal['vegi']
+                    $meal['normal'] + 
+                    $meal['big'] + 
+                    $meal['small'] + 
+                    $meal['s_small'] + 
+                    $meal['no_rice']
                 );
             }
         }
@@ -462,12 +500,12 @@ class CreateOrder extends Page
                             $temp_meals[] = [
                                 'meal_id' => $meal['meal_id'],
                                 'name' => $meals[$meal['meal_id']]->name,
-                                'normal_rice' => $meal['normal_rice'],
-                                'small_rice' => $meal['small_rice'],
+                                'normal' => $meal['normal'],
+                                'big' => $meal['big'],
+                                'small' => $meal['small'],
+                                's_small' => $meal['s_small'],
                                 'no_rice' => $meal['no_rice'],
-                                'vegi' => $meal['vegi'],
-                                'qty' => intval($meal['normal_rice']) + intval($meal['small_rice']) + 
-                                       intval($meal['no_rice']) + intval($meal['vegi']),
+                                'qty' => intval($meal['normal']) + intval($meal['big']) + intval($meal['s_small']) + intval($meal['small']) + intval($meal['no_rice']),
                             ];
                         }
                     }
@@ -501,7 +539,6 @@ class CreateOrder extends Page
         }
 
         return [
-            'order_no' => $this->data['order_no'],
             'customer_id' => $this->data['customer_id'],
             'customer_name' => $customer ? $customer->name : '',
             'address_id' => $this->data['address_id'],

@@ -128,6 +128,9 @@ return [
     */
 
     'username_login' => env('USERNAME_LOGIN', false),
+    'order_id_padding' => 8,
+    'order_id_prefix' => '',
+    'order_id_suffix' => '',
 
     /*
     |--------------------------------------------------------------------------

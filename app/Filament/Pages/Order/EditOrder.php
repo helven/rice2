@@ -56,17 +56,18 @@ class EditOrder extends Page
         $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backup_driver'])->findOrFail($id);
         
         $this->form->fill([
-            'order_no' => $this->order->order_no,
+            'id' => $this->order->formatted_id,
             'customer_id' => $this->order->customer_id,
             'address_id' => $this->order->address_id,
             'delivery_date' => $this->order->delivery_date,
             'meals' => $this->order->meals->map(function($meal) {
                 return [
                     'meal_id' => $meal->meal_id,
-                    'normal_rice' => $meal->normal_rice,
-                    'small_rice' => $meal->small_rice,
+                    'normal' => $meal->normal,
+                    'big' => $meal->big,
+                    'small' => $meal->small,
+                    's_small' => $meal->s_small,
                     'no_rice' => $meal->no_rice,
-                    'vegi' => $meal->vegi,
                 ];
             })->toArray(),
             'total_amount' => $this->order->total_amount,
@@ -94,9 +95,9 @@ class EditOrder extends Page
             Section::make('Order Information')
                 ->collapsible()
                 ->schema([
-                    TextInput::make('order_no')
-                        ->required()
-                        ->maxLength(64),
+                    TextInput::make('id')
+                        ->label('Order No')
+                        ->readonly(),
                     Grid::make(2)
                         ->schema([
                             Select::make('customer_id')
@@ -165,6 +166,7 @@ ob_start();?>
                         ->reorderable(false)
                         ->deletable(true)
                         ->cloneable()
+                        ->columns(7)
                         ->addAction(
                             fn ($action) => $action
                                 ->label('Add Meal')
@@ -173,68 +175,78 @@ ob_start();?>
                                 ])
                         )
                         ->schema([
-                            Grid::make(5)
-                                ->schema([
-                                    Select::make('meal_id')
-                                        ->label('Meal')
-                                        ->placeholder('Select Meal')
-                                        ->required()
-                                        ->searchable()
-                                        ->preload()
-                                        ->options(Meal::query()->pluck('name', 'id')),
-
-                                    TextInput::make('normal_rice')
-                                        ->label('Normal Rice')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('normal_rice', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-
-                                    TextInput::make('small_rice')
-                                        ->label('Small Rice')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('small_rice', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-
-                                    TextInput::make('no_rice')
-                                        ->label('No Rice')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('no_rice', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-                                    
-                                    TextInput::make('vegi')
-                                        ->label('Vegi')
-                                        ->numeric()
-                                        ->default(0)
-                                        ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                        ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            $state = (int)ltrim($state, '0') ?: 0;
-                                            $set('vegi', $state);
-                                        })
-                                        ->step(1)
-                                        ->rules(['required', 'integer', 'min:0', 'max:1000']),
-                                ])
+                            Select::make('meal_id')
+                                ->label('Meal')
+                                ->placeholder('Select Meal')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->options(Meal::query()->where('status_id', 1)->pluck('name', 'id'))
+                                ->columnSpan(2),
+                            TextInput::make('normal')
+                                ->label('Normal')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    $state = (int)ltrim($state, '0') ?: 0;
+                                    $set('normal', $state);
+                                })
+                                ->step(1)
+                                ->rules(['required', 'integer', 'min:0', 'max:1000']),
+                            TextInput::make('big')
+                                    ->label('Big')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        $state = (int)ltrim($state, '0') ?: 0;
+                                        $set('big', $state);
+                                    })
+                                    ->step(1)
+                                    ->rules(['required', 'integer', 'min:0', 'max:1000']),
+                            TextInput::make('small')
+                                ->label('Small')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    $state = (int)ltrim($state, '0') ?: 0;
+                                    $set('small', $state);
+                                })
+                                ->step(1)
+                                ->rules(['required', 'integer', 'min:0', 'max:1000']),
+                            TextInput::make('s_small')
+                                ->label('S.Small')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    $state = (int)ltrim($state, '0') ?: 0;
+                                    $set('s_small', $state);
+                                })
+                                ->step(1)
+                                ->rules(['required', 'integer', 'min:0', 'max:1000']),
+                            TextInput::make('no_rice')
+                                ->label('No Rice')
+                                ->numeric()
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(1000)
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    $state = (int)ltrim($state, '0') ?: 0;
+                                    $set('no_rice', $state);
+                                })
+                                ->step(1)
+                                ->rules(['required', 'integer', 'min:0', 'max:1000']),
                             ]),
                     TextInput::make('total_amount')
                         ->label('Total')
@@ -347,17 +359,17 @@ ob_start();?>
         $data = $this->form->getState();
 
         $this->validate([
-            'data.order_no' => ['required', 'string'],
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date' => ['required', 'string'],
             'data.arrival_time' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
             'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
-            'data.meals.*.normal_rice' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.small_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.normal' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.big' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.small' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.s_small' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.vegi' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.total_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'],
             'data.notes' => ['nullable', 'string'],
             'data.driver_id' => ['required', 'exists:drivers,id'],
@@ -373,7 +385,6 @@ ob_start();?>
             
             // Update the order
             $this->order->update([
-                'order_no' => $data['order_no'],
                 'customer_id' => $data['customer_id'],
                 'address_id' => $data['address_id'],
                 'delivery_date' => \Carbon\Carbon::parse($data['delivery_date']),
@@ -392,10 +403,11 @@ ob_start();?>
             foreach ($data['meals'] as $meal) {
                 $this->order->meals()->create([
                     'meal_id' => $meal['meal_id'],
-                    'normal_rice' => $meal['normal_rice'],
-                    'small_rice' => $meal['small_rice'],
+                    'normal' => $meal['normal'],
+                    'big' => $meal['big'],
+                    'small' => $meal['small'],
+                    's_small' => $meal['s_small'],
                     'no_rice' => $meal['no_rice'],
-                    'vegi' => $meal['vegi'],
                 ]);
             }
             
@@ -428,12 +440,12 @@ ob_start();?>
             if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
                 $temp_meals[] = [
                     'meal_id' => $meal['meal_id'],
-                    'name' => $meals[$meal['meal_id']]->name,
-                    'normal_rice' => $meal['normal_rice'],
-                    'small_rice' => $meal['small_rice'],
+                    'normal' => $meal['normal'],
+                    'big' => $meal['big'],
+                    'small' => $meal['small'],
+                    's_small' => $meal['s_small'],
                     'no_rice' => $meal['no_rice'],
-                    'vegi' => $meal['vegi'],
-                    'qty' => $meal['normal_rice'] + $meal['small_rice'] + $meal['no_rice'] + $meal['vegi'],
+                    'qty' => $meal['normal'] + $meal['big'] + $meal['small'] + $meal['s_small'] + $meal['no_rice']
                 ];
             }
         }
@@ -450,7 +462,6 @@ ob_start();?>
         }
 
         return [
-            'order_no' => $this->data['order_no'],
             'customer_id' => $this->data['customer_id'],
             'customer_name' => $customer?->name ?? '',
             'address_id' => $this->data['address_id'],
@@ -478,8 +489,8 @@ ob_start();?>
     {
         $record = $this->getRecord();
         return [
-            '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
-            '' => $record->order_no ?? 'Edit Order',
+            '/'.config('filament.path', 'backend').'/orders' => 'Orders',
+            '' => $record ? 'Order '.$record->formatted_id : 'Edit Order',
         ];
     }
 

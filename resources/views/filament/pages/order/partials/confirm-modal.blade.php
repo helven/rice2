@@ -5,7 +5,6 @@
     <div class="grid grid-cols-2 gap-4">
         <div>
             <div class="font-semibold">Order Information:</div>
-            <div>Order No: {{ $formattedData['order_no'] }}</div>
             <div>Customer: {{ $formattedData['customer_name'] }}</div>
             <div>Address:<br />{!! $formattedData['address'] !!}</div>
             <div>Delivery Date: {{ $formattedData['delivery_date'] }}</div>
@@ -16,13 +15,14 @@
             <div class="space-y-2">
                 @foreach($formattedData['meals'] as $meal)
                     <div class="border p-2 rounded">
-                        <div class="grid grid-cols-5 gap-2">
-                            <div>Meal: {{ $meal['name'] }}</div>
-                            <div>Normal Rice: {{ $meal['normal_rice'] }}</div>
-                            <div>Small Rice: {{ $meal['small_rice'] }}</div>
-                            <div>No Rice: {{ $meal['no_rice'] }}</div>
-                            <div>Vegi: {{ $meal['vegi'] }}</div>
-                            <div>Qty: {{ $meal['qty'] }}</div>
+                        <div class="grid grid-cols-6 gap-2">
+                            <div>Meal: {{ $meal['name'] ?? $meal['meal_name'] ?? 'N/A' }}</div>
+                            <div>Normal: {{ $meal['normal'] ?? $meal['normal_rice'] ?? 0 }}</div>
+                            <div>Big: {{ $meal['big'] ?? 0 }}</div>
+                            <div>Small: {{ $meal['small'] ?? $meal['small_rice'] ?? 0 }}</div>
+                            <div>S.Small: {{ $meal['s_small'] ?? 0 }}</div>
+                            <div>No Rice: {{ $meal['no_rice'] ?? 0 }}</div>
+                            <div>Qty: {{ $meal['qty'] ?? 0 }}</div>
                         </div>
                     </div>
                 @endforeach

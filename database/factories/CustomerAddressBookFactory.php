@@ -30,6 +30,7 @@ class CustomerAddressBookFactory extends Factory
             'driver_id' => fake()->numberBetween(1, 5),
             'driver_route' => fake()->randomElement(['Route 1', 'Route 2', 'Route 3']),
             'backup_driver_id' => fake()->numberBetween(1, 5), // 30% chance of having a backup driver
+            'backup_driver_route' => fake()->randomElement([null, 'Route 1', 'Route 2', 'Route 3']),
         ];
     }
 }

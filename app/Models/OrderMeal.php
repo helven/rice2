@@ -11,17 +11,19 @@ class OrderMeal extends Model
         'status_id',
         'order_id',
         'meal_id',
-        'normal_rice',
-        'small_rice',
+        'normal',
+        'big',
+        'small',
+        's_small',
         'no_rice',
-        'vegi',
     ];
 
     protected $casts = [
-        'normal_rice' => 'integer',
-        'small_rice' => 'integer',
+        'normal' => 'integer',
+        'big' => 'integer',
+        'small' => 'integer',
+        's_small' => 'integer',
         'no_rice' => 'integer',
-        'vegi' => 'integer',
     ];
 
     public function order(): BelongsTo
