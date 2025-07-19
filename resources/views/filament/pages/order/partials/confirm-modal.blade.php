@@ -73,85 +73,21 @@
                             <div class="font-medium text-gray-900 mb-3">
                                 {{ \Carbon\Carbon::parse($date)->format('d M Y') }}
                             </div>
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="bg-gray-50">
-                                        <th class="py-2 px-2 text-left font-medium text-gray-700">Meal</th>
-                                        <th class="py-2 px-2 text-center font-medium text-gray-700">Normal</th>
-                                        <th class="py-2 px-2 text-center font-medium text-gray-700">Big</th>
-                                        <th class="py-2 px-2 text-center font-medium text-gray-700">Small</th>
-                                        <th class="py-2 px-2 text-center font-medium text-gray-700">S.Small</th>
-                                        <th class="py-2 px-2 text-center font-medium text-gray-700">No Rice</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200">
-                                    @foreach($dayOrders['meals'] as $meal)
-                                        <tr>
-                                            <td class="py-2 px-2">{{ $meal['name'] ?? $meal['meal_name'] ?? 'N/A' }}</td>
-                                            <td class="py-2 px-2 text-center">{{ $meal['normal'] ?? 0 }}</td>
-                                            <td class="py-2 px-2 text-center">{{ $meal['big'] ?? 0 }}</td>
-                                            <td class="py-2 px-2 text-center">{{ $meal['small'] ?? 0 }}</td>
-                                            <td class="py-2 px-2 text-center">{{ $meal['s_small'] ?? 0 }}</td>
-                                            <td class="py-2 px-2 text-center">{{ $meal['no_rice'] ?? 0 }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="6" class="pt-2 text-sm text-gray-600">
-                                            <div class="space-y-1">
-                                                <div class="text-right font-bold">Amount: RM{{ number_format($dayOrders['total_amount'], 2) }}</div>
-                                                @if(!empty($dayOrders['notes']))
-                                                    <div class="font-medium">Notes:</div>
-                                                    <div class="px-2 py-1 bg-gray-50 p-4 rounded-lg">{{ $dayOrders['notes'] }}</div>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                            @include('filament.pages.order.partials.meal-table', [
+                                'meals' => $dayOrders['meals'],
+                                'total_amount' => $dayOrders['total_amount'],
+                                'notes' => $dayOrders['notes'] ?? ''
+                            ])
                         </div>
                     @endforeach
                 @else
                     {{-- EditOrder structure --}}
                     <div class="bg-white border border-gray-200 rounded-lg p-3">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="bg-gray-50">
-                                    <th class="py-2 px-2 text-left font-medium text-gray-700">Meal</th>
-                                    <th class="py-2 px-2 text-center font-medium text-gray-700">Normal</th>
-                                    <th class="py-2 px-2 text-center font-medium text-gray-700">Big</th>
-                                    <th class="py-2 px-2 text-center font-medium text-gray-700">Small</th>
-                                    <th class="py-2 px-2 text-center font-medium text-gray-700">S.Small</th>
-                                    <th class="py-2 px-2 text-center font-medium text-gray-700">No Rice</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                @foreach($formattedData['meals'] as $meal)
-                                    <tr>
-                                        <td class="py-2 px-2">{{ $meal['name'] ?? $meal['meal_name'] ?? 'N/A' }}</td>
-                                        <td class="py-2 px-2 text-center">{{ $meal['normal'] ?? 0 }}</td>
-                                        <td class="py-2 px-2 text-center">{{ $meal['big'] ?? 0 }}</td>
-                                        <td class="py-2 px-2 text-center">{{ $meal['small'] ?? 0 }}</td>
-                                        <td class="py-2 px-2 text-center">{{ $meal['s_small'] ?? 0 }}</td>
-                                        <td class="py-2 px-2 text-center">{{ $meal['no_rice'] ?? 0 }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="6" class="pt-2 text-sm text-gray-600">
-                                        <div class="space-y-1">
-                                            <div class="text-right font-bold">Amount: RM{{ number_format($formattedData['total_amount'], 2) }}</div>
-                                            @if(!empty($formattedData['notes']))
-                                                <div class="font-medium">Notes:</div>
-                                                <div class="px-2 py-1 bg-gray-50 p-4 rounded-lg">{{ $formattedData['notes'] }}</div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        @include('filament.pages.order.partials.meal-table', [
+                            'meals' => $formattedData['meals'],
+                            'total_amount' => $formattedData['total_amount'],
+                            'notes' => $formattedData['notes'] ?? ''
+                        ])
                     </div>
                 @endif
             </div>
