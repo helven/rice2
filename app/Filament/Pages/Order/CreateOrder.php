@@ -59,7 +59,7 @@ class CreateOrder extends Page
         // Get first active meal for default
         $defaultMeal = Meal::where('status_id', 1)->first();
         $defaultMealId = $defaultMeal ? $defaultMeal->id : '';
-        
+
         $this->form->fill([
             'customer_id' => '',
             'address_id' => '',
@@ -74,6 +74,89 @@ class CreateOrder extends Page
             'backup_driver_route' => '',
             'driver_notes' => '',
         ]);
+        
+
+        $dev_autofill = TRUE;
+        // For development: Get first active customer, their default address, and first active meal
+        if ($dev_autofill && app()->environment('local')) {
+            $customer = Customer::where('status_id', 1)->first();
+            $address = $customer ? CustomerAddressBook::where('customer_id', $customer->id)
+                ->where('status_id', 1)
+                ->where('is_default', true)
+                ->first() : null;
+            $driver = Driver::where('status_id', 1)->first();
+            $driverRoute = $driver && $driver->route ? $driver->route[0]['route_name'] : null;
+            
+            // Get tomorrow and day after tomorrow for delivery
+            $tomorrow = \Carbon\Carbon::tomorrow();
+            $dayAfterTomorrow = \Carbon\Carbon::tomorrow()->addDay();
+            $deliveryDateRange = $tomorrow->format('Y/m/d') . ' - ' . $dayAfterTomorrow->format('Y/m/d');
+
+            // Get two different meals for variety
+            $defaultMeal = Meal::where('status_id', 1)->first();
+            $secondMeal = Meal::where('status_id', 1)->where('id', '!=', $defaultMeal->id)->first();
+            if (!$secondMeal) $secondMeal = $defaultMeal; // Fallback to same meal if no other exists
+            
+            $this->form->fill([
+                'customer_id' => $customer ? $customer->id : '',
+                'address_id' => $address ? $address->id : '',
+                'delivery_date_range' => $deliveryDateRange,
+                'meals_by_date' => [
+                    [
+                        'date' => $tomorrow->format('Y-m-d'),
+                        'meals' => [
+                            [
+                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
+                                'normal' => 2,
+                                'big' => 1,
+                                'small' => 1,
+                                's_small' => 0,
+                                'no_rice' => 1,
+                            ],
+                            [
+                                'meal_id' => $secondMeal ? $secondMeal->id : '',
+                                'normal' => 1,
+                                'big' => 1,
+                                'small' => 0,
+                                's_small' => 1,
+                                'no_rice' => 0,
+                            ]
+                        ],
+                        'total_amount' => 100.00,
+                        'notes' => 'Sample order notes for day 1'
+                    ],
+                    [
+                        'date' => $dayAfterTomorrow->format('Y-m-d'),
+                        'meals' => [
+                            [
+                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
+                                'normal' => 2,
+                                'big' => 1,
+                                'small' => 1,
+                                's_small' => 0,
+                                'no_rice' => 1,
+                            ],
+                            [
+                                'meal_id' => $secondMeal ? $secondMeal->id : '',
+                                'normal' => 1,
+                                'big' => 1,
+                                'small' => 0,
+                                's_small' => 1,
+                                'no_rice' => 0,
+                            ]
+                        ],
+                        'total_amount' => 100.00,
+                        'notes' => 'Sample order notes for day 2'
+                    ]
+                ],
+                'arrival_time' => '08:00',
+                'driver_id' => $driver ? $driver->id : '',
+                'driver_route' => $driverRoute,
+                'backup_driver_id' => '',
+                'backup_driver_route' => '',
+                'driver_notes' => 'Sample driver notes',
+            ]);
+        }
     }
 
     public function form(Form $form): Form
@@ -486,18 +569,19 @@ class CreateOrder extends Page
         $customer = Customer::find($this->data['customer_id'] ?? null);
         $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
         
-        $temp_meals = [];
+        $meals_by_date = [];
         
         // Handle meals_by_date structure (for Create Order)
         if (isset($this->data['meals_by_date']) && is_array($this->data['meals_by_date'])) {
-            foreach ($this->data['meals_by_date'] as $date => $dateData) {
-                if (isset($dateData['meals'])) {
+            foreach ($this->data['meals_by_date'] as $dateData) {
+                if (isset($dateData['date']) && isset($dateData['meals'])) {
                     $meal_ids = collect($dateData['meals'])->pluck('meal_id')->toArray();
                     $meals = Meal::whereIn('id', $meal_ids)->get()->keyBy('id');
                     
+                    $formatted_meals = [];
                     foreach ($dateData['meals'] as $meal) {
                         if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
-                            $temp_meals[] = [
+                            $formatted_meals[] = [
                                 'meal_id' => $meal['meal_id'],
                                 'name' => $meals[$meal['meal_id']]->name,
                                 'normal' => $meal['normal'],
@@ -509,6 +593,12 @@ class CreateOrder extends Page
                             ];
                         }
                     }
+                    
+                    $meals_by_date[$dateData['date']] = [
+                        'meals' => $formatted_meals,
+                        'total_amount' => $dateData['total_amount'],
+                        'notes' => $dateData['notes'] ?? ''
+                    ];
                 }
             }
         }
@@ -544,9 +634,8 @@ class CreateOrder extends Page
             'address_id' => $this->data['address_id'],
             'address' => $address ? $display_address : '',
             'delivery_date' => $delivery_dates,
-            'meals' => $temp_meals,
-            'total_amount' => $this->data['total_amount'] ?? '0.00',
-            'notes' => $this->data['notes'] ?? '',
+            'meals_by_date' => $meals_by_date,
+            'total_amount' => array_sum(array_column($meals_by_date, 'total_amount')),
             'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time']) 
                 ? date('h:i A', strtotime($this->data['arrival_time'])) 
                 : '',

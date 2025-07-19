@@ -1,0 +1,43 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+  ],
+	"settings": {
+		"favorites.resources": [],
+		"favorites.sortOrder": "ASC",
+		"svn.enabled": false,
+		"svn.autorefresh": false,
+    "[php]": {
+      "editor.tabSize": 4,
+    },
+    "[html]": {
+      "editor.tabSize": 2,
+    },
+    "[css]": {
+      "editor.tabSize": 2,
+    },
+    "[javascript]": {
+      "editor.tabSize": 2,
+    },
+    "[json]": {
+      "editor.tabSize": 2,
+    },
+    "[jsonc]": {
+      "editor.tabSize": 2,
+    },
+    "[javascriptreact]": { // For .jsx files
+      "editor.tabSize": 2,
+    },
+    "[typescript]": {
+      "editor.tabSize": 2,
+    },
+    "[typescriptreact]": { // For .tsx files
+      "editor.tabSize": 2,
+    },
+    "[vue]": {
+      "editor.tabSize": 2,
+    },
+	}
+}
