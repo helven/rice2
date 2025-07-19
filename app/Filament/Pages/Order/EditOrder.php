@@ -393,7 +393,7 @@ ob_start();?>
                 'arrival_time' => $data['arrival_time'],
                 'driver_id' => $data['driver_id'],
                 'driver_route' => $data['driver_route'],
-                'backup_driver_id' => $data['backup_driver_id'] ?? null,
+                'backup_driver_id' => $data['backup_driver_id'] ?? 0,
                 'backup_driver_route' => $data['backup_driver_route'] ?? '',
                 'driver_notes' => $data['driver_notes'],
             ]);
@@ -440,6 +440,7 @@ ob_start();?>
             if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
                 $temp_meals[] = [
                     'meal_id' => $meal['meal_id'],
+                    'name' => $meals[$meal['meal_id']]->name,
                     'normal' => $meal['normal'],
                     'big' => $meal['big'],
                     'small' => $meal['small'],

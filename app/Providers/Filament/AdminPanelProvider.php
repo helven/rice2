@@ -28,7 +28,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(config('filament.path', 'backend'))
             ->brandLogo(asset('images/logo.png'))
+            ->favicon(asset('favicon.ico'))
             ->assets([
+                Css::make('app-css', \Illuminate\Support\Facades\Vite::asset('resources/css/app.css')),
                 Css::make('custom-style', asset('css/filament/custom.css')),
             ])
             // Conditional login based on config

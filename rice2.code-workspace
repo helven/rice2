@@ -2,7 +2,15 @@
 	"folders": [
 		{
 			"path": "."
-		}
+		},
+		{
+			"path": "app/Filament",
+			"name": "FILAMENT"
+		},
+		{
+			"path": "resources/views/filament",
+			"name": "FILAMENT VIEWS"
+		},
   ],
 	"settings": {
 		"favorites.resources": [],

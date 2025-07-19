@@ -40,6 +40,7 @@
 
         <x-filament::modal
             id="confirm-modal"
+            width="5xl"
             x-show="showModal"
             x-on:open-modal.window="if ($event.detail.id === 'confirm-modal') showModal = true"
             x-on:close-modal.window="if ($event.detail.id === 'confirm-modal') showModal = false"
@@ -48,21 +49,23 @@
             wire:ignore.self
         >
             <x-slot name="heading">
-                Confirm Order
+                <div class="text-xl">Confirm Order</div>
             </x-slot>
 
             @include('filament.pages.order.partials.confirm-modal')
 
             <x-slot name="footerActions">
-                <x-filament::button
-                    type="submit"
-                    class="mt-4"
-                >
-                    Submit
-                </x-filament::button>
-                <x-filament::button x-on:click="$dispatch('close-modal', { id: 'confirm-modal' })" color="gray">
-                    Close
-                </x-filament::button>
+                <div class="w-full gap-3 flex flex-wrap items-center justify-center">
+                    <x-filament::button
+                        type="submit"
+                        class="mt-4"
+                    >
+                        Submit
+                    </x-filament::button>
+                    <x-filament::button x-on:click="$dispatch('close-modal', { id: 'confirm-modal' })" color="gray">
+                        Close
+                    </x-filament::button>
+                </div>
             </x-slot>
         </x-filament::modal>
     </form>

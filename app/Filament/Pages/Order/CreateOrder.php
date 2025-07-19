@@ -49,7 +49,7 @@ class CreateOrder extends Page
     protected static ?string $slug = 'orders/create';
     protected static bool $shouldRegisterNavigation = true;
     protected static ?int $navigationSort = 2;
-    
+
     protected static string $view = 'filament.pages.order.create-order';
 
     public array $data = [];
@@ -74,7 +74,7 @@ class CreateOrder extends Page
             'backup_driver_route' => '',
             'driver_notes' => '',
         ]);
-        
+
 
         $dev_autofill = TRUE;
         // For development: Get first active customer, their default address, and first active meal
@@ -86,17 +86,18 @@ class CreateOrder extends Page
                 ->first() : null;
             $driver = Driver::where('status_id', 1)->first();
             $driverRoute = $driver && $driver->route ? $driver->route[0]['route_name'] : null;
-            
+
             // Get tomorrow and day after tomorrow for delivery
             $tomorrow = \Carbon\Carbon::tomorrow();
             $dayAfterTomorrow = \Carbon\Carbon::tomorrow()->addDay();
-            $deliveryDateRange = $tomorrow->format('Y/m/d') . ' - ' . $dayAfterTomorrow->format('Y/m/d');
+            $twoDaysLater = \Carbon\Carbon::tomorrow()->addDays(2); // 3 days after dayAfterTomorrow
+            $deliveryDateRange = $tomorrow->format('Y/m/d') . ' - ' . $twoDaysLater->format('Y/m/d');
 
             // Get two different meals for variety
             $defaultMeal = Meal::where('status_id', 1)->first();
             $secondMeal = Meal::where('status_id', 1)->where('id', '!=', $defaultMeal->id)->first();
             if (!$secondMeal) $secondMeal = $defaultMeal; // Fallback to same meal if no other exists
-            
+
             $this->form->fill([
                 'customer_id' => $customer ? $customer->id : '',
                 'address_id' => $address ? $address->id : '',
@@ -147,6 +148,29 @@ class CreateOrder extends Page
                         ],
                         'total_amount' => 100.00,
                         'notes' => 'Sample order notes for day 2'
+                    ],
+                    [
+                        'date' => $twoDaysLater->format('Y-m-d'),
+                        'meals' => [
+                            [
+                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
+                                'normal' => 1,
+                                'big' => 2,
+                                'small' => 1,
+                                's_small' => 1,
+                                'no_rice' => 0,
+                            ],
+                            [
+                                'meal_id' => $secondMeal ? $secondMeal->id : '',
+                                'normal' => 2,
+                                'big' => 0,
+                                'small' => 1,
+                                's_small' => 0,
+                                'no_rice' => 1,
+                            ]
+                        ],
+                        'total_amount' => 120.00,
+                        'notes' => 'Sample order notes for day 3'
                     ]
                 ],
                 'arrival_time' => '08:00',
@@ -181,43 +205,7 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Customer::query()->pluck('name', 'id'))
-                                ->reactive(),
-
-                            Select::make('address_id')
-                                ->label('Delivery Location')
-                                ->placeholder('Select Company or City')
-                                ->required()
-                                ->searchable()
-                                ->allowHtml()
                                 ->reactive()
-                                ->disabled(fn (callable $get): bool => blank($get('customer_id')))
-                                ->options(function (callable $get) {
-                                    $customerId = $get('customer_id');
-                                    if (blank($customerId)) {
-                                        return [];
-                                    }
-                                    return CustomerAddressBook::query()
-                                        ->where('customer_id', $customerId)
-                                        ->where('status_id', 1)
-                                        ->orderBy('is_default', 'desc')
-                                        ->orderBy('name', 'asc')
-                                        ->get()
-                                        ->mapWithKeys(function ($address) {
-                                            $address->address_1 = trim($address->address_1);
-                                            $address->address_2 = trim($address->address_2);
-                                            ob_start();?>
-<div class="hidden"><?php echo "{$address->name}|{$address->city}";?></div>
-<span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";
-?>
-<div><?php echo $address->address_1;?><br />
-<?php echo ($address->address_2)?$address->address_2.'<br />':"";
-?>
-<?php echo $address->postcode;?> <?php echo $address->city;?></div>
-<?php
-                                            $displayAddress = trim(ob_get_clean());
-                                            return [$address->id => $displayAddress];
-                                        });
-                                })
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     // Load driver information based on selected address
                                     if ($state) {
@@ -234,7 +222,7 @@ class CreateOrder extends Page
                                                 $set('driver_id', null);
                                                 $set('driver_route', null);
                                             }
-                                            
+
                                             // Use pre-assigned backup driver information from the address
                                             if ($address->backup_driver_id) {
                                                 $set('backup_driver_id', $address->backup_driver_id);
@@ -254,6 +242,42 @@ class CreateOrder extends Page
                                         $set('backup_driver_id', null);
                                         $set('backup_driver_route', null);
                                     }
+                                }),
+
+                            Select::make('address_id')
+                                ->label('Delivery Location')
+                                ->placeholder('Select Company or City')
+                                ->required()
+                                ->searchable()
+                                ->allowHtml()
+                                ->reactive()
+                                ->disabled(fn(callable $get): bool => blank($get('customer_id')))
+                                ->options(function (callable $get) {
+                                    $customerId = $get('customer_id');
+                                    if (blank($customerId)) {
+                                        return [];
+                                    }
+                                    return CustomerAddressBook::query()
+                                        ->where('customer_id', $customerId)
+                                        ->where('status_id', 1)
+                                        ->orderBy('is_default', 'desc')
+                                        ->orderBy('name', 'asc')
+                                        ->get()
+                                        ->mapWithKeys(function ($address) {
+                                            $address->address_1 = trim($address->address_1);
+                                            $address->address_2 = trim($address->address_2);
+                                            ob_start(); ?>
+                <div class="hidden"><?php echo "{$address->name}|{$address->city}"; ?></div>
+                <span class="font-bold"><?php echo $address->name; ?></span><?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : "";
+                                                                            ?>
+                <div><?php echo $address->address_1; ?><br />
+                    <?php echo ($address->address_2) ? $address->address_2 . '<br />' : "";
+                    ?>
+                    <?php echo $address->postcode; ?> <?php echo $address->city; ?></div>
+            <?php
+                                            $displayAddress = trim(ob_get_clean());
+                                            return [$address->id => $displayAddress];
+                                        });
                                 })
                         ]),
                     DateRangePicker::make('delivery_date_range')
@@ -284,10 +308,12 @@ class CreateOrder extends Page
                                             's_small' => 0,
                                             'no_rice' => 0,
                                         ]
-                                    ]
+                                    ],
+                                    'total_amount' => 0.00,
+                                    'notes' => ''
                                 ];
                             }
-                            
+
                             $set('meals_by_date', $meals_by_date);
                         })
                 ]),
@@ -314,7 +340,7 @@ class CreateOrder extends Page
                         ->cloneable()
                         ->columns(7)
                         ->addAction(
-                            fn ($action) => $action
+                            fn($action) => $action
                                 ->label('Add Meal')
                                 ->extraAttributes([
                                     'class' => '',
@@ -420,20 +446,20 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->options(function (callable $get) {
                                     $driverId = $get('driver_id');
-                            
+
                                     if (blank($driverId)) {
                                         return [];
                                     }
-                            
+
                                     $driver = \App\Models\Driver::find($driverId);
                                     if (!$driver || !$driver->route) {
                                         return [];
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('backup_driver_id')))
+                                ->disabled(fn(callable $get): bool => blank($get('driver_id')))
                         ]),
-                        Grid::make(2)
+                    Grid::make(2)
                         ->schema([
                             Select::make('backup_driver_id')
                                 ->label('Backup Driver')
@@ -451,22 +477,22 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->options(function (callable $get) {
                                     $driverId = $get('backup_driver_id');
-                            
+
                                     if (blank($driverId)) {
                                         return [];
                                     }
-                            
+
                                     $driver = \App\Models\Driver::find($driverId);
                                     if (!$driver || !$driver->route) {
                                         return [];
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('backup_driver_id')))
+                                ->disabled(fn(callable $get): bool => blank($get('backup_driver_id')))
                         ]),
-                        Textarea::make('driver_notes')
-                            ->label('Notes')
-                            ->rows(5)
+                    Textarea::make('driver_notes')
+                        ->label('Notes')
+                        ->rows(5)
                 ]),
         ];
     }
@@ -475,7 +501,7 @@ class CreateOrder extends Page
     {
         // Validate the form data
         $data = $this->form->getState();
-        
+
         $this->validate([
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
@@ -492,7 +518,7 @@ class CreateOrder extends Page
         try {
             // Begin transaction
             \DB::beginTransaction();
-            
+
             // Create an order for each date
             foreach ($data['meals_by_date'] as $date => $dateData) {
                 // Skip if no meals for this date
@@ -509,7 +535,7 @@ class CreateOrder extends Page
                     'arrival_time' => $data['arrival_time'],
                     'driver_id' => $data['driver_id'],
                     'driver_route' => $data['driver_route'],
-                    'backup_driver_id' => $data['backup_driver_id'],
+                    'backup_driver_id' => $data['backup_driver_id'] ?? 0,
                     'backup_driver_route' => $data['backup_driver_route'] ?? '',
                     'driver_notes' => $data['driver_notes'] ?? '',
                 ]);
@@ -529,13 +555,13 @@ class CreateOrder extends Page
             }
 
             \DB::commit();
-            
+
             Notification::make()
                 ->success()
                 ->title('Orders created successfully')
                 ->send();
 
-            $this->redirect('/'.config('filament.path', 'backend').'/orders');
+            $this->redirect('/' . config('filament.path', 'backend') . '/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
@@ -553,10 +579,10 @@ class CreateOrder extends Page
             $mealData = \App\Models\Meal::find($meal['meal_id']);
             if ($mealData) {
                 $total += $mealData->price * (
-                    $meal['normal'] + 
-                    $meal['big'] + 
-                    $meal['small'] + 
-                    $meal['s_small'] + 
+                    $meal['normal'] +
+                    $meal['big'] +
+                    $meal['small'] +
+                    $meal['s_small'] +
                     $meal['no_rice']
                 );
             }
@@ -568,16 +594,16 @@ class CreateOrder extends Page
     {
         $customer = Customer::find($this->data['customer_id'] ?? null);
         $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
-        
+
         $meals_by_date = [];
-        
+
         // Handle meals_by_date structure (for Create Order)
         if (isset($this->data['meals_by_date']) && is_array($this->data['meals_by_date'])) {
             foreach ($this->data['meals_by_date'] as $dateData) {
                 if (isset($dateData['date']) && isset($dateData['meals'])) {
                     $meal_ids = collect($dateData['meals'])->pluck('meal_id')->toArray();
                     $meals = Meal::whereIn('id', $meal_ids)->get()->keyBy('id');
-                    
+
                     $formatted_meals = [];
                     foreach ($dateData['meals'] as $meal) {
                         if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
@@ -593,7 +619,7 @@ class CreateOrder extends Page
                             ];
                         }
                     }
-                    
+
                     $meals_by_date[$dateData['date']] = [
                         'meals' => $formatted_meals,
                         'total_amount' => $dateData['total_amount'],
@@ -604,27 +630,27 @@ class CreateOrder extends Page
         }
 
         $display_address = '';
-        if($address){
-            ob_start();?>
-<?php echo $address->name;?><br />
-<?php echo $address->address_1;?><br />
-<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
-<?php echo $address->postcode;?> <?php echo $address->city;?>
+        if ($address) {
+            ob_start(); ?>
+            <?php echo $address->name; ?><br />
+            <?php echo $address->address_1; ?><br />
+            <?php echo ($address->address_2) ? $address->address_2 . '<br />' : ""; ?>
+            <?php echo $address->postcode; ?> <?php echo $address->city; ?>
 <?php
             $display_address = trim(ob_get_clean());
         }
-        
+
         $delivery_dates = '';
 
         // Parse the date range
-        if($this->data['delivery_date_range'] !== '') {
+        if ($this->data['delivery_date_range'] !== '') {
             [$startDate, $endDate] = explode(' - ', $this->data['delivery_date_range']);
             $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
             $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
 
             // Create a collection of dates between start and end
             for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-                $delivery_dates .= ($delivery_dates != ''?', ':'').$date->format('Y-m-d');
+                $delivery_dates .= ($delivery_dates != '' ? ', ' : '') . $date->format('d M Y');
             }
         }
 
@@ -636,8 +662,8 @@ class CreateOrder extends Page
             'delivery_date' => $delivery_dates,
             'meals_by_date' => $meals_by_date,
             'total_amount' => array_sum(array_column($meals_by_date, 'total_amount')),
-            'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time']) 
-                ? date('h:i A', strtotime($this->data['arrival_time'])) 
+            'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time'])
+                ? date('h:i A', strtotime($this->data['arrival_time']))
                 : '',
             'driver_id' => $this->data['driver_id'] ?? '',
             'driver_name' => Driver::find($this->data['driver_id'] ?? null) ? Driver::find($this->data['driver_id'] ?? null)->name : '',
@@ -652,7 +678,7 @@ class CreateOrder extends Page
     public function getBreadcrumbs(): array
     {
         return [
-            '/'.config('filament.path', 'backend').'/orders' => 'Orders',
+            '/' . config('filament.path', 'backend') . '/orders' => 'Orders',
             '' => 'New Order',
         ];
     }
