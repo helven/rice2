@@ -27,8 +27,9 @@ class ListDropOff extends ListRecords
     {
         return $table
             ->query($this->query())
+            ->recordUrl(fn (Order $record): string => "/backend/orders/{$record->id}/edit")
             ->columns([
-                TextColumn::make('order_no')
+                TextColumn::make('formatted_id')
                     ->label('Order No')
                     ->sortable(),
                 TextColumn::make('dropoff_time')

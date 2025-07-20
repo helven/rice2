@@ -115,16 +115,20 @@ class DriverResource extends Resource
                     ->sortable(),
                 TextColumn::make('contact')
                     ->label('Contact No')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('ic_name')
                     ->label('IC Name')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(false),
+                    ->toggleable()
+                    ->visibleFrom('md'),
                 TextColumn::make('ic_no')
                     ->label('IC No')
                     ->searchable()
-                    ->toggleable(false),
+                    ->toggleable()
+                    ->toggledHiddenByDefault()
+                    ->visibleFrom('md'),
                 TextColumn::make('status.label')
                     ->label('Status')
                     ->searchable()
@@ -139,12 +143,15 @@ class DriverResource extends Resource
                     ->label('Created At')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(true),
+                    ->toggleable()
+                    ->toggledHiddenByDefault()
+                    ->visibleFrom('lg'),
                 TextColumn::make('updated_at')
                     ->label('Last Modified')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(false),
+                    ->toggleable()
+                    ->visibleFrom('lg'),
             ])
             ->filters([
                 SelectFilter::make('status_id')
@@ -179,7 +186,8 @@ class DriverResource extends Resource
                         })
                 ]),
             ])
-            ->defaultSort('name', 'asc');
+            ->defaultSort('name', 'asc')
+            ->striped();
     }
 
     public static function getRelations(): array

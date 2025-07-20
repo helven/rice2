@@ -34,9 +34,8 @@ class ListOrder extends Page implements HasTable
         return $table
             ->query($this->query())
             ->columns([
-                TextColumn::make('id')
+                TextColumn::make('formatted_id')
                     ->label('Order No')
-                    ->formatStateUsing(fn (string $state): string => str_pad($state, 6, '0', STR_PAD_LEFT))
                     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('Customer')
@@ -127,7 +126,8 @@ class ListOrder extends Page implements HasTable
                     ->label('Last Modified')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
-                    ->toggleable(true),
+                    ->toggleable(true)
+                    ->toggledHiddenByDefault(),
             ])
             ->filters([
                 SelectFilter::make('payment_status_id')
