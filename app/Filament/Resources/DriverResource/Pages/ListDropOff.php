@@ -21,7 +21,8 @@ use Filament\Tables\Actions\Action;
 class ListDropOff extends ListRecords
 {
     protected static string $resource = DriverResource::class;
-    protected static ?string $navigationLabel = 'Drop Off List';
+    protected static ?string $navigationLabel = 'Drop Off';
+    protected static ?string $title = 'Drop Off';
 
     public function table(Table $table): Table
     {
@@ -31,6 +32,10 @@ class ListDropOff extends ListRecords
             ->columns([
                 TextColumn::make('formatted_id')
                     ->label('Order No')
+                    ->sortable(),
+                TextColumn::make('delivery_date')
+                    ->label('Delivery Date')
+                    ->dateTime('Y-m-d')
                     ->sortable(),
                 TextColumn::make('dropoff_time')
                     ->label('DropOff Time')
@@ -85,16 +90,16 @@ class ListDropOff extends ListRecords
                         );
                     })
                     ->html(),
-                TextColumn::make('delivery_date')
-                    ->label('Delivery Date')
-                    ->dateTime('Y-m-d')
-                    ->sortable(),
                 TextColumn::make('driver.name')
                     ->label('Driver')
                     ->searchable()
                     ->toggleable(true),
             ])
             ->filters([
+                Tables\Filters\Filter::make('todays_dropoff')
+                    ->label("Today's Drop Off")
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->whereDate('delivery_date', now())),
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options([
@@ -124,7 +129,7 @@ class ListDropOff extends ListRecords
     {
         return [
             '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
-            '' => 'Drop Off List',
+            '' => 'Drop Off',
         ];
     }
 }

@@ -36,7 +36,7 @@ class DriverResource extends Resource
                 ->icon('heroicon-o-truck')
                 ->group(static::getNavigationGroup())
                 ->url(static::getUrl('index')),
-            NavigationItem::make('Drop Off List')
+            NavigationItem::make('Drop Off')
                 ->icon('heroicon-o-clipboard-document-list')
                 ->group(static::getNavigationGroup())
                 ->url(static::getUrl('dropoff')),
