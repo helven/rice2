@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class AreaSeeder extends Seeder
 {

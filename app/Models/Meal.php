@@ -21,6 +21,6 @@ class Meal extends Model
 
     public function status()
     {
-        return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
+        return $this->belongsTo(MealStatus::class, 'status_id', 'id');
     }
 }

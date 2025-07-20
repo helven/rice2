@@ -11,14 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('order_statuses', function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('label');
+            $table->string('description')->nullable();
+            $table->boolean('is_system')->default(false);
+            $table->timestamps();
+        });
+
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('order_no')->default('');
             $table->unsignedInteger('customer_id');
             $table->unsignedInteger('address_id');
             $table->integer('status_id')->default(1);
-            $table->integer('payment_status_id')->default(12);
-            $table->integer('payment_method_id')->default(12);
+            $table->integer('payment_status_id')->default(3);
+            $table->integer('payment_method_id')->default(0);
             $table->datetime('delivery_date');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->text('notes')->nullable();

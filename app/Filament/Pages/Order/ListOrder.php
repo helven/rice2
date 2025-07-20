@@ -62,8 +62,8 @@ class ListOrder extends Page implements HasTable
                     ->searchable()
                     ->sortable()
                     ->color(function (Order $record): string {
-                        if ($record->payment_status_id === 13) return 'success';
-                        if ($record->payment_status_id === 12) return 'warning';
+                        if ($record->payment_status_id === 4) return 'success';
+                        if ($record->payment_status_id === 3) return 'warning';
                         return 'gray';
                     })
                     ->action(
@@ -76,13 +76,13 @@ class ListOrder extends Page implements HasTable
                                     ->required()
                                     ->reactive()
                                     ->afterStateUpdated(function ($state, callable $set) {
-                                        if ((string)$state === '12') {
+                                        if ((string)$state === 3) {
                                             $set('payment_method_id', null);
                                         }
                                     })
                                     ->options([
-                                        12 => 'Unpaid',
-                                        13 => 'Paid',
+                                        3 => 'Unpaid',
+                                        4 => 'Paid',
                                     ])
                                     ->default(function (Order $record): int {
                                         return $record->payment_status_id;
@@ -92,14 +92,14 @@ class ListOrder extends Page implements HasTable
                                     ->native()
                                     ->placeholder('Select Payment Method')
                                     ->relationship('payment_method', 'label')
-                                    ->required(fn (callable $get): bool => (string)$get('payment_status_id') === '13')
+                                    ->required(fn (callable $get): bool => (string)$get('payment_status_id') === 4)
                                     ->default(function (Order $record): ?int {
                                         return $record->payment_method_id;
                                     })
-                                    ->disabled(fn (callable $get) => (string)$get('payment_status_id') === '12')
+                                    ->disabled(fn (callable $get) => (string)$get('payment_status_id') === 3)
                             ])
                             ->action(function (Order $record, array $data): void {
-                                $data['payment_method_id'] = (string)$data['payment_status_id'] === '12' ? null : $data['payment_method_id'];
+                                $data['payment_method_id'] = (string)$data['payment_status_id'] === 3 ? null : $data['payment_method_id'];
                                 $record->update([
                                     'payment_status_id' => $data['payment_status_id'],
                                     'payment_method_id' => $data['payment_method_id'],
@@ -133,8 +133,8 @@ class ListOrder extends Page implements HasTable
                 SelectFilter::make('payment_status_id')
                     ->label('Payment')
                     ->options([
-                        13 => 'Paid',
-                        12 => 'Unpaid',
+                        3 => 'Paid',
+                        4 => 'Unpaid',
                     ]),
                 SelectFilter::make('status_id')
                     ->label('Status')
@@ -152,7 +152,7 @@ class ListOrder extends Page implements HasTable
                     ->url(fn (Order $record): string => "/backend/orders/{$record->id}/edit"),
                 Tables\Actions\DeleteAction::make()
                     ->action(function ($record) {
-                        $record->update(['status_id' => 11]);
+                        $record->update(['status_id' => 99]);
                     }),
             ])
             ->bulkActions([
@@ -164,7 +164,7 @@ class ListOrder extends Page implements HasTable
                         ->requiresConfirmation()
                         ->action(function ($records) {
                             $records->each(function ($record) {
-                                $record->update(['status_id' => 11]);
+                                $record->update(['status_id' => 99]);
                             });
                         })
                 ]),

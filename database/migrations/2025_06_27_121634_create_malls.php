@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('mall_statuses', function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('label');
+            $table->string('description')->nullable();
+            $table->boolean('is_system')->default(false);
+            $table->timestamps();
+        });
+
         Schema::create('malls', function (Blueprint $table) {
             $table->id();
             $table->integer('status_id')->default(1);

@@ -107,7 +107,7 @@ class MealResource extends Resource
                     ->icon('heroicon-o-trash')
                     ->requiresConfirmation()
                     ->action(function (Meal $record) {
-                        $record->update(['status_id' => 11]);
+                        $record->update(['status_id' => 99]);
                     })
             ])
             ->bulkActions([
@@ -119,7 +119,7 @@ class MealResource extends Resource
                         ->requiresConfirmation()
                         ->action(function ($records) {
                             $records->each(function ($record) {
-                                $record->update(['status_id' => 11]);
+                                $record->update(['status_id' => 99]);
                             });
                         })
                 ]),

@@ -34,12 +34,12 @@ class Order extends Model
 
     public function status()
     {
-        return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
+        return $this->belongsTo(OrderStatus::class, 'status_id', 'id');
     }
 
     public function payment_status()
     {
-        return $this->belongsTo(AttrStatus::class, 'payment_status_id', 'id');
+        return $this->belongsTo(OrderStatus::class, 'payment_status_id', 'id');
     }
 
     public function payment_method()

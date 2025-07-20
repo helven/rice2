@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('customer_statuses', function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('label');
+            $table->string('description')->nullable();
+            $table->boolean('is_system')->default(false);
+            $table->timestamps();
+        });
+
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
             $table->integer('status_id')->default(1);
@@ -29,5 +37,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('customers');
+        Schema::dropIfExists('customers_statuses');
     }
 };

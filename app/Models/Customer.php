@@ -13,7 +13,7 @@ class Customer extends Model
         'name',
         'contact',
         'payment_method_id',
-        'status'
+        'status_id'
     ];
 
     /**
@@ -34,7 +34,7 @@ class Customer extends Model
 
     public function status()
     {
-        return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
+        return $this->belongsTo(CustomerStatus::class, 'status_id', 'id');
     }
 
     public function state()

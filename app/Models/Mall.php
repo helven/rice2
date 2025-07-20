@@ -17,7 +17,7 @@ class Mall extends Model
 
     public function status()
     {
-        return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
+        return $this->belongsTo(MallStatus::class, 'status_id', 'id');
     }
 
     public function paymentMethod()

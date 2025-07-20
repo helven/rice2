@@ -25,6 +25,6 @@ class Driver extends Model
 
     public function status()
     {
-        return $this->belongsTo(AttrStatus::class, 'status_id', 'id');
+        return $this->belongsTo(DriverStatus::class, 'status_id', 'id');
     }
 }

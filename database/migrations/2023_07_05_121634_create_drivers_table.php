@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('driver_statuses', function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('label');
+            $table->string('description')->nullable();
+            $table->boolean('is_system')->default(false);
+            $table->timestamps();
+        });
+
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
             $table->integer('status_id')->default(1);
@@ -32,5 +40,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('drivers');
+        Schema::dropIfExists('driver_statuses');
     }
 };
