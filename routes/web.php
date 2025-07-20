@@ -29,10 +29,18 @@ Route::get('/ok-banana-rice', function () {
         'message' => 'All caches cleared and rebuilt successfully.',
     ]);
 });
+$fn_web_domain = function($name)
+{
+    $base   = env('APP_DIR', '');
+    $base   = ($base != '')?$base.'/':$base;
 
-Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
-    return view('dashboard');
-})->name('dashboard');
+    require __DIR__.'/web_admin.php';
+
+    Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+};
+
 
 // Subdomain routes
 Route::domain('admin.' . str_replace(['http://', 'https://', 'www.'], '', config('app.url')))->group(function () {
@@ -57,3 +65,5 @@ Route::domain('api.' . str_replace(['http://', 'https://', 'www.'], '', config('
         return 'About page for api subdomain';
     });
 });
+
+Route::domain(config('app.domain'))->group($fn_web_domain);
