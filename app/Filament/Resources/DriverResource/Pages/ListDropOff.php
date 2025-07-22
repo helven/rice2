@@ -36,7 +36,7 @@ class ListDropOff extends ListRecords
         return $table
             ->query($this->query())
             ->recordUrl(fn(Order $record): string => "/backend/orders/{$record->id}/edit")
-            //->searchable(true)
+//->searchable(true)
             //->header(view('filament.tables.order-search-header'))
             ->headerActions([
                 Action::make('printDropOff')
@@ -45,6 +45,20 @@ class ListDropOff extends ListRecords
                     ->icon('heroicon-o-printer')
                     ->url(function () {
                         $params = [];
+
+                        $search = $this->getTableSearch();
+                        if ($search) {
+                            $params['search'] = $search;
+                        }
+
+                        $orderIdFrom = $this->getTableFilterState('order_id_range')['order_id_from'] ?? null;
+                        $orderIdTo = $this->getTableFilterState('order_id_range')['order_id_to'] ?? null;
+                        if ($orderIdFrom) {
+                            $params['order_id_from'] = $orderIdFrom;
+                        }
+                        if ($orderIdTo) {
+                            $params['order_id_to'] = $orderIdTo;
+                        }
 
                         $todaysDropoffFilter = $this->getTableFilterState('todays_dropoff');
                         if ($todaysDropoffFilter && isset($todaysDropoffFilter['isActive']) && $todaysDropoffFilter['isActive']) {
