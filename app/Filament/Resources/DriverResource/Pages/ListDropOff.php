@@ -17,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
 use Filament\Tables\Actions\Action;
+use Livewire\Attributes\Url;
 
 class ListDropOff extends ListRecords
 {
@@ -24,11 +25,19 @@ class ListDropOff extends ListRecords
     protected static ?string $navigationLabel = 'Drop Off';
     protected static ?string $title = 'Drop Off';
 
+    #[Url]
+    public $orderIdFrom = '';
+
+    #[Url]
+    public $orderIdTo = '';
+
     public function table(Table $table): Table
     {
         return $table
             ->query($this->query())
-            ->recordUrl(fn (Order $record): string => "/backend/orders/{$record->id}/edit")
+            ->recordUrl(fn(Order $record): string => "/backend/orders/{$record->id}/edit")
+            //->searchable(true)
+            //->header(view('filament.tables.order-search-header'))
             ->headerActions([
                 Action::make('printDropOff')
                     ->label('Print Drop Off')
@@ -36,33 +45,42 @@ class ListDropOff extends ListRecords
                     ->icon('heroicon-o-printer')
                     ->url(function () {
                         $params = [];
-                        
+
                         $todaysDropoffFilter = $this->getTableFilterState('todays_dropoff');
                         if ($todaysDropoffFilter && isset($todaysDropoffFilter['isActive']) && $todaysDropoffFilter['isActive']) {
                             $params['date'] = now()->format('Y-m-d');
                         }
-                        
+
                         $statusFilter = $this->getTableFilterState('status_id');
                         if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
                             $params['status_id'] = $statusFilter['value'];
                         }
-                        
+
                         $customerFilter = $this->getTableFilterState('customer');
                         if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
                             $params['customer'] = $customerFilter['value'];
                         }
-                        
+
                         $driverFilter = $this->getTableFilterState('driver');
                         if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
                             $params['driver'] = $driverFilter['value'];
                         }
-                        
+
                         return route('admin.order.print_dropoff', $params);
                     }, true),
             ])
             ->columns([
                 TextColumn::make('formatted_id')
                     ->label('Order No')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        // If the search term starts with zeros, make it an exact match after stripping zeros
+                        if (str_starts_with($search, '0')) {
+                            $searchWithoutLeadingZeros = ltrim($search, '0');
+                            return $query->where('id', '=', $searchWithoutLeadingZeros);
+                        }
+                        // Otherwise, do a partial match
+                        return $query->where('id', 'like', "%{$search}%");
+                    })
                     ->sortable(),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
@@ -97,7 +115,7 @@ class ListDropOff extends ListRecords
                             ->action(function (Order $record, array $data): void {
                                 $record->update(['dropoff_time' => $data['dropoff_time']]);
                             })
-                            ->fillForm(fn (Order $record): array => [
+                            ->fillForm(fn(Order $record): array => [
                                 'dropoff_time' => $record->dropoff_time,
                             ])
                     ),
@@ -117,7 +135,7 @@ class ListDropOff extends ListRecords
                         }
                         return new HtmlString(
                             '<span class="font-bold">' . e($record->address->name) . '</span><br />' .
-                            e($record->address->address_1).', '.e($record->address->city)
+                                e($record->address->address_1) . ', ' . e($record->address->city)
                         );
                     })
                     ->html(),
@@ -142,35 +160,49 @@ class ListDropOff extends ListRecords
                         return $query
                             ->when(
                                 $data['order_id_from'],
-                                fn (Builder $query, $value): Builder => $query->where('id', '>=', $value),
+                                fn(Builder $query, $value): Builder => $query->where('id', '>=', $value),
                             )
                             ->when(
                                 $data['order_id_to'],
-                                fn (Builder $query, $value): Builder => $query->where('id', '<=', $value),
+                                fn(Builder $query, $value): Builder => $query->where('id', '<=', $value),
                             );
                     }),
                 Tables\Filters\Filter::make('todays_dropoff')
                     ->label("Today's Drop Off")
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->whereDate('delivery_date', now())),
+                    ->query(fn(Builder $query): Builder => $query->whereDate('delivery_date', now())),
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options([
                         1 => 'Active',
                         2 => 'Inactive',
                     ]),
-                SelectFilter::make('customer')
-                    ->relationship('customer', 'name'),
                 SelectFilter::make('driver')
                     ->relationship('driver', 'name'),
+                SelectFilter::make('customer')
+                    ->relationship('customer', 'name'),
             ])
             ->defaultSort('delivery_date', 'desc');
-            // Removed separate actions column as requested
+        // Removed separate actions column as requested
     }
 
     protected function query(): Builder
     {
-        return Order::query()->whereIn('status_id', [1, 2]);
+        $query = Order::query()
+            ->with(['customer', 'driver'])
+            ->whereNotNull('dropoff_time')
+            ->orderBy('delivery_date', 'desc')
+            ->orderBy('dropoff_time', 'desc');
+
+        //if (!empty($this->orderIdFrom)) {
+        //    $query->where('id', '>=', $this->orderIdFrom);
+        //}
+
+        //if (!empty($this->orderIdTo)) {
+        //    $query->where('id', '<=', $this->orderIdTo);
+        //}
+
+        return $query;
     }
 
     protected function getHeaderActions(): array
@@ -181,7 +213,7 @@ class ListDropOff extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            '/'.config('filament.path', 'backend').'/drivers' => 'Drivers',
+            '/' . config('filament.path', 'backend') . '/drivers' => 'Drivers',
             '' => 'Drop Off',
         ];
     }
