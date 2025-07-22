@@ -27,3 +27,24 @@ td.fi-ta-actions-cell {
 .fi-form-actions > div {
     justify-content: center !important;
 }
+@font-face {
+  font-family: Calibri;
+  src: url(/fonts/calibri.ttf?ab3ba6d39bf555222bd49fd4cd9fdfe5);
+}
+@media screen {
+  .print_page_title {
+    margin-bottom: 20px;
+  }
+  .print_pagebreak {
+    border: 1px dashed #CCC;
+    margin: 50px 0;
+  }
+}
+@media print {
+  .print_page_title {
+    display: none;
+  }
+  .print_pagebreak {
+    page-break-before: always;
+  }
+}

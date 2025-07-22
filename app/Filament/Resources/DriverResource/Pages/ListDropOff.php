@@ -29,6 +29,37 @@ class ListDropOff extends ListRecords
         return $table
             ->query($this->query())
             ->recordUrl(fn (Order $record): string => "/backend/orders/{$record->id}/edit")
+            ->headerActions([
+                Action::make('printDropOff')
+                    ->label('Print Drop Off')
+                    ->button()
+                    ->icon('heroicon-o-printer')
+                    ->url(function () {
+                        $params = [];
+                        
+                        $todaysDropoffFilter = $this->getTableFilterState('todays_dropoff');
+                        if ($todaysDropoffFilter && isset($todaysDropoffFilter['isActive']) && $todaysDropoffFilter['isActive']) {
+                            $params['date'] = now()->format('Y-m-d');
+                        }
+                        
+                        $statusFilter = $this->getTableFilterState('status_id');
+                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+                            $params['status_id'] = $statusFilter['value'];
+                        }
+                        
+                        $customerFilter = $this->getTableFilterState('customer');
+                        if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
+                            $params['customer'] = $customerFilter['value'];
+                        }
+                        
+                        $driverFilter = $this->getTableFilterState('driver');
+                        if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
+                            $params['driver'] = $driverFilter['value'];
+                        }
+                        
+                        return route('admin.order.print_dropoff', $params);
+                    }, true),
+            ])
             ->columns([
                 TextColumn::make('formatted_id')
                     ->label('Order No')
