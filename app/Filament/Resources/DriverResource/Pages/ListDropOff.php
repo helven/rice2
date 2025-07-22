@@ -127,6 +127,28 @@ class ListDropOff extends ListRecords
                     ->toggleable(true),
             ])
             ->filters([
+                Tables\Filters\Filter::make('order_id_range')
+                    ->form([
+                        TextInput::make('order_id_from')
+                            ->label('Order No From')
+                            ->numeric()
+                            ->placeholder('e.g., 3'),
+                        TextInput::make('order_id_to')
+                            ->label('Order No To')
+                            ->numeric()
+                            ->placeholder('e.g., 10'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['order_id_from'],
+                                fn (Builder $query, $value): Builder => $query->where('id', '>=', $value),
+                            )
+                            ->when(
+                                $data['order_id_to'],
+                                fn (Builder $query, $value): Builder => $query->where('id', '<=', $value),
+                            );
+                    }),
                 Tables\Filters\Filter::make('todays_dropoff')
                     ->label("Today's Drop Off")
                     ->toggle()
