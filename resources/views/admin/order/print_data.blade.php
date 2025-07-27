@@ -15,7 +15,9 @@
                 <div class="print_pagebreak"></div>
                 <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page">
             <?php } ?>
+
             @include('admin.order.partials.print_data_order_item', ['order' => $order, 'page_item_ctr' => $page_item_ctr])
+
             <?php $page_item_ctr++; ?>
         <?php } ?>
     </div>

@@ -74,8 +74,6 @@ class OrderController extends AdminController
      */
     function printData()
     {
-        //\Debugbar::disable();
-
         $query = Order::query();
 
         $query
@@ -106,8 +104,6 @@ class OrderController extends AdminController
      */
     function printDropOff()
     {
-        //\Debugbar::disable();
-
         $query = Order::query();
 
         $query
@@ -167,8 +163,6 @@ class OrderController extends AdminController
      */
     function printDriverSheet1()
     {
-        //\Debugbar::disable();
-
         $query = Order::query();
 
         $query
@@ -182,61 +176,10 @@ class OrderController extends AdminController
             ->orderBy('id')
             ->orderBy('address_id');
 
-        if (request()->has('date_range') && !empty(request()->get('date_range'))) {
-            switch (request()->get('date_range')) {
-                case 'today':
-                    $query->where('delivery_date', '=', date('Y-m-d'));
-                    break;
-                case 'week':
-                    $query->where('delivery_date', '>=', date('Y-m-d', strtotime('last sunday')));
-                    $query->where('delivery_date', '<=', date('Y-m-d', strtotime('next sunday')));
-                    break;
-                case 'month':
-                    $query->where('delivery_date', '>=', date('Y-m-01'));
-                    $query->where('delivery_date', '<=', date('Y-m-d'));
-                    break;
-                case 'custom':
-                    $query->where('delivery_date', '>=', request()->get('start_date'));
-                    $query->where('delivery_date', '<=', request()->get('end_date'));
-                    break;
-            }
-        }
-
-
-        // Driver ID filter
-        if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
-            if (is_array(request()->get('driver_id'))) {
-                $driver_ids = array_filter(request()->get('driver_id'));
-                if (!empty($driver_ids)) {
-                    $query->whereIn('driver_id', $driver_ids);
-                }
-            } else {
-                $query->where('driver_id', request()->get('driver_id'));
-            }
-        }
-
-        // Order number range filter
-        if (
-            request()->has('sorder_no') && request()->get('sorder_no') != '' &&
-            request()->has('eorder_no') && request()->get('eorder_no') != ''
-        ) {
-
-            $start_order = request()->get('sorder_no');
-            $end_order = request()->get('eorder_no');
-
-            // Add suffix if no dash present
-            if (strpos($end_order, '-') === false) {
-                $end_order .= '-999';
-            }
-
-            $query->whereBetween('id', [$start_order, $end_order]);
-        }
-
-        if (request()->has('delivery_date') && !empty(request()->get('delivery_date'))) {
-            $query->where('delivery_date', request()->get('delivery_date'));
-        }
+        $this->applyOrderFilters($query);
 
         $orders_list = $query->get();
+
         // SPLIT list by driver
         $this->v_data['orders_list'] = array();
         foreach ($orders_list as $order) {
@@ -280,59 +223,24 @@ class OrderController extends AdminController
      */
     function printDriverSheet2()
     {
-        //\Debugbar::disable();
+        $query = Order::query();
 
-        $m_import_order = new Order();
+        $query
+            ->with([
+                'driver',
+                'customer',
+                'address.mall',
+                'address.area'
+            ])
+            ->orderBy('arrival_time')
+            ->orderBy('id')
+            ->orderBy('address_id');
 
-        $where  = '';
-        $a_qvar = array();
+        $this->applyOrderFilters($query);
 
-        if (request()->has('batch_id') && !empty(request()->get('batch_id'))) {
-            $where  .= "    AND import_orders_batch.id = :id";
-            $a_qvar['id']   = request()->get('batch_id');
-        }
+        $orders_list = $query->get();
 
-        $this->v_data['import_orders_batch']   = $m_import_order->getOrderBatch(array(
-            'where' => $where,
-            'qvar'  => $a_qvar
-        ));
-
-        $where  = '';
-        $a_qvar = array();
-
-        if (request()->has('batch_id') && !empty(request()->get('batch_id'))) {
-            $where  .= "    AND import_orders.batch_id = :batch_id";
-            $a_qvar['batch_id']   = request()->get('batch_id');
-        }
-        if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
-            if (is_array(request()->get('driver_id'))) {
-                $driver_id = implode(',', request()->get('driver_id'));
-                if ($driver_id != '') {
-                    $where  .= "    AND import_orders.driver_id IN({$driver_id})";
-                }
-            } else {
-                $where  .= "    AND import_orders.driver_id = :driver_id";
-                $a_qvar['driver_id']    = request()->get('driver_id');
-            }
-        }
-        if (request()->has('sorder_no') && request()->get('sorder_no') != '' && request()->has('eorder_no') && request()->get('eorder_no') != '') {
-            $where  .= "    AND import_orders.order_no BETWEEN :sorder_no AND :eorder_no";
-            $a_qvar['sorder_no']     = request()->get('sorder_no');
-            // if(strpos($a_qvar['sorder_no'], '-') === FALSE){
-            //     $a_qvar['sorder_no']    .= '-000';
-            // }
-
-            $a_qvar['eorder_no']    = request()->get('eorder_no');
-            if (strpos($a_qvar['eorder_no'], '-') === FALSE) {
-                $a_qvar['eorder_no']    .= '-999';
-            }
-        }
-
-        $this->v_data['import_orders_list']  = $m_import_order->getOrderList(array(
-            'where' => $where,
-            'qvar'  => $a_qvar,
-            'order' => "    ORDER BY drivers.name ASC, import_orders.order_no ASC"
-        ));
+        $this->v_data['orders_list'] = $orders_list;
 
         return view('admin.import_order.print_driver_sheet_2', $this->v_data);
     }

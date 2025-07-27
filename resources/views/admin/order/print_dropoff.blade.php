@@ -4,9 +4,9 @@
 <?php }else{ ?>
     <div class="print_page_title">Driver Sheet, please select <b>Landscape</b>, A4 paper for best printing result</div>
     <?php $driver_per_page = 4;?>
-    <?php $page_ctr = 0; ?>
     <?php $driver_per_row = 2;?>
-    <?php $row_ctr = 0;?>
+
+    <?php $page_ctr = 0; ?>
     <?php $page_item_ctr = 0;?>
     <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
         <?php foreach($orders_list as $driver => $orders){ ?>
@@ -17,7 +17,6 @@
                 </div>
                 <div class="print_pagebreak"></div>
                 <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
-                <?php //$current_page++;?>
             <?php } ?>
             
             @include('admin.order.partials.print_dropoff_item', ['driver_id' => $driver_id, 'orders' => $orders, 'page_item_ctr' => $page_item_ctr])
