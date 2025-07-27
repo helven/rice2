@@ -50,6 +50,7 @@ class EditOrder extends Page
 
     public array $data = [];
     public ?Order $order = null;
+    public array $modalData = [];
 
     public function mount($id): void
     {
@@ -107,7 +108,7 @@ class EditOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Customer::query()->pluck('name', 'id'))
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $set('address_id', null);
                                 }),
@@ -118,6 +119,7 @@ class EditOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->allowHtml()
+                                ->live()
                                 ->disabled(fn (callable $get): bool => blank($get('customer_id')))
                                 //->dehydrated(fn (callable $get): bool => filled($get('customer_id')))
                                 ->options(function (callable $get) {
@@ -152,9 +154,10 @@ ob_start();?>
                     DateTimePicker::make('delivery_date')
                         ->label('Delivery Date')
                         ->required()
-                        ->minDate(\Carbon\Carbon::now())
+                        //->minDate(\Carbon\Carbon::now())
                         ->timezone('Asia/Kuala_Lumpur')
                         ->displayFormat('Y/m/d') // 12-hour with AM/PM (K = AM/PM)
+                        ->live()
             ]),
             Section::make('Add Order')
                 ->collapsible()
@@ -182,6 +185,7 @@ ob_start();?>
                                 ->searchable()
                                 ->preload()
                                 ->options(Meal::query()->where('status_id', 1)->pluck('name', 'id'))
+                                ->live()
                                 ->columnSpan(2),
                             TextInput::make('normal')
                                 ->label('Normal')
@@ -189,7 +193,7 @@ ob_start();?>
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('normal', $state);
@@ -201,7 +205,7 @@ ob_start();?>
                                     ->numeric()
                                     ->default(0)
                                     ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                    ->reactive()
+                                    ->live()
                                     ->afterStateUpdated(function ($state, callable $set) {
                                         $state = (int)ltrim($state, '0') ?: 0;
                                         $set('big', $state);
@@ -214,7 +218,7 @@ ob_start();?>
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('small', $state);
@@ -227,7 +231,7 @@ ob_start();?>
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('s_small', $state);
@@ -240,7 +244,7 @@ ob_start();?>
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('no_rice', $state);
@@ -255,7 +259,7 @@ ob_start();?>
                         ->default(0.00)
                         ->prefix('RM')
                         ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->reactive()
+                        ->live()
                         ->afterStateUpdated(function ($state, callable $set) {
                             $state = (int)ltrim($state, '0') ?: 0;
                             $set('total_amount', $state);
@@ -264,6 +268,7 @@ ob_start();?>
                     Textarea::make('notes')
                         ->label('Notes')
                         ->rows(5)
+                        ->live()
                 ]),
             Section::make('Driver Information')
                 ->collapsible()
@@ -280,6 +285,7 @@ ob_start();?>
                                 ->displayFormat('h:i A') // 12-hour with AM/PM (K = AM/PM)
                                 ->format('H:i')
                                 ->withoutSeconds()
+                                ->live()
                         ]),
                     Grid::make(2)
                         ->schema([
@@ -290,7 +296,7 @@ ob_start();?>
                                 ->searchable()
                                 ->preload()
                                 ->options(Driver::query()->pluck('name', 'id'))
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $set('driver_route', null);
                                 }),
@@ -299,6 +305,7 @@ ob_start();?>
                                 ->placeholder('Select Route') 
                                 ->required()
                                 ->searchable()
+                                ->live()
                                 ->options(function (callable $get) {
                                     $driverId = $get('driver_id');
                             
@@ -322,7 +329,7 @@ ob_start();?>
                                 ->searchable()
                                 ->preload()
                                 ->options(Driver::query()->pluck('name', 'id'))
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $set('backup_driver_route', null);
                                 }),
@@ -330,6 +337,7 @@ ob_start();?>
                                 ->label('Route')
                                 ->placeholder('Select Route') 
                                 ->searchable()
+                                ->live()
                                 ->options(function (callable $get) {
                                     $driverId = $get('backup_driver_id');
                             
@@ -349,6 +357,7 @@ ob_start();?>
                         Textarea::make('driver_notes')
                             ->label('Notes')
                             ->rows(5)
+                            ->live()
                 ]),
         ];
     }
@@ -484,6 +493,66 @@ ob_start();?>
             'backup_driver_route' => $this->data['backup_driver_route'] ?? '',
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
+    }
+
+    public function updatedDataCustomerId(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataAddressId(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDeliveryDate(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataMeals(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataTotalAmount(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataNotes(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataArrivalTime(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDriverId(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDriverRoute(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataBackupDriverId(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataBackupDriverRoute(): void
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDriverNotes(): void
+    {
+        $this->modalData = $this->getFormattedData();
     }
 
     public function getBreadcrumbs(): array

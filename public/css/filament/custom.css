@@ -16,6 +16,13 @@ div.fi-input-wrp.rounded-lg {
     border-radius: 0.25rem !important;
 }
 
+.fi-btn[disabled="true"],
+.fi-btn[disabled],
+.fi-btn-secondary[disabled="true"],
+.fi-btn-secondary[disabled] {
+    opacity: 0.5 !important;
+}
+
 .fi-btn-secondary {
     color: #000000 !important;
 }

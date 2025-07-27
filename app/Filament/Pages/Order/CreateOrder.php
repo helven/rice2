@@ -53,6 +53,7 @@ class CreateOrder extends Page
     protected static string $view = 'filament.pages.order.create-order';
 
     public array $data = [];
+    public array $modalData = [];
 
     public function mount(): void
     {
@@ -181,6 +182,9 @@ class CreateOrder extends Page
                 'driver_notes' => 'Sample driver notes',
             ]);
         }
+
+        // Initialize modal data
+        $this->modalData = $this->getFormattedData();
     }
 
     public function form(Form $form): Form
@@ -205,7 +209,7 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Customer::query()->pluck('name', 'id'))
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     // Load driver information based on selected address
                                     if ($state) {
@@ -250,7 +254,7 @@ class CreateOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->allowHtml()
-                                ->reactive()
+                                ->live()
                                 ->disabled(fn(callable $get): bool => blank($get('customer_id')))
                                 ->options(function (callable $get) {
                                     $customerId = $get('customer_id');
@@ -284,7 +288,7 @@ class CreateOrder extends Page
                         ->label('Delivery Date')
                         ->required()
                         ->minDate(\Carbon\Carbon::now())
-                        ->reactive()
+                        ->live()
                         ->afterStateUpdated(function ($state, callable $set) {
                             if (empty($state)) {
                                 $set('meals_by_date', []);
@@ -354,6 +358,7 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Meal::query()->where('status_id', 1)->pluck('name', 'id'))
+                                ->live()
                                 ->columnSpan(2),
                             TextInput::make('normal')
                                 ->label('Normal')
@@ -361,6 +366,7 @@ class CreateOrder extends Page
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
+                                ->live()
                                 ->required(),
                             TextInput::make('big')
                                 ->label('Big')
@@ -368,6 +374,7 @@ class CreateOrder extends Page
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
+                                ->live()
                                 ->required(),
                             TextInput::make('small')
                                 ->label('Small')
@@ -375,6 +382,7 @@ class CreateOrder extends Page
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
+                                ->live()
                                 ->required(),
                             TextInput::make('s_small')
                                 ->label('S.Small')
@@ -382,6 +390,7 @@ class CreateOrder extends Page
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
+                                ->live()
                                 ->required(),
                             TextInput::make('no_rice')
                                 ->label('No Rice')
@@ -389,6 +398,7 @@ class CreateOrder extends Page
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(1000)
+                                ->live()
                                 ->required(),
                         ]),
 
@@ -399,7 +409,7 @@ class CreateOrder extends Page
                         ->default(0.00)
                         ->prefix('RM')
                         ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->reactive()
+                        ->live()
                         ->afterStateUpdated(function ($state, callable $set) {
                             $state = (int)ltrim($state, '0') ?: 0;
                             $set('total_amount', $state);
@@ -408,6 +418,7 @@ class CreateOrder extends Page
                     Textarea::make('notes')
                         ->label('Notes')
                         ->rows(5)
+                        ->live()
                 ])
                 ->columns(1),
             Section::make('Driver Information')
@@ -425,6 +436,7 @@ class CreateOrder extends Page
                                 ->displayFormat('h:i A') // 12-hour with AM/PM (K = AM/PM)
                                 ->format('H:i')
                                 ->withoutSeconds()
+                                ->live()
                         ]),
                     Grid::make(2)
                         ->schema([
@@ -435,7 +447,7 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Driver::query()->pluck('name', 'id'))
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $set('driver_route', null);
                                 }),
@@ -444,6 +456,7 @@ class CreateOrder extends Page
                                 ->placeholder('Select Route')
                                 ->required()
                                 ->searchable()
+                                ->live()
                                 ->options(function (callable $get) {
                                     $driverId = $get('driver_id');
 
@@ -467,7 +480,7 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->options(Driver::query()->pluck('name', 'id'))
-                                ->reactive()
+                                ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $set('backup_driver_route', null);
                                 }),
@@ -475,6 +488,7 @@ class CreateOrder extends Page
                                 ->label('Route')
                                 ->placeholder('Select Route')
                                 ->searchable()
+                                ->live()
                                 ->options(function (callable $get) {
                                     $driverId = $get('backup_driver_id');
 
@@ -493,6 +507,7 @@ class CreateOrder extends Page
                     Textarea::make('driver_notes')
                         ->label('Notes')
                         ->rows(5)
+                        ->live()
                 ]),
         ];
     }
@@ -673,6 +688,56 @@ class CreateOrder extends Page
             'backup_driver_route' => $this->data['backup_driver_route'] ?? '',
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
+    }
+
+    public function updatedDataCustomerId()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataAddressId()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDeliveryDateRange()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataMealsByDate()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataArrivalTime()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDriverId()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDriverRoute()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataBackupDriverId()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataBackupDriverRoute()
+    {
+        $this->modalData = $this->getFormattedData();
+    }
+
+    public function updatedDataDriverNotes()
+    {
+        $this->modalData = $this->getFormattedData();
     }
 
     public function getBreadcrumbs(): array
