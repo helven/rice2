@@ -196,19 +196,43 @@ class ListOrder extends Page implements HasTable
                                 'custom' => 'Custom Range'
                             ])
                             ->default('today')
-                            ->reactive()
-                            ->afterStateUpdated(function (callable $set, $state) {
-                                if ($state !== 'custom') {
-                                    $set('start_date', null);
-                                    $set('end_date', null);
-                                }
-                            }),
+                            ->placeholder(false)
+                            ->selectablePlaceholder(false)
+                            ->live(),
+                            //->extraAttributes([
+                            //    'x-data' => '{ 
+                            //        rangeType: "today",
+                            //        toggleDateFields(type) {
+                            //            const startField = document.querySelector(".fi-fo-field-wrp:has(.from-date-field)");
+                            //            const endFie.d = document.querySelector(".fi-fo-field-wrp:has(.to-date-field)");
+                            //            if (startField && endField) {
+                            //                if (type === "custom") {
+                            //                    startField.style.display = "block";
+                            //                    endField.style.display = "block";
+                            //                } else {
+                            //                    startField.style.display = "none";
+                            //                    endField.style.display = "none";
+                            //                }
+                            //            }
+                            //        }
+                            //    }',
+                            //    'x-init' => '$nextTick(() => toggleDateFields(rangeType))',
+                            //    'x-on:change' => 'rangeType = $event.target.value; toggleDateFields(rangeType)'
+                            //]),
                         DatePicker::make('start_date')
                             ->label('From Date')
+                            ->extraAttributes([
+                                'class' => 'custom-date-picker from-date-field',
+                                'id' => 'txt_StartDate'
+                            ])
                             ->visible(fn (callable $get) => $get('range_type') === 'custom')
                             ->required(fn (callable $get) => $get('range_type') === 'custom'),
                         DatePicker::make('end_date')
                             ->label('To Date')
+                            ->extraAttributes([
+                                'class' => 'custom-date-picker to-date-field',
+                                'id' => 'txt_EndDate'
+                            ])
                             ->visible(fn (callable $get) => $get('range_type') === 'custom')
                             ->required(fn (callable $get) => $get('range_type') === 'custom')
                             ->afterOrEqual('start_date')
