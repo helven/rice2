@@ -11,8 +11,12 @@ b {
   font-weight: 700;
 }
 
-div.print_page {
+div.print_page_portrait {
   width: 790px;
+}
+
+div.print_page_landscape {
+  /*width: 1111.2px;*/
 }
 
 div.page_row {
@@ -61,6 +65,7 @@ table.order_detail tbody tr:last-child td {
 @media screen {
   body {
     min-width: 1710px;
+    padding: 40px;
   }
 
   .screen_50px {
@@ -95,12 +100,8 @@ table.order_detail tbody tr:last-child td {
     width: 120px;
   }
 
-  body {
-    padding: 40px;
-  }
-
-  div.driver_sheet_container {
-    width: 800px;
+  div.print_page_landscape {
+    width: 1600px;
   }
 }
 

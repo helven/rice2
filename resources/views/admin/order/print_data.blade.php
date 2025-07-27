@@ -6,18 +6,18 @@
     <?php $order_per_page = 4; ?>
     <?php $page_ctr = 0; ?>
     <?php $page_item_ctr = 0; ?>
-    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page">
+    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
         <?php foreach ($orders_list as $order) { ?>
             <?php if ($page_item_ctr >= $order_per_page) { ?>
                 <?php $page_item_ctr = 0; ?>
                 <?php $page_ctr++; ?>
-    </div>
-    <div class="print_pagebreak"></div>
-    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page">
-    <?php } ?>
-    @include('admin.order.partials.print_data_order_item', ['order' => $order, 'page_item_ctr' => $page_item_ctr])
-    <?php $page_item_ctr++; ?>
-<?php } ?>
+                </div>
+                <div class="print_pagebreak"></div>
+                <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page">
+            <?php } ?>
+            @include('admin.order.partials.print_data_order_item', ['order' => $order, 'page_item_ctr' => $page_item_ctr])
+            <?php $page_item_ctr++; ?>
+        <?php } ?>
     </div>
 <?php } ?>
 @section('style')
