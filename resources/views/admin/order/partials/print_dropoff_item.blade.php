@@ -1,4 +1,4 @@
-<div id="div_Order-{{ $driver_id }}" class="col-6 driver_sheet">
+<div class="col-6 driver_sheet">
     <table class="order_detail" border="0" cellspacing="0" cellpadding="0">
         <thead>
             <tr class="thead">

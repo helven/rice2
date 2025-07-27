@@ -19,6 +19,7 @@
                 </div>
                 <div class="print_pagebreak"></div>
                 <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
+                <?php //$current_page++;?>
             <?php } ?>
             
             @include('admin.order.partials.print_driver_sheet_1_item', ['driver_id' => $driver_id, 'orders' => $orders, 'page_item_ctr' => $page_item_ctr])
@@ -34,19 +35,16 @@
         size: A4 landscape;
     }
     div.print_page_landscape {
-    display: grid;
-    gap:10px;
-    grid-template-columns: calc(50% - 10px) calc(50% - 10px);
-}
+        display: grid;
+        gap: 10px;
+        grid-template-columns: calc(50% - 20px) calc(50% - 20px);
+        width: 1600px;
+    }
 
     @media print {
         :root {
-            font-size: 8px;
+            font-size: 12px;
         }
-    }
-
-    div.driver_sheet_container {
-        margin-right: 10px;
     }
 
     div.driver_sheet {

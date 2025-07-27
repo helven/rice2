@@ -242,7 +242,7 @@ class OrderController extends AdminController
 
         $this->v_data['orders_list'] = $orders_list;
 
-        return view('admin.import_order.print_driver_sheet_2', $this->v_data);
+        return view('admin.order.print_driver_sheet_2', $this->v_data);
     }
     /**
      * Print Order Data
@@ -324,6 +324,6 @@ class OrderController extends AdminController
             }
         }
 
-        return view('admin.import_order.print_payment', $this->v_data);
+        return view('admin.order.print_payment', $this->v_data);
     }
 }
