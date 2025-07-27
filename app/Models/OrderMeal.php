@@ -26,6 +26,11 @@ class OrderMeal extends Model
         'no_rice' => 'integer',
     ];
 
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(MealStatus::class);
+    }
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);

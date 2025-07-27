@@ -73,13 +73,36 @@ class Order extends Model
     }
 
     /**
-     * Get the formatted order ID with zero padding
+     * Get the formatted order ID with zero padding and location suffix
      *
      * @return string
      */
     public function getFormattedIdAttribute(): string
     {
         $padding = config('app.order_id_padding', 5);
-        return str_pad($this->id, $padding, '0', STR_PAD_LEFT);
+        $formattedId = str_pad($this->id, $padding, '0', STR_PAD_LEFT);
+        
+        // Append mall_id or area_id from address if available
+        if ($this->address) {
+            if ($this->address->mall_id) {
+                $formattedId .= '-' . str_pad($this->address->mall_id, 3, '0', STR_PAD_LEFT);
+            } elseif ($this->address->area_id && $this->address->area) {
+                $formattedId .= '-' . $this->address->area->postal;
+            }
+        }
+        
+        return $formattedId;
+    }
+
+    /**
+     * Get the total quantity of all meals in this order
+     *
+     * @return int
+     */
+    public function getTotalQtyAttribute(): int
+    {
+        return $this->meals->sum(function ($meal) {
+            return $meal->normal + $meal->big + $meal->small + $meal->s_small + $meal->no_rice;
+        });
     }
 }
