@@ -19,7 +19,6 @@
                 </div>
                 <div class="print_pagebreak"></div>
                 <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
-                <?php //$current_page++;?>
             <?php } ?>
             
             @include('admin.order.partials.print_driver_sheet_1_item', ['driver_id' => $driver_id, 'orders' => $orders, 'page_item_ctr' => $page_item_ctr])
