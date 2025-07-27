@@ -16,7 +16,7 @@ use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
-use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\Action as TableAction;
 use Livewire\Attributes\Url;
 
 class ListDropOff extends ListRecords
@@ -39,7 +39,7 @@ class ListDropOff extends ListRecords
 //->searchable(true)
             //->header(view('filament.tables.order-search-header'))
             ->headerActions([
-                Action::make('printDropOff')
+                TableAction::make('printDropOff')
                     ->label('Print Drop Off')
                     ->button()
                     ->icon('heroicon-o-printer')
@@ -116,7 +116,7 @@ class ListDropOff extends ListRecords
                     ->html()
                     ->sortable()
                     ->action(
-                        Action::make('editDropoffTimeInline')
+                        TableAction::make('editDropoffTimeInline')
                             ->label('Edit Dropoff Time')
                             ->modalHeading('Edit Dropoff Time')
                             ->modalWidth('sm')

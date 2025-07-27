@@ -11,9 +11,12 @@ use Filament\Tables\Table;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Actions\Action;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 
 class ListOrder extends Page implements HasTable
 {
@@ -28,11 +31,62 @@ class ListOrder extends Page implements HasTable
     protected static ?int $navigationSort = 1;
     
     protected static string $view = 'filament.pages.order.list-order';
+    
+    public $dateFilter = 'today';
 
     public function table(Table $table): Table
     {
         return $table
             ->query($this->query())
+            ->headerActions([
+                TableAction::make('printData')
+                    ->label('Print Data')
+                    ->button()
+                    ->icon('heroicon-o-printer')
+                    ->url(function () {
+                        $params = [];
+
+                        $search = $this->getTableSearch();
+                        if ($search) {
+                            $params['search'] = $search;
+                        }
+
+                        $dateRangeFilter = $this->getTableFilterState('date_range');
+                        if ($dateRangeFilter) {
+                            if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
+                                $params['date_range'] = $dateRangeFilter['range_type'];
+                            }
+                            if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
+                                $params['start_date'] = $dateRangeFilter['start_date'];
+                            }
+                            if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
+                                $params['end_date'] = $dateRangeFilter['end_date'];
+                            }
+                        }
+
+                        $statusFilter = $this->getTableFilterState('payment_status_id');
+                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+                            $params['payment_status_id'] = $statusFilter['value'];
+                        }
+
+                        $statusFilter = $this->getTableFilterState('status_id');
+                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+                            $params['status_id'] = $statusFilter['value'];
+                        }
+
+                        $customerFilter = $this->getTableFilterState('customer');
+                        if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
+                            $params['customer'] = $customerFilter['value'];
+                        }
+
+                        $driverFilter = $this->getTableFilterState('driver');
+                        if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
+                            $params['driver'] = $driverFilter['value'];
+                        }
+
+                        return route('admin.order.print_data', $params);
+                    }, true),
+            ])
             ->columns([
                 TextColumn::make('formatted_id')
                     ->label('Order No')
@@ -130,17 +184,90 @@ class ListOrder extends Page implements HasTable
                     ->toggledHiddenByDefault(),
             ])
             ->filters([
-                SelectFilter::make('payment_status_id')
-                    ->label('Payment')
-                    ->options([
-                        3 => 'Paid',
-                        4 => 'Unpaid',
-                    ]),
+                Filter::make('date_range')
+                    ->form([
+                        Select::make('range_type')
+                            ->label('Date Range')
+                            ->options([
+                                'all' => 'All Orders',
+                                'today' => "Today's Order",
+                                'week' => "This week's Order",
+                                'month' => "This month's Order",
+                                'custom' => 'Custom Range'
+                            ])
+                            ->default('today')
+                            ->reactive()
+                            ->afterStateUpdated(function (callable $set, $state) {
+                                if ($state !== 'custom') {
+                                    $set('start_date', null);
+                                    $set('end_date', null);
+                                }
+                            }),
+                        DatePicker::make('start_date')
+                            ->label('From Date')
+                            ->visible(fn (callable $get) => $get('range_type') === 'custom')
+                            ->required(fn (callable $get) => $get('range_type') === 'custom'),
+                        DatePicker::make('end_date')
+                            ->label('To Date')
+                            ->visible(fn (callable $get) => $get('range_type') === 'custom')
+                            ->required(fn (callable $get) => $get('range_type') === 'custom')
+                            ->afterOrEqual('start_date')
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $rangeType = $data['range_type'] ?? 'all';
+                        
+                        if ($rangeType === 'all' || !$rangeType) {
+                            return $query;
+                        }
+                        
+                        return match ($rangeType) {
+                            'today' => $query->whereDate('delivery_date', Carbon::today()),
+                            'week' => $query->whereBetween('delivery_date', [
+                                Carbon::now()->startOfWeek(),
+                                Carbon::now()->endOfWeek()
+                            ]),
+                            'month' => $query->whereBetween('delivery_date', [
+                                Carbon::now()->startOfMonth(),
+                                Carbon::now()->endOfMonth()
+                            ]),
+                            'custom' => $query->when(
+                                $data['start_date'] && $data['end_date'],
+                                fn (Builder $query) => $query->whereBetween('delivery_date', [
+                                    Carbon::parse($data['start_date'])->startOfDay(),
+                                    Carbon::parse($data['end_date'])->endOfDay()
+                                ])
+                            ),
+                            default => $query
+                        };
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        $rangeType = $data['range_type'] ?? 'all';
+                        
+                        if ($rangeType === 'all' || !$rangeType) {
+                            return null;
+                        }
+                        
+                        return match ($rangeType) {
+                            'today' => "Today's Orders",
+                            'week' => "This Week's Orders",
+                            'month' => "This Month's Orders",
+                            'custom' => isset($data['start_date'], $data['end_date']) 
+                                ? 'Custom Range: ' . Carbon::parse($data['start_date'])->format('M j') . ' - ' . Carbon::parse($data['end_date'])->format('M j, Y')
+                                : 'Custom Range',
+                            default => null
+                        };
+                    }),
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options([
                         1 => 'Active',
                         2 => 'Inactive',
+                    ]),
+                SelectFilter::make('payment_status_id')
+                    ->label('Payment')
+                    ->options([
+                        3 => 'Paid',
+                        4 => 'Unpaid',
                     ]),
                 SelectFilter::make('customer')
                         ->relationship('customer', 'name'),
