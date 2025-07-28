@@ -36,6 +36,50 @@ class ListOrder extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        function filterParams($table) {
+            $params = [];
+
+            $search = $table->getTableSearch();
+            if ($search) {
+                $params['search'] = $search;
+            }
+
+            $dateRangeFilter = $table->getTableFilterState('date_range');
+            if ($dateRangeFilter) {
+                if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
+                    $params['date_range'] = $dateRangeFilter['range_type'];
+                }
+                if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
+                    $params['start_date'] = $dateRangeFilter['start_date'];
+                }
+                if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
+                    $params['end_date'] = $dateRangeFilter['end_date'];
+                }
+            }
+
+            $statusFilter = $table->getTableFilterState('payment_status_id');
+            if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+                $params['payment_status_id'] = $statusFilter['value'];
+            }
+
+            $statusFilter = $table->getTableFilterState('status_id');
+            if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+                $params['status_id'] = $statusFilter['value'];
+            }
+
+            $customerFilter = $table->getTableFilterState('customer_id');
+            if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
+                $params['customer_id'] = $customerFilter['value'];
+            }
+
+            $driverFilter = $table->getTableFilterState('driver_id');
+            if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
+                $params['driver_id'] = $driverFilter['value'];
+            }
+            
+            return $params;
+        }
+
         return $table
             ->query($this->query())
             ->headerActions([
@@ -44,45 +88,7 @@ class ListOrder extends Page implements HasTable
                     ->button()
                     ->icon('heroicon-o-printer')
                     ->url(function () {
-                        $params = [];
-
-                        $search = $this->getTableSearch();
-                        if ($search) {
-                            $params['search'] = $search;
-                        }
-
-                        $dateRangeFilter = $this->getTableFilterState('date_range');
-                        if ($dateRangeFilter) {
-                            if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
-                                $params['date_range'] = $dateRangeFilter['range_type'];
-                            }
-                            if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
-                                $params['start_date'] = $dateRangeFilter['start_date'];
-                            }
-                            if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
-                                $params['end_date'] = $dateRangeFilter['end_date'];
-                            }
-                        }
-
-                        $statusFilter = $this->getTableFilterState('payment_status_id');
-                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
-                            $params['payment_status_id'] = $statusFilter['value'];
-                        }
-
-                        $statusFilter = $this->getTableFilterState('status_id');
-                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
-                            $params['status_id'] = $statusFilter['value'];
-                        }
-
-                        $customerFilter = $this->getTableFilterState('customer_id');
-                        if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
-                            $params['customer_id'] = $customerFilter['value'];
-                        }
-
-                        $driverFilter = $this->getTableFilterState('driver_id');
-                        if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
-                            $params['driver_id'] = $driverFilter['value'];
-                        }
+                        $params = filterParams($this);
 
                         return route('admin.order.print_data', $params);
                     }, true),
@@ -92,47 +98,19 @@ class ListOrder extends Page implements HasTable
                     ->button()
                     ->icon('heroicon-o-printer')
                     ->url(function () {
-                         $params = [];
-
-                        $search = $this->getTableSearch();
-                        if ($search) {
-                            $params['search'] = $search;
-                        }
-
-                        $dateRangeFilter = $this->getTableFilterState('date_range');
-                        if ($dateRangeFilter) {
-                            if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
-                                $params['date_range'] = $dateRangeFilter['range_type'];
-                            }
-                            if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
-                                $params['start_date'] = $dateRangeFilter['start_date'];
-                            }
-                            if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
-                                $params['end_date'] = $dateRangeFilter['end_date'];
-                            }
-                        }
-
-                        $statusFilter = $this->getTableFilterState('payment_status_id');
-                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
-                            $params['payment_status_id'] = $statusFilter['value'];
-                        }
-
-                        $statusFilter = $this->getTableFilterState('status_id');
-                        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
-                            $params['status_id'] = $statusFilter['value'];
-                        }
-
-                        $customerFilter = $this->getTableFilterState('customer_id');
-                        if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
-                            $params['customer_id'] = $customerFilter['value'];
-                        }
-
-                        $driverFilter = $this->getTableFilterState('driver_id');
-                        if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
-                            $params['driver_id'] = $driverFilter['value'];
-                        }
+                        $params = filterParams($this);
 
                         return route('admin.order.print_driver_sheet_1', $params);
+                    }, true),
+                
+                TableAction::make('printDriverSheet2')
+                    ->label('Print Driver Sheet 2')
+                    ->button()
+                    ->icon('heroicon-o-printer')
+                    ->url(function () {
+                        $params = filterParams($this);
+
+                        return route('admin.order.print_driver_sheet_2', $params);
                     }, true),
             ])
             ->columns([

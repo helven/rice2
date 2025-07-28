@@ -33,6 +33,26 @@ class OrderController extends AdminController
      */
     private function applyOrderFilters($query)
     {
+        if (request()->has('date_range') && !empty(request()->get('date_range'))) {
+            switch (request()->get('date_range')) {
+                case 'today':
+                    $query->where('delivery_date', '=', date('Y-m-d'));
+                    break;
+                case 'week':
+                    $query->where('delivery_date', '>=', date('Y-m-d', strtotime('last sunday')));
+                    $query->where('delivery_date', '<=', date('Y-m-d', strtotime('next sunday')));
+                    break;
+                case 'month':
+                    $query->where('delivery_date', '>=', date('Y-m-01'));
+                    $query->where('delivery_date', '<=', date('Y-m-d'));
+                    break;
+                case 'custom':
+                    $query->where('delivery_date', '>=', request()->get('start_date'));
+                    $query->where('delivery_date', '<=', request()->get('end_date'));
+                    break;
+            }
+        }
+
         // Driver ID filter
         if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
             if (is_array(request()->get('driver_id'))) {
@@ -126,7 +146,7 @@ class OrderController extends AdminController
             $this->v_data['orders_list']['driver_' . $order->driver->id][]  = $order;
         }
 
-        $orders_per_driver = 3;
+        $orders_per_driver = 20;
         foreach ($this->v_data['orders_list']  as $driver_id => &$driver) {
             if (count($driver) > $orders_per_driver) {
                 $a_temp         = array();

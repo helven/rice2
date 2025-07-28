@@ -32,19 +32,62 @@
     @page {
         size: A4 landscape;
     }
-    div.print_page_landscape {
-        display: grid;
-        gap: 30px;
-        grid-template-columns: calc(50% - 30px) calc(50% - 30px);
-        width: 1464px;
+    body {
+        font-family: 'Calibri';
     }
+        div.print_page_landscape {
+            display: grid;
+            gap: 30px;
+            grid-template-columns: calc(50% - 30px) calc(50% - 30px);
+            /*width: 1464px;*/
+            width: 964px;
+        }
+        div.driver_sheet_container {
+            height: 300px;
+            width: 450px;
+        }
+            div.driver_sheet {
+                border: 1px solid #000;
+                height: 100%;
+                overflow: hidden;
+                position: relative;
+                widtH: 100%;
+            }
+                div.driver_sheet div.order_no,
+                div.driver_sheet div.destination,
+                div.driver_sheet div.name {
+                    line-height: 1.5em;
+                    text-align: center;
+                }
+                div.driver_sheet div.order_no {
+                    font-size: 3.25rem;
+                }
+                div.driver_sheet div.destination {
+                    font-size: 1.15em;
+                }
+                div.driver_sheet div.name {
+                    font-size: 1.4rem;
+                }
+                div.driver_sheet div.driver_name {
+                    font-size: 1rem;
+                }
+                div.driver_sheet > div.driver_sheet_data {
+                    display: flex;
+                    flex-direction: column;
+                    font-weight: 700;
+                    height: 100%;
+                    justify-content: center;
+                    margin: 0 20px;
+                    width: calc(100% - 40px);
+                }
+                div.driver_sheet div.driver_name {
+                    bottom: 5px;
+                    position: absolute;
+                    right: 10px;
+                }
     @media screen {
         body {
             padding: 40px;
-        }
-        div.driver_sheet_container {
-            height: 500px;
-            width: 700px;
         }
     }
     @media print {
@@ -55,51 +98,23 @@
             height: calc(50vh - 20px);
             width: calc(50vw - 20px);
         }
-    }
-    body {
-        font-family: 'Calibri';
-    }
-        div.driver_sheet {
-            border: 1px solid #000;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-            widtH: 100%;
+        div.driver_sheet div.order_no,
+        div.driver_sheet div.destination,
+        div.driver_sheet div.name {
+            line-height: 1.5em;
         }
-            div.driver_sheet > div.driver_sheet_data {
-                display: flex;
-                flex-direction: column;
-                font-weight: 700;
-                height: 100%;
-                justify-content: center;
-                margin: 0 20px;
-                /*position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(0, -50%);*/
-                width: calc(100% - 40px);
-            }
-                div.driver_sheet div.order_no,
-                div.driver_sheet div.destination,
-                div.driver_sheet div.name {
-                    line-height: 1.5em;
-                    text-align: center;
-                }
-                div.driver_sheet div.order_no {
-                    font-size: 4.5rem;
-                }
-                div.driver_sheet div.destination {
-                    font-size: 1.6rem;
-                }
-                div.driver_sheet div.name {
-                    font-size: 1.9rem;
-                }
-
-            div.driver_sheet div.driver_name {
-                bottom: 5px;
-                font-size: 1rem;
-                position: absolute;
-                right: 10px;
-            }
+        div.driver_sheet div.order_no {
+            font-size: 5.4rem;
+        }
+        div.driver_sheet div.destination {
+            font-size: 1.92rem;
+        }
+        div.driver_sheet div.name {
+            font-size: 2.3rem;
+        }
+        div.driver_sheet div.driver_name {
+            font-size: 1.2rem;
+        }
+    }
 </style>
 @endsection
