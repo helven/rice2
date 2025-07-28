@@ -92,7 +92,8 @@ class CreateOrder extends Page
             $tomorrow = \Carbon\Carbon::tomorrow();
             $dayAfterTomorrow = \Carbon\Carbon::tomorrow()->addDay();
             $twoDaysLater = \Carbon\Carbon::tomorrow()->addDays(2); // 3 days after dayAfterTomorrow
-            $deliveryDateRange = $tomorrow->format('Y/m/d') . ' - ' . $twoDaysLater->format('Y/m/d');
+            $threeDaysLater = \Carbon\Carbon::tomorrow()->addDays(3); // 3 days after dayAfterTomorrow
+            $deliveryDateRange = $tomorrow->format('Y/m/d') . ' - ' . $threeDaysLater->format('Y/m/d');
 
             // Get two different meals for variety
             $defaultMeal = Meal::where('status_id', 1)->first();
@@ -152,6 +153,29 @@ class CreateOrder extends Page
                     ],
                     [
                         'date' => $twoDaysLater->format('Y-m-d'),
+                        'meals' => [
+                            [
+                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
+                                'normal' => 1,
+                                'big' => 2,
+                                'small' => 1,
+                                's_small' => 1,
+                                'no_rice' => 0,
+                            ],
+                            [
+                                'meal_id' => $secondMeal ? $secondMeal->id : '',
+                                'normal' => 2,
+                                'big' => 0,
+                                'small' => 1,
+                                's_small' => 0,
+                                'no_rice' => 1,
+                            ]
+                        ],
+                        'total_amount' => 120.00,
+                        'notes' => 'Sample order notes for day 3'
+                    ],
+                    [
+                        'date' => $threeDaysLater->format('Y-m-d'),
                         'meals' => [
                             [
                                 'meal_id' => $defaultMeal ? $defaultMeal->id : '',
