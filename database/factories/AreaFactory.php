@@ -14,7 +14,7 @@ class AreaFactory extends Factory
         return [
             'name' => 'Area: '.fake()->city(),
             'status_id' => fake()->randomElement([1, 2]),
-            'postal' => fake()->postcode(),
+            'postal' => fake()->numerify('#####'),
             'delivery_fee' => [
                 ['qty' => 1, 'delivery_fee' => fake()->numberBetween(4, 6)],
                 ['qty' => 2, 'delivery_fee' => fake()->numberBetween(3, 5)],

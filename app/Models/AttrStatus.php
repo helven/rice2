@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AttrStatus extends Model
 {
-    protected $table = 'attr_status';
+    protected $table = 'attr_statuses';
     public $timestamps = false;
     
     protected $fillable = [

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAttrStatusTable extends Migration
+class CreateAttrStatusesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateAttrStatusTable extends Migration
      */
     public function up()
     {
-        Schema::create('attr_status', function (Blueprint $table) {
+        Schema::create('attr_statuses', function (Blueprint $table) {
             $table->id();
             $table->string('key')->index();
             $table->string('label');
@@ -27,6 +27,6 @@ class CreateAttrStatusTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('attr_status');
+        Schema::dropIfExists('attr_statuses');
     }
 }

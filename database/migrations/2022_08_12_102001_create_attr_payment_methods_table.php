@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAttrStateTable extends Migration
+class CreateAttrPaymentMethodsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,11 @@ class CreateAttrStateTable extends Migration
      */
     public function up()
     {
-        Schema::create('attr_state', function (Blueprint $table) {
+        Schema::create('attr_payment_methods', function (Blueprint $table) {
             $table->id();
             $table->string('key')->index();
             $table->string('label');
+            $table->string('name');
         });
     }
 
@@ -27,6 +28,6 @@ class CreateAttrStateTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('attr_state');
+        Schema::dropIfExists('attr_payment_methods');
     }
 }

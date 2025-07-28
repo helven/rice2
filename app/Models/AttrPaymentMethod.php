@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AttrPaymentMethod extends Model
 {
-    protected $table = 'attr_payment_method';
+    protected $table = 'attr_payment_methods';
     public $timestamps = false;
     
     protected $fillable = [
