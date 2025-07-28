@@ -51,7 +51,7 @@
                 <td class="text-end">4</td>
                 <td>(付款方式)</td>
                 <td>Payment</td>
-                <td>{{ $order->payment_method }}</td>
+                <td>{{ $order->payment_method->label }}</td>
                 <td></td>
                 <td class="text-end"><b style="font-size:1.1rem;">{{ $order->total_qty }}</b></td>
             </tr>

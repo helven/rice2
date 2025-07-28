@@ -271,77 +271,32 @@ class OrderController extends AdminController
      */
     function printPayment()
     {
-        //\Debugbar::disable();
+        $query = Order::query();
 
-        $m_import_order = new Order();
+        $query
+            ->with([
+                'driver',
+                'customer',
+                'address.mall',
+                'address.area'
+            ])
+            ->orderBy('arrival_time')
+            ->orderBy('id')
+            ->orderBy('address_id');
 
-        $where  = '';
-        $a_qvar = array();
+        $this->applyOrderFilters($query);
 
-        if (request()->has('batch_id') && !empty(request()->get('batch_id'))) {
-            $where  .= "    AND import_orders_batch.id = :id";
-            $a_qvar['id']   = request()->get('batch_id');
-        }
-
-        $this->v_data['import_orders_batch']   = $m_import_order->getOrderBatch(array(
-            'where' => $where,
-            'qvar'  => $a_qvar
-        ));
-
-        $where  = '';
-        $a_qvar = array();
-
-        if (request()->has('batch_id') && !empty(request()->get('batch_id'))) {
-            $where  .= "    AND import_orders.batch_id = :batch_id";
-            $a_qvar['batch_id']   = request()->get('batch_id');
-        }
-        if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
-            if (is_array(request()->get('driver_id'))) {
-                $driver_id = implode(',', request()->get('driver_id'));
-                if ($driver_id != '') {
-                    $where  .= "    AND import_orders.driver_id IN({$driver_id})";
-                }
-            } else {
-                $where  .= "    AND import_orders.driver_id = :driver_id";
-                $a_qvar['driver_id']    = request()->get('driver_id');
-            }
-        }
-        if (request()->has('sorder_no') && request()->get('sorder_no') != '' && request()->has('eorder_no') && request()->get('eorder_no') != '') {
-            $where  .= "    AND import_orders.order_no BETWEEN :sorder_no AND :eorder_no";
-            $a_qvar['sorder_no']     = request()->get('sorder_no');
-            // if(strpos($a_qvar['sorder_no'], '-') === FALSE){
-            //     $a_qvar['sorder_no']    .= '-000';
-            // }
-
-            $a_qvar['eorder_no']    = request()->get('eorder_no');
-            if (strpos($a_qvar['eorder_no'], '-') === FALSE) {
-                $a_qvar['eorder_no']    .= '-999';
-            }
-        }
-
-        $import_orders_list = $m_import_order->getOrderList(array(
-            'where' => $where,
-            'qvar'  => $a_qvar,
-            'order' => "    ORDER BY payment_method ASC, id ASC"
-        ));
-
-        // SPLIT list by batch id method
-        $a_temp = array();
-        foreach ($import_orders_list as $import_orders) {
-            $a_temp['batch_' . $import_orders->batch_id][]  = $import_orders;
-        }
+        $orders_list = $query->get();
 
         // SPLIT list by payment method
         $this->v_data['import_orders_list'] = array();
-        foreach ($a_temp as $key => $a_batch) {
-            foreach ($a_batch as $import_orders) {
-                $payment_method = $import_orders->payment_method;
-                if ($payment_method == '') {
-                    $payment_method = 'NULL_METHOD';
-                }
-                $payment_method = str_replace(array(' ', '-'), '_', $payment_method);
-                $this->v_data['import_orders_list'][$key]['payment_' . $payment_method][]  = $import_orders;
+        foreach ($orders_list as $order) {
+            $payment_method = $order->payment_method->key;
+            if ($payment_method == '') {
+                $payment_method = 'NULL_METHOD';
             }
+            $payments_method = str_replace(array(' ', '-'), '_', $payment_method);
+            $this->v_data['payments_list']['payment_' . $payment_method][]  = $order;
         }
 
         return view('admin.order.print_payment', $this->v_data);

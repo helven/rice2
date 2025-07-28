@@ -11,6 +11,14 @@ b {
   font-weight: 700;
 }
 
+h3 {
+  font-size: calc(1.3rem + 0.6vw);
+  font-weight: 500;
+  line-height: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
 div.print_page_portrait {
   width: 790px;
 }
