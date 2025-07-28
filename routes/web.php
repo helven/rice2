@@ -1,11 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\OrderController;
 
 Route::get('/', function () {
     //return view('welcome');
     return redirect('/'.config('filament.path', 'backend'));
 });
+
+// Fallback login route in case Filament routes are not loaded
+Route::get('/login', function () {
+    $filamentPath = config('filament.path', 'backend');
+    return redirect($filamentPath . '/login');
+})->name('login');
 Route::get('/ok-banana-rice', function () {
     $key = request()->query('key');
     $validKey = env('CACHE_TRIGGER_KEY');
