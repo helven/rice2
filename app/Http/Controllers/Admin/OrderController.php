@@ -289,15 +289,17 @@ class OrderController extends AdminController
         $orders_list = $query->get();
 
         // SPLIT list by payment method
-        $this->v_data['import_orders_list'] = array();
+        $this->v_data['payments_list'] = array();
         foreach ($orders_list as $order) {
             $payment_method = $order->payment_method->key;
             if ($payment_method == '') {
                 $payment_method = 'NULL_METHOD';
             }
             $payments_method = str_replace(array(' ', '-'), '_', $payment_method);
-            $this->v_data['payments_list']['payment_' . $payment_method][]  = $order;
+            $this->v_data['payments_list']['date_'. date('Ymd', strtotime($order->delivery_date))]['payment_' . $payment_method][]  = $order;
+            //$this->v_data['payments_list']['payment_' . $payment_method][]  = $order;
         }
+            //dd($this->v_data['payments_list']);
 
         return view('admin.order.print_payment', $this->v_data);
     }
