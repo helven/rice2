@@ -1,4 +1,5 @@
 @extends('admin.layouts.print')
+@section('content')
 <?php if (!$orders_list) { ?>
     <div class="print_page_title">No Order found.</div>
 <?php } else { ?>
@@ -28,6 +29,7 @@
         <?php } ?>
     </div>
 <?php } ?>
+@endsection
 @section('style')
 @parent
 <style>

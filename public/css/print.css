@@ -27,6 +27,10 @@ div.print_page_landscape {
   /*width: 1111.2px;*/
 }
 
+div.heading {
+  margin-bottom: 1rem;
+}
+
 div.page_row {
   display: flex;
 }
@@ -45,6 +49,7 @@ table {
 
 table.order_detail {
   border: 2px solid #000;
+  margin-bottom: 1rem;
   width: 100%;
 }
 
@@ -56,9 +61,8 @@ table.order_detail thead th {
 
 table.order_detail th,
 table.order_detail td {
-  border-left: 1px solid #666;
-  border-right: 1px solid #666;
-  font-size: 1rem;
+  border: 1px solid #666;
+  font-size: 0.9rem;
   padding: 2px 5px;
 }
 
@@ -74,6 +78,18 @@ table.order_detail tbody tr:last-child td {
   body {
     min-width: 1710px;
     padding: 40px;
+  }
+
+  .screen_20px {
+    width: 20px;
+  }
+
+  .screen_30px {
+    width: 30px;
+  }
+
+  .screen_40px {
+    width: 40px;
   }
 
   .screen_50px {
@@ -106,6 +122,10 @@ table.order_detail tbody tr:last-child td {
 
   .screen_120px {
     width: 120px;
+  }
+
+  .screen_350px {
+    width: 350px;
   }
 
   div.print_page_landscape {
@@ -160,6 +180,10 @@ table.order_detail tbody tr:last-child td {
 
   .print_120px {
     width: 120px;
+  }
+
+  .print_350px {
+    width: 320px;
   }
 
   div.driver_sheet_container {

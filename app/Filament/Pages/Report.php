@@ -93,10 +93,9 @@ class Report extends Page implements HasForms
                                 Action::make('print_monthly_sales')
                                     ->label('Print Report')
                                     ->icon('heroicon-o-printer')
-                                    ->url(fn () => route('admin.report.print_daily_order_quantity_report', [
-                                        'date_range' => 'custom',
-                                        'start_date' => ($this->form->getState()['monthly_sales_month'] ?? now()->format('Y-m')) . '-01',
-                                        'end_date' => Carbon::parse(($this->form->getState()['monthly_sales_month'] ?? now()->format('Y-m')) . '-01')->endOfMonth()->format('Y-m-d')
+                                    ->url(fn () => route('admin.report.print_monthly_sales_report', [
+                                        'date_range' => 'monthly',
+                                        'month' => Carbon::parse(($this->form->getState()['monthly_sales_month'] ?? now()->format('Y-m')))->endOfMonth()->format('Y-m')
                                     ]))
                                     ->openUrlInNewTab()
                                     ->extraAttributes([
@@ -122,7 +121,7 @@ class Report extends Page implements HasForms
                                 Action::make('print_daily_order_quantity')
                                     ->label('Print Report')
                                     ->icon('heroicon-o-printer')
-                                    ->url(fn () => route('admin.report.print_monthly_sales_report', [
+                                    ->url(fn () => route('admin.report.print_daily_order_quantity_report', [
                                         'date_range' => 'daily',
                                         'daily_date' => $this->form->getState()['daily_order_quantity_date'] ?? now()->format('Y-m-d')
                                     ]))

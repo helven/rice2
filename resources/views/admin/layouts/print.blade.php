@@ -17,6 +17,7 @@
         <meta name="msapplication-TileColor" content="#ffffff">
         <meta name="msapplication-TileImage" content="{{ asset('images/favicon/favicon-192x192.png') }}">
         <meta name="theme-color" content="#ffffff">
+        @vite(['resources/css/app.css'])
         <link rel="stylesheet" href="{{ asset('css/reset.css') }}?ver={{ filemtime(public_path('css/reset.css')) }}">
         <link rel="stylesheet" href="{{ asset('css/print.css') }}?ver={{ filemtime(public_path('css/print.css')) }}">
         <link rel="stylesheet" href="{{ asset('css/filament/custom.css') }}?ver={{ filemtime(public_path('css/filament/custom.css')) }}">
