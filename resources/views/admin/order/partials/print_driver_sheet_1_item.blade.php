@@ -8,9 +8,9 @@
             </tr>
             <tr class="thead">
                 <th class="screen_60px print_60px">Arrival</th>
-                <th class="screen_100px print_100px">Order No</th>
+                <th class="screen_90px print_80px">Order No</th>
                 <th>Company &amp Address</th>
-                <th class="screen_100px print_100px">Name</th>
+                <th class="screen_110px print_100px">Name</th>
                 <th class="screen_90px print_80px">HP</th>
                 <th class="screen_20px print_20px">QTY</th>
             </tr>

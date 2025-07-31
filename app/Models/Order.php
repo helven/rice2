@@ -86,8 +86,6 @@ class Order extends Model
         if ($this->address) {
             if ($this->address->mall_id) {
                 $formattedId .= '-' . str_pad($this->address->mall_id, 3, '0', STR_PAD_LEFT);
-            } elseif ($this->address->area_id && $this->address->area) {
-                $formattedId .= '-' . $this->address->area->postal;
             }
         }
         
