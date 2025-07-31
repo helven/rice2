@@ -29,14 +29,15 @@ class ListOrder extends Page implements HasTable
     protected static ?string $slug = 'orders';
     protected static bool $shouldRegisterNavigation = true;
     protected static ?int $navigationSort = 1;
-    
+
     protected static string $view = 'filament.pages.order.list-order';
-    
+
     public $dateFilter = 'today';
 
     public function table(Table $table): Table
     {
-        function filterParams($table) {
+        function filterParams($table)
+        {
             $params = [];
 
             $search = $table->getTableSearch();
@@ -48,12 +49,26 @@ class ListOrder extends Page implements HasTable
             if ($dateRangeFilter) {
                 if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
                     $params['date_range'] = $dateRangeFilter['range_type'];
-                }
-                if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
-                    $params['start_date'] = $dateRangeFilter['start_date'];
-                }
-                if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
-                    $params['end_date'] = $dateRangeFilter['end_date'];
+
+                    switch($dateRangeFilter['range_type']){
+                        case 'daily':
+                            if (isset($dateRangeFilter['daily_date']) && $dateRangeFilter['daily_date']) {
+                                $params['daily_date'] = $dateRangeFilter['daily_date'];
+                            }
+                            break;
+                        case 'this_week':
+                            if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
+                                $params['start_date'] = $dateRangeFilter['start_date'];
+                            }
+                            break;
+                        case 'this_month':
+                            if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
+                                $params['end_date'] = $dateRangeFilter['end_date'];
+                            }
+                            break;
+                        defaut:
+                            
+                    }
                 }
             }
 
@@ -76,7 +91,7 @@ class ListOrder extends Page implements HasTable
             if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
                 $params['driver_id'] = $driverFilter['value'];
             }
-            
+
             return $params;
         }
 
@@ -92,7 +107,7 @@ class ListOrder extends Page implements HasTable
 
                         return route('admin.order.print_data', $params);
                     }, true),
-                
+
                 TableAction::make('printDriverSheet1')
                     ->label('Print Driver Sheet 1')
                     ->button()
@@ -102,7 +117,7 @@ class ListOrder extends Page implements HasTable
 
                         return route('admin.order.print_driver_sheet_1', $params);
                     }, true),
-                
+
                 TableAction::make('printDriverSheet2')
                     ->label('Print Driver Sheet 2')
                     ->button()
@@ -171,11 +186,11 @@ class ListOrder extends Page implements HasTable
                                     ->native()
                                     ->placeholder('Select Payment Method')
                                     ->relationship('payment_method', 'label')
-                                    ->required(fn (callable $get): bool => (string)$get('payment_status_id') === 4)
+                                    ->required(fn(callable $get): bool => (string)$get('payment_status_id') === 4)
                                     ->default(function (Order $record): ?int {
                                         return $record->payment_method_id;
                                     })
-                                    ->disabled(fn (callable $get) => (string)$get('payment_status_id') === 3)
+                                    ->disabled(fn(callable $get) => (string)$get('payment_status_id') === 3)
                             ])
                             ->action(function (Order $record, array $data): void {
                                 $data['payment_method_id'] = (string)$data['payment_status_id'] === 3 ? null : $data['payment_method_id'];
@@ -216,73 +231,94 @@ class ListOrder extends Page implements HasTable
                             ->label('Date Range')
                             ->options([
                                 'all' => 'All Orders',
-                                'today' => "Today's Order",
-                                'week' => "This week's Order",
-                                'month' => "This month's Order",
+                                'daily' => "Daily Order",
+                                'this_week' => "This week's Order",
+                                'this_month' => "This month's Order",
                                 'custom' => 'Custom Range'
                             ])
-                            ->default('today')
+                            ->default('daily')
                             ->placeholder(false)
                             ->selectablePlaceholder(false)
                             ->live(),
-                            //->extraAttributes([
-                            //    'x-data' => '{ 
-                            //        rangeType: "today",
-                            //        toggleDateFields(type) {
-                            //            const startField = document.querySelector(".fi-fo-field-wrp:has(.from-date-field)");
-                            //            const endFie.d = document.querySelector(".fi-fo-field-wrp:has(.to-date-field)");
-                            //            if (startField && endField) {
-                            //                if (type === "custom") {
-                            //                    startField.style.display = "block";
-                            //                    endField.style.display = "block";
-                            //                } else {
-                            //                    startField.style.display = "none";
-                            //                    endField.style.display = "none";
-                            //                }
-                            //            }
-                            //        }
-                            //    }',
-                            //    'x-init' => '$nextTick(() => toggleDateFields(rangeType))',
-                            //    'x-on:change' => 'rangeType = $event.target.value; toggleDateFields(rangeType)'
-                            //]),
+                        Select::make('daily_date')
+                            ->label('Select Date')
+                            ->options(function () {
+                                $dates = [];
+                                $startOfMonth = Carbon::now()->startOfMonth();
+                                $endOfMonth = Carbon::now()->endOfMonth();
+
+                                for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+                                    $dates[$date->format('Y-m-d')] = $date->format('d M Y (D)');
+                                }
+
+                                return $dates;
+                            })
+                            ->default(Carbon::today()->format('Y-m-d'))
+                            ->placeholder(false)
+                            ->selectablePlaceholder(false)
+                            ->visible(fn(callable $get) => $get('range_type') === 'daily')
+                            ->required(fn(callable $get) => $get('range_type') === 'daily'),
+                        //->extraAttributes([
+                        //    'x-data' => '{ 
+                        //        rangeType: "today",
+                        //        toggleDateFields(type) {
+                        //            const startField = document.querySelector(".fi-fo-field-wrp:has(.from-date-field)");
+                        //            const endFie.d = document.querySelector(".fi-fo-field-wrp:has(.to-date-field)");
+                        //            if (startField && endField) {
+                        //                if (type === "custom") {
+                        //                    startField.style.display = "block";
+                        //                    endField.style.display = "block";
+                        //                } else {
+                        //                    startField.style.display = "none";
+                        //                    endField.style.display = "none";
+                        //                }
+                        //            }
+                        //        }
+                        //    }',
+                        //    'x-init' => '$nextTick(() => toggleDateFields(rangeType))',
+                        //    'x-on:change' => 'rangeType = $event.target.value; toggleDateFields(rangeType)'
+                        //]),
                         DatePicker::make('start_date')
                             ->label('From Date')
                             ->extraAttributes([
                                 'class' => 'custom-date-picker from-date-field',
                                 'id' => 'txt_StartDate'
                             ])
-                            ->visible(fn (callable $get) => $get('range_type') === 'custom')
-                            ->required(fn (callable $get) => $get('range_type') === 'custom'),
+                            ->visible(fn(callable $get) => $get('range_type') === 'custom')
+                            ->required(fn(callable $get) => $get('range_type') === 'custom'),
                         DatePicker::make('end_date')
                             ->label('To Date')
                             ->extraAttributes([
                                 'class' => 'custom-date-picker to-date-field',
                                 'id' => 'txt_EndDate'
                             ])
-                            ->visible(fn (callable $get) => $get('range_type') === 'custom')
-                            ->required(fn (callable $get) => $get('range_type') === 'custom')
+                            ->visible(fn(callable $get) => $get('range_type') === 'custom')
+                            ->required(fn(callable $get) => $get('range_type') === 'custom')
                             ->afterOrEqual('start_date')
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $rangeType = $data['range_type'] ?? 'all';
-                        
+
                         if ($rangeType === 'all' || !$rangeType) {
                             return $query;
                         }
-                        
+
                         return match ($rangeType) {
-                            'today' => $query->whereDate('delivery_date', Carbon::today()),
-                            'week' => $query->whereBetween('delivery_date', [
+                            'daily' => $query->when(
+                                $data['daily_date'],
+                                fn(Builder $query) => $query->whereDate('delivery_date', Carbon::parse($data['daily_date']))
+                            ),
+                            'this_week' => $query->whereBetween('delivery_date', [
                                 Carbon::now()->startOfWeek(),
                                 Carbon::now()->endOfWeek()
                             ]),
-                            'month' => $query->whereBetween('delivery_date', [
+                            'this_month' => $query->whereBetween('delivery_date', [
                                 Carbon::now()->startOfMonth(),
                                 Carbon::now()->endOfMonth()
                             ]),
                             'custom' => $query->when(
                                 $data['start_date'] && $data['end_date'],
-                                fn (Builder $query) => $query->whereBetween('delivery_date', [
+                                fn(Builder $query) => $query->whereBetween('delivery_date', [
                                     Carbon::parse($data['start_date'])->startOfDay(),
                                     Carbon::parse($data['end_date'])->endOfDay()
                                 ])
@@ -292,16 +328,18 @@ class ListOrder extends Page implements HasTable
                     })
                     ->indicateUsing(function (array $data): ?string {
                         $rangeType = $data['range_type'] ?? 'all';
-                        
+
                         if ($rangeType === 'all' || !$rangeType) {
                             return null;
                         }
-                        
+
                         return match ($rangeType) {
-                            'today' => "Today's Orders",
-                            'week' => "This Week's Orders",
-                            'month' => "This Month's Orders",
-                            'custom' => isset($data['start_date'], $data['end_date']) 
+                            'daily' => isset($data['daily_date'])
+                                ? 'Daily Orders: ' . Carbon::parse($data['daily_date'])->format('M j, Y')
+                                : 'Daily Orders',
+                            'this_week' => "This Week's Orders",
+                            'this_month' => "This Month's Orders",
+                            'custom' => isset($data['start_date'], $data['end_date'])
                                 ? 'Custom Range: ' . Carbon::parse($data['start_date'])->format('M j') . ' - ' . Carbon::parse($data['end_date'])->format('M j, Y')
                                 : 'Custom Range',
                             default => null
@@ -320,13 +358,13 @@ class ListOrder extends Page implements HasTable
                         4 => 'Unpaid',
                     ]),
                 SelectFilter::make('customer_id')
-                        ->relationship('customer', 'name'),
+                    ->relationship('customer', 'name'),
                 SelectFilter::make('driver_id')
                     ->relationship('driver', 'name'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->url(fn (Order $record): string => "/backend/orders/{$record->id}/edit"),
+                    ->url(fn(Order $record): string => "/backend/orders/{$record->id}/edit"),
                 Tables\Actions\DeleteAction::make()
                     ->action(function ($record) {
                         $record->update(['status_id' => 99]);
@@ -359,7 +397,7 @@ class ListOrder extends Page implements HasTable
         return [
             Action::make('create')
                 ->label('New Order')
-                ->url('/'.config('filament.path', 'backend').'/orders/create')
+                ->url('/' . config('filament.path', 'backend') . '/orders/create')
                 ->icon('heroicon-m-plus'),
         ];
     }
@@ -367,7 +405,7 @@ class ListOrder extends Page implements HasTable
     public function get()
     {
         return [
-            '/'.config('filament.path', 'backend').'/orders' => 'Orders',
+            '/' . config('filament.path', 'backend') . '/orders' => 'Orders',
             '' => 'Manage Orders',
         ];
     }

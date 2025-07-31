@@ -1,5 +1,5 @@
 @extends('admin.layouts.print')
-<?php if (!$payments_list) { ?>
+<?php if (!$daily_sales_list) { ?>
     <div class="print_page_title">No Order found.</div>
 <?php } else { ?>
     <div class="print_page_title">Order Sheet, please select <b>Portrait</b>, A4 paper for best printing result</div>
@@ -9,7 +9,7 @@
     <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
         <?php $grand_total = 0;?>
         <?php $HTML_grand_total = '';?>
-        <?php foreach ($payments_list as $date => $payments_method_list) { ?>
+        <?php foreach ($daily_sales_list as $date => $payments_method_list) { ?>
             <?php foreach ($payments_method_list as $payment_method => $orders_list) { ?>
                 <div id="div_Payment-{{ $orders_list[0]->payment_method->id }}" class="print_payment">
                     <div>

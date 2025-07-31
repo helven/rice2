@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\URL;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-class OrderController extends AdminController
+class ReportController extends AdminController
 {
     function __construct()
     {
@@ -87,41 +87,11 @@ class OrderController extends AdminController
     }
 
     /**
-     * Print Order Data
+     * Print Daily Bank Sales Report
      *
      * @return \Illuminate\Http\Response
      */
-    function printData()
-    {
-        $query = Order::query();
-
-        $query
-            ->with([
-                'meals.meal',
-                'driver',
-                'customer',
-                'address.mall',
-                'address.area'
-            ])
-            ->orderBy('arrival_time')
-            ->orderBy('id')
-            ->orderBy('address_id');
-
-        $this->applyOrderFilters($query);
-
-        $orders_list = $query->get();
-
-        $this->v_data['orders_list'] = $orders_list;
-
-        return view('admin.order.print_data', $this->v_data);
-    }
-
-    /**
-     * Print Drop Off
-     *
-     * @return \Illuminate\Http\Response
-     */
-    function printDropOff()
+    function printDailyBankSalesReport()
     {
         $query = Order::query();
 
@@ -139,48 +109,29 @@ class OrderController extends AdminController
         $this->applyOrderFilters($query);
 
         $orders_list = $query->get();
-        // SPLIT list by driver
-        $this->v_data['orders_list'] = array();
+
+        // SPLIT list by payment method
+        $this->v_data['daily_sales_list'] = array();
         foreach ($orders_list as $order) {
-            $this->v_data['orders_list']['driver_' . $order->driver->id][]  = $order;
-        }
-
-        $orders_per_driver = 20;
-        foreach ($this->v_data['orders_list']  as $driver_id => &$driver) {
-            if (count($driver) > $orders_per_driver) {
-                $a_temp         = array();
-                $order_ctr      = 0;
-                $separate_ctr   = 0;
-
-                foreach ($driver as $order) {
-                    if ($order_ctr < $orders_per_driver) {
-                        array_push($a_temp, $order);
-                    } else {
-                        $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                        $separate_ctr++;
-
-                        // RESET
-                        $a_temp = array();
-                        $order_ctr    = 0;
-                        array_push($a_temp, $order);
-                    }
-                    $order_ctr++;
-                }
-                $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                unset($this->v_data['orders_list'][$driver_id]);
+            $payment_method = $order->payment_method->key;
+            if ($payment_method == '') {
+                $payment_method = 'NULL_METHOD';
             }
+            $payments_method = str_replace(array(' ', '-'), '_', $payment_method);
+            $this->v_data['daily_sales_list']['date_'. date('Ymd', strtotime($order->delivery_date))]['payment_' . $payment_method][]  = $order;
+            //$this->v_data['daily_sales_list']['payment_' . $payment_method][]  = $order;
         }
-        ksort($this->v_data['orders_list']); // sort by [driver_name]_[driver_id]-ctr
+            //dd($this->v_data['daily_sales_list']);
 
-        return view('admin.order.print_dropoff', $this->v_data);
+        return view('admin.report.print_daily_bank_sales_report', $this->v_data);
     }
 
     /**
-     * Print Driver Sheet 1
+     * Print Quantity Order Daily Report
      *
      * @return \Illuminate\Http\Response
      */
-    function printDriverSheet1()
+    function printDailyOrderQuantityReport()
     {
         $query = Order::query();
 
@@ -196,51 +147,14 @@ class OrderController extends AdminController
             ->orderBy('address_id');
 
         $this->applyOrderFilters($query);
-
-        $orders_list = $query->get();
-
-        // SPLIT list by driver
-        $this->v_data['orders_list'] = array();
-        foreach ($orders_list as $order) {
-            $this->v_data['orders_list']['driver_' . $order->driver->id][]  = $order;
-        }
-
-        $orders_per_driver = 3;
-        foreach ($this->v_data['orders_list']  as $driver_id => &$driver) {
-            if (count($driver) > $orders_per_driver) {
-                $a_temp         = array();
-                $order_ctr      = 0;
-                $separate_ctr   = 0;
-
-                foreach ($driver as $order) {
-                    if ($order_ctr < $orders_per_driver) {
-                        array_push($a_temp, $order);
-                    } else {
-                        $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                        $separate_ctr++;
-
-                        // RESET
-                        $a_temp = array();
-                        $order_ctr    = 0;
-                        array_push($a_temp, $order);
-                    }
-                    $order_ctr++;
-                }
-                $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                unset($this->v_data['orders_list'][$driver_id]);
-            }
-        }
-        ksort($this->v_data['orders_list']); // sort by [driver_name]_[driver_id]-ctr
-
-        return view('admin.order.print_driver_sheet_1', $this->v_data);
     }
 
     /**
-     * Print Driver Sheet 2
+     * Print Monthly Sales Report
      *
      * @return \Illuminate\Http\Response
      */
-    function printDriverSheet2()
+    function printMonthlySalesReport()
     {
         $query = Order::query();
 
@@ -256,11 +170,5 @@ class OrderController extends AdminController
             ->orderBy('address_id');
 
         $this->applyOrderFilters($query);
-
-        $orders_list = $query->get();
-
-        $this->v_data['orders_list'] = $orders_list;
-
-        return view('admin.order.print_driver_sheet_2', $this->v_data);
     }
 }
