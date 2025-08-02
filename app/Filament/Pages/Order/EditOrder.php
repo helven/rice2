@@ -46,7 +46,7 @@ class EditOrder extends Page
     protected static ?string $title = 'Edit Order';
     protected static ?string $slug = 'orders/{id}/edit';
     protected static bool $shouldRegisterNavigation = false;
-    
+
     protected static string $view = 'filament.pages.order.edit-order';
 
     public array $data = [];
@@ -56,13 +56,13 @@ class EditOrder extends Page
     public function mount($id): void
     {
         $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backup_driver'])->findOrFail($id);
-        
+
         $this->form->fill([
             'id' => $this->order->formatted_id,
             'customer_id' => $this->order->customer_id,
             'address_id' => $this->order->address_id,
             'delivery_date' => $this->order->delivery_date,
-            'meals' => $this->order->meals->map(function($meal) {
+            'meals' => $this->order->meals->map(function ($meal) {
                 return [
                     'meal_id' => $meal->meal_id,
                     'normal' => $meal->normal,
@@ -77,7 +77,7 @@ class EditOrder extends Page
             'arrival_time' => $this->order->arrival_time,
             'driver_id' => $this->order->driver_id,
             'driver_route' => $this->order->driver_route,
-            'backup_driver_id' => ($this->order->backup_driver_id !== 0)?$this->order->backup_driver_id:'',
+            'backup_driver_id' => ($this->order->backup_driver_id !== 0) ? $this->order->backup_driver_id : '',
             'backup_driver_route' => $this->order->backup_driver_route,
             'driver_notes' => $this->order->driver_notes,
         ]);
@@ -135,13 +135,13 @@ class EditOrder extends Page
                                         ->mapWithKeys(function ($address) {
                                             $address->address_1 = trim($address->address_1);
                                             $address->address_2 = trim($address->address_2);
-ob_start();?>
-<div class="hidden"><?php echo "{$address->name}|{$address->city}";?></div>
-<span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";?>
-<div><?php echo $address->address_1;?><br />
-<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
-<?php echo $address->postcode;?> <?php echo $address->city;?></div>
-<?php
+                                            ob_start(); ?>
+                <div class="hidden"><?php echo "{$address->name}|{$address->city}"; ?></div>
+                <span class="font-bold"><?php echo $address->name; ?></span><?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : ""; ?>
+                <div><?php echo $address->address_1; ?><br />
+                    <?php echo ($address->address_2) ? $address->address_2 . '<br />' : ""; ?>
+                    <?php echo $address->postcode; ?> <?php echo $address->city; ?></div>
+            <?php
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
                                         });
@@ -161,7 +161,7 @@ ob_start();?>
                         ->displayFormat(config('app.date_format'))
                         ->required()
                         ->live()
-            ]),
+                ]),
             Section::make('Add Order')
                 ->collapsible()
                 ->schema([
@@ -174,7 +174,7 @@ ob_start();?>
                         ->cloneable()
                         ->columns(7)
                         ->addAction(
-                            fn ($action) => $action
+                            fn($action) => $action
                                 ->label('Add Meal')
                                 ->extraAttributes([
                                     'class' => '',
@@ -204,17 +204,17 @@ ob_start();?>
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
                             TextInput::make('big')
-                                    ->label('Big')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->extraInputAttributes(['min' => 0, 'max' => 1000])
-                                    ->live()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        $state = (int)ltrim($state, '0') ?: 0;
-                                        $set('big', $state);
-                                    })
-                                    ->step(1)
-                                    ->rules(['required', 'integer', 'min:0', 'max:1000']),
+                                ->label('Big')
+                                ->numeric()
+                                ->default(0)
+                                ->extraInputAttributes(['min' => 0, 'max' => 1000])
+                                ->live()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    $state = (int)ltrim($state, '0') ?: 0;
+                                    $set('big', $state);
+                                })
+                                ->step(1)
+                                ->rules(['required', 'integer', 'min:0', 'max:1000']),
                             TextInput::make('small')
                                 ->label('Small')
                                 ->numeric()
@@ -254,7 +254,7 @@ ob_start();?>
                                 })
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
-                            ]),
+                        ]),
                     TextInput::make('total_amount')
                         ->label('Total')
                         ->placeholder('0.00')
@@ -322,7 +322,7 @@ ob_start();?>
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                ->disabled(fn(callable $get): bool => blank($get('driver_id')))
                         ]),
                     Grid::make(2)
                         ->schema([
@@ -393,7 +393,7 @@ ob_start();?>
         try {
             // Begin transaction
             \DB::beginTransaction();
-            
+
             // Calculate total quantity for delivery fee calculation
             $totalQty = 0;
             foreach ($data['meals'] as $meal) {
@@ -403,7 +403,7 @@ ob_start();?>
             // Calculate delivery fee
             $address = CustomerAddressBook::find($data['address_id']);
             $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
-            
+
             // Update the order
             $this->order->update([
                 'customer_id' => $data['customer_id'],
@@ -420,6 +420,30 @@ ob_start();?>
                 'driver_notes' => $data['driver_notes'],
             ]);
 
+            // Update or create invoice for this order
+            $customer = \App\Models\Customer::find($data['customer_id']);
+
+            $billingAddress = $customer->name . "\n" .
+                $address->address_1 . "\n" .
+                ($address->address_2 ? $address->address_2 . "\n" : '') .
+                $address->mall_or_area;
+
+            // Check if invoice already exists for this order
+            $invoice = \App\Models\Invoice::where('order_id', $this->order->id)->first();
+
+            if (!$invoice) {
+                // Create new invoice
+                \App\Models\Invoice::create([
+                    'order_id' => $this->order->id,
+                    'invoice_number' => $this->order->invoice_no,
+                    'billing_name' => $customer->name,
+                    'billing_address' => $billingAddress,
+                    'tax_amount' => config('app.tax_rate'),
+                    'issue_date' => now(),
+                    'due_date' => now()->addDays(30),
+                ]);
+            }
+
             // Update or create meals
             $this->order->meals()->delete(); // Remove existing meals
             foreach ($data['meals'] as $meal) {
@@ -432,15 +456,15 @@ ob_start();?>
                     'no_rice' => $meal['no_rice'],
                 ]);
             }
-            
+
             \DB::commit();
-            
+
             Notification::make()
                 ->success()
                 ->title('Order updated successfully')
                 ->send();
 
-            $this->redirect('/'.config('filament.path', 'backend').'/orders');
+            $this->redirect('/' . config('filament.path', 'backend') . '/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()
@@ -459,7 +483,7 @@ ob_start();?>
 
         $temp_meals = [];
         $total_qty = 0;
-        foreach($this->data['meals'] as $meal){
+        foreach ($this->data['meals'] as $meal) {
             if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
                 $meal_qty = $meal['normal'] + $meal['big'] + $meal['small'] + $meal['s_small'] + $meal['no_rice'];
                 $total_qty += $meal_qty;
@@ -480,12 +504,12 @@ ob_start();?>
         $delivery_fee = $this->calculateDeliveryFee($address, $total_qty);
 
         $display_address = '';
-        if($address){
-            ob_start();?>
-<?php echo $address->name;?><br />
-<?php echo $address->address_1;?><br />
-<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
-<?php echo $address->postcode;?> <?php echo $address->city;?>
+        if ($address) {
+            ob_start(); ?>
+            <?php echo $address->name; ?><br />
+            <?php echo $address->address_1; ?><br />
+            <?php echo ($address->address_2) ? $address->address_2 . '<br />' : ""; ?>
+            <?php echo $address->postcode; ?> <?php echo $address->city; ?>
 <?php
             $display_address = trim(ob_get_clean());
         }
@@ -495,15 +519,15 @@ ob_start();?>
             'customer_name' => $customer?->name ?? '',
             'address_id' => $this->data['address_id'],
             'address' => $address ? $display_address : '',
-            'delivery_date' => isset($this->data['delivery_date']) && !empty($this->data['delivery_date']) 
-                ? date(config('app.date_format'), strtotime($this->data['delivery_date'])) 
+            'delivery_date' => isset($this->data['delivery_date']) && !empty($this->data['delivery_date'])
+                ? date(config('app.date_format'), strtotime($this->data['delivery_date']))
                 : '',
             'meals' => $temp_meals,
             'total_amount' => $this->data['total_amount'] ?? '0.00',
             'delivery_fee' => $delivery_fee,
             'notes' => $this->data['notes'] ?? '',
-            'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time']) 
-                ? date('h:i A', strtotime($this->data['arrival_time'])) 
+            'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time'])
+                ? date('h:i A', strtotime($this->data['arrival_time']))
                 : '',
             'driver_id' => $this->data['driver_id'] ?? '',
             'driver_name' => Driver::find($this->data['driver_id'] ?? null)?->name ?? '',
@@ -587,9 +611,9 @@ ob_start();?>
         }
 
         $deliveryFeeRules = $area->delivery_fee;
-        
+
         // Sort by qty in descending order to find the highest applicable tier
-        usort($deliveryFeeRules, function($a, $b) {
+        usort($deliveryFeeRules, function ($a, $b) {
             return $b['qty'] - $a['qty'];
         });
 
@@ -608,8 +632,8 @@ ob_start();?>
     {
         $record = $this->getRecord();
         return [
-            '/'.config('filament.path', 'backend').'/orders' => 'Orders',
-            '' => $record ? 'Order '.$record->formatted_id : 'Edit Order',
+            '/' . config('filament.path', 'backend') . '/orders' => 'Orders',
+            '' => $record ? 'Order ' . $record->formatted_id : 'Edit Order',
         ];
     }
 

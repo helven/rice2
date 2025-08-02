@@ -108,7 +108,7 @@ class CreateOrder extends Page
             $days = 2;
 
             $startDate = \Carbon\Carbon::today();
-            
+
             // Generate individual dates with comma separator
             $dates = [];
             for ($i = 0; $i < $days; $i++) {
@@ -207,13 +207,13 @@ class CreateOrder extends Page
                                         ->mapWithKeys(function ($address) {
                                             $address->address_1 = trim($address->address_1);
                                             $address->address_2 = trim($address->address_2);
-ob_start();?>
-<div class="hidden"><?php echo "{$address->name}|{$address->city}";?></div>
-<span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";?>
-<div><?php echo $address->address_1;?><br />
-<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
-<?php echo $address->postcode;?> <?php echo $address->city;?></div>
-<?php
+                                            ob_start(); ?>
+                <div class="hidden"><?php echo "{$address->name}|{$address->city}"; ?></div>
+                <span class="font-bold"><?php echo $address->name; ?></span><?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : ""; ?>
+                <div><?php echo $address->address_1; ?><br />
+                    <?php echo ($address->address_2) ? $address->address_2 . '<br />' : ""; ?>
+                    <?php echo $address->postcode; ?> <?php echo $address->city; ?></div>
+            <?php
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
                                         });
@@ -294,7 +294,7 @@ ob_start();?>
                             }
 
                             $dates = explode(',', $state);
-                            
+
                             $meals_by_date = [];
                             foreach ($dates as $dateString) {
                                 $date = \Carbon\Carbon::parse(trim($dateString));
@@ -341,7 +341,7 @@ ob_start();?>
                         ->cloneable()
                         ->columns(7)
                         ->addAction(
-                            fn ($action) => $action
+                            fn($action) => $action
                                 ->label('Add Meal')
                                 ->extraAttributes([
                                     'class' => '',
@@ -467,7 +467,7 @@ ob_start();?>
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                ->disabled(fn(callable $get): bool => blank($get('driver_id')))
                         ]),
                     Grid::make(2)
                         ->schema([
@@ -568,6 +568,22 @@ ob_start();?>
                     'backup_driver_route' => $data['backup_driver_route'] ?? '',
                     'driver_notes' => $data['driver_notes'] ?? '',
                     'payment_method_id' => $paymentMethodId,
+                ]);
+
+                // Create invoice for this order
+                $billingAddress = $customer->name . "\n" .
+                    $address->address_1 . "\n" .
+                    ($address->address_2 ? $address->address_2 . "\n" : '') .
+                    $address->mall_or_area;
+
+                $invoice = \App\Models\Invoice::create([
+                    'order_id' => $order->id,
+                    'invoice_number' => $order->invoice_no,
+                    'billing_name' => $customer->name,
+                    'billing_address' => $billingAddress,
+                    'tax_amount' => config('app.tax_rate'),
+                    'issue_date' => now(),
+                    'due_date' => now()->addDays(30),
                 ]);
 
                 // Create order meals for this date
@@ -683,7 +699,7 @@ ob_start();?>
         if ($this->data['delivery_date'] !== '') {
             // Parse comma-separated dates
             $dateStrings = explode(', ', $this->data['delivery_date']);
-            
+
             foreach ($dateStrings as $dateString) {
                 $date = \Carbon\Carbon::parse(str_replace('/', '-', $dateString));
                 $delivery_date .= ($delivery_date != '' ? ', ' : '') . $date->format(config('app.date_format'));
@@ -774,9 +790,9 @@ ob_start();?>
         }
 
         $deliveryFeeRules = $area->delivery_fee;
-        
+
         // Sort by qty in descending order to find the highest applicable tier
-        usort($deliveryFeeRules, function($a, $b) {
+        usort($deliveryFeeRules, function ($a, $b) {
             return $b['qty'] - $a['qty'];
         });
 

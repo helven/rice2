@@ -86,4 +86,14 @@ class CustomerAddressBook extends Model
     {
         return $this->belongsTo(Driver::class, 'backup_driver_id');
     }
+
+    /**
+     * Get the mall or area
+     *
+     * @return string
+     */
+    public function getMallOrAreaAttribute() :  string
+    {
+        return $this->mall_id ? $this->mall->name : $this->area->postal.' '.$this->area->name;
+    }
 }

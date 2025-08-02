@@ -100,6 +100,19 @@ class Order extends Model
     }
 
     /**
+     * Get the invoice no from order ID with zero padding
+     *
+     * @return string
+     */
+    public function getInvoiceNoAttribute(): string
+    {
+        $padding = config('app.order_id_padding', 5);
+        $formattedId = str_pad($this->id, $padding, '0', STR_PAD_LEFT);
+
+        return $formattedId;
+    }
+
+    /**
      * Get the total quantity of all meals in this order
      *
      * @return int
