@@ -106,7 +106,7 @@ class CreateOrder extends Page
 
             $days = 1;
 
-            $startDate = \Carbon\Carbon::tomorrow();
+            $startDate = \Carbon\Carbon::today();
             $endDate = $startDate->copy()->addDays($days - 1);
             $deliveryDateRange = $startDate->format('Y/m/d') . ' - ' . $endDate->format('Y/m/d');
 
@@ -178,41 +178,14 @@ class CreateOrder extends Page
                                 ->options(Customer::query()->pluck('name', 'id'))
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
-                                    // Load driver information based on selected address
-                                    if ($state) {
-                                        $address = CustomerAddressBook::find($state);
-                                        if ($address) {
-                                            // Use pre-assigned driver information from the address
-                                            if ($address->driver_id) {
-                                                $set('driver_id', $address->driver_id);
-                                                if ($address->driver_route) {
-                                                    $set('driver_route', $address->driver_route);
-                                                }
-                                            } else {
-                                                // Clear driver fields if no driver assigned to address
-                                                $set('driver_id', null);
-                                                $set('driver_route', null);
-                                            }
-
-                                            // Use pre-assigned backup driver information from the address
-                                            if ($address->backup_driver_id) {
-                                                $set('backup_driver_id', $address->backup_driver_id);
-                                                if ($address->backup_driver_route) {
-                                                    $set('backup_driver_route', $address->backup_driver_route);
-                                                }
-                                            } else {
-                                                // Clear backup driver fields if no backup driver assigned to address
-                                                $set('backup_driver_id', null);
-                                                $set('backup_driver_route', null);
-                                            }
-                                        }
-                                    } else {
-                                        // Clear all driver fields if no address selected
-                                        $set('driver_id', null);
-                                        $set('driver_route', null);
-                                        $set('backup_driver_id', null);
-                                        $set('backup_driver_route', null);
-                                    }
+                                    // Reset address when customer changes
+                                    $set('address_id', null);
+                                    
+                                    // Clear all driver fields when customer changes
+                                    //$set('driver_id', null);
+                                    //$set('driver_route', null);
+                                    //$set('backup_driver_id', null);
+                                    //$set('backup_driver_route', null);
                                 }),
 
                             Select::make('address_id')
@@ -250,6 +223,29 @@ class CreateOrder extends Page
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
                                         });
+                                })
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    // Load driver information based on selected address
+                                    if ($state) {
+                                        $address = CustomerAddressBook::find($state);
+                                        if ($address) {
+                                            // Use pre-assigned driver information from the address only if current fields are empty
+                                            if ($address->driver_id && !$get('driver_id')) {
+                                                $set('driver_id', $address->driver_id);
+                                                if ($address->driver_route && !$get('driver_route')) {
+                                                    $set('driver_route', $address->driver_route);
+                                                }
+                                            }
+
+                                            // Use pre-assigned backup driver information from the address only if current fields are empty
+                                            if ($address->backup_driver_id && !$get('backup_driver_id')) {
+                                                $set('backup_driver_id', $address->backup_driver_id);
+                                                if ($address->backup_driver_route && !$get('backup_driver_route')) {
+                                                    $set('backup_driver_route', $address->backup_driver_route);
+                                                }
+                                            }
+                                        }
+                                    }
                                 })
                         ]),
                     DateRangePicker::make('delivery_date_range')
