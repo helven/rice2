@@ -105,7 +105,7 @@ class CreateOrder extends Page
                 'driver_notes' => 'Sample driver notes',
             ];
 
-            $days = 1;
+            $days = 2;
 
             $startDate = \Carbon\Carbon::today();
             $endDate = $startDate->copy()->addDays($days - 1);
