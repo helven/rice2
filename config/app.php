@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -131,6 +130,7 @@ return [
     'order_id_padding' => 8,
     'order_id_prefix' => '',
     'order_id_suffix' => '',
+    'tax_rate' => env('TAX_RATE', 0.00),
 
     /*
     |--------------------------------------------------------------------------
@@ -149,5 +149,4 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
-
 ];

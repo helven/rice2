@@ -11,10 +11,16 @@ class AreaFactory extends Factory
 {
     public function definition(): array
     {
+        // Malaysian cities list
+        $malaysianCities = [
+            'Kuala Lumpur', 'George Town', 'Ipoh', 'Shah Alam', 'Subang Jaya',
+            'Johor Bahru', 'Klang', 'Petaling Jaya', 'Kuantan', 'Alor Setar'
+        ];
+
         return [
-            'name' => 'Area: '.fake()->city(),
+            'name' => 'Area: '.fake()->randomElement($malaysianCities), // Using Malaysian cities
             'status_id' => fake()->randomElement([1, 2]),
-            'postal' => fake()->numerify('#####'),
+            'postal' => fake()->numerify('#####'), // Maintaining 5-digit numeric format
             'delivery_fee' => [
                 ['qty' => 1, 'delivery_fee' => fake()->numberBetween(4, 6)],
                 ['qty' => 2, 'delivery_fee' => fake()->numberBetween(3, 5)],

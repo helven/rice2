@@ -29,6 +29,7 @@ return new class extends Migration
             $table->integer('payment_method_id')->default(0);
             $table->datetime('delivery_date');
             $table->decimal('total_amount', 10, 2)->default(0);
+            $table->decimal('delivery_fee', 10, 2)->default(0);
             $table->text('notes')->nullable();
             $table->time('arrival_time')->default('00:00:00');
             $table->string('dropoff_time', 8)->default('');

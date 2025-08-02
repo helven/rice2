@@ -37,7 +37,7 @@ class CustomerSeeder extends Seeder
         ]);
 
         Customer::factory()
-            ->count(10)  // This will create 10 customers, each with 1-3 addresses
+            ->count(3)  // This will create 10 customers, each with 1-3 addresses
             ->create();
     }
 }

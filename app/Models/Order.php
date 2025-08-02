@@ -72,6 +72,11 @@ class Order extends Model
         return $this->hasMany(OrderMeal::class);
     }
 
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class);
+    }
+
     /**
      * Get the formatted order ID with zero padding and location suffix
      *
@@ -81,14 +86,14 @@ class Order extends Model
     {
         $padding = config('app.order_id_padding', 5);
         $formattedId = str_pad($this->id, $padding, '0', STR_PAD_LEFT);
-        
+
         // Append mall_id or area_id from address if available
         if ($this->address) {
             if ($this->address->mall_id) {
                 $formattedId .= '-' . str_pad($this->address->mall_id, 3, '0', STR_PAD_LEFT);
             }
         }
-        
+
         return $formattedId;
     }
 
@@ -98,6 +103,18 @@ class Order extends Model
      * @return int
      */
     public function getTotalQtyAttribute(): int
+    {
+        return $this->meals->sum(function ($meal) {
+            return $meal->normal + $meal->big + $meal->small + $meal->s_small + $meal->no_rice;
+        });
+    }
+
+    /**
+     * Get the total quantity of all meals in this order
+     *
+     * @return int
+     */
+    public function getDeliveryFeeAttribute(): int
     {
         return $this->meals->sum(function ($meal) {
             return $meal->normal + $meal->big + $meal->small + $meal->s_small + $meal->no_rice;

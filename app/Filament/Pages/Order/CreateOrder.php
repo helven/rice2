@@ -88,123 +88,66 @@ class CreateOrder extends Page
             $driver = Driver::where('status_id', 1)->first();
             $driverRoute = $driver && $driver->route ? $driver->route[0]['route_name'] : null;
 
-            // Get tomorrow and day after tomorrow for delivery
-            $tomorrow = \Carbon\Carbon::tomorrow();
-            $dayAfterTomorrow = \Carbon\Carbon::tomorrow()->addDay();
-            $twoDaysLater = \Carbon\Carbon::tomorrow()->addDays(2); // 3 days after dayAfterTomorrow
-            $threeDaysLater = \Carbon\Carbon::tomorrow()->addDays(3); // 3 days after dayAfterTomorrow
-            $deliveryDateRange = $tomorrow->format('Y/m/d') . ' - ' . $threeDaysLater->format('Y/m/d');
-
             // Get two different meals for variety
             $defaultMeal = Meal::where('status_id', 1)->first();
             $secondMeal = Meal::where('status_id', 1)->where('id', '!=', $defaultMeal->id)->first();
             if (!$secondMeal) $secondMeal = $defaultMeal; // Fallback to same meal if no other exists
 
-            $this->form->fill([
+            $order_data = [
                 'customer_id' => $customer ? $customer->id : '',
                 'address_id' => $address ? $address->id : '',
-                'delivery_date_range' => $deliveryDateRange,
-                'meals_by_date' => [
-                    [
-                        'date' => $tomorrow->format('Y-m-d'),
-                        'meals' => [
-                            [
-                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
-                                'normal' => 2,
-                                'big' => 1,
-                                'small' => 1,
-                                's_small' => 0,
-                                'no_rice' => 1,
-                            ],
-                            [
-                                'meal_id' => $secondMeal ? $secondMeal->id : '',
-                                'normal' => 1,
-                                'big' => 1,
-                                'small' => 0,
-                                's_small' => 1,
-                                'no_rice' => 0,
-                            ]
-                        ],
-                        'total_amount' => 100.00,
-                        'notes' => 'Sample order notes for day 1'
-                    ],
-                    [
-                        'date' => $dayAfterTomorrow->format('Y-m-d'),
-                        'meals' => [
-                            [
-                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
-                                'normal' => 2,
-                                'big' => 1,
-                                'small' => 1,
-                                's_small' => 0,
-                                'no_rice' => 1,
-                            ],
-                            [
-                                'meal_id' => $secondMeal ? $secondMeal->id : '',
-                                'normal' => 1,
-                                'big' => 1,
-                                'small' => 0,
-                                's_small' => 1,
-                                'no_rice' => 0,
-                            ]
-                        ],
-                        'total_amount' => 100.00,
-                        'notes' => 'Sample order notes for day 2'
-                    ],
-                    [
-                        'date' => $twoDaysLater->format('Y-m-d'),
-                        'meals' => [
-                            [
-                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
-                                'normal' => 1,
-                                'big' => 2,
-                                'small' => 1,
-                                's_small' => 1,
-                                'no_rice' => 0,
-                            ],
-                            [
-                                'meal_id' => $secondMeal ? $secondMeal->id : '',
-                                'normal' => 2,
-                                'big' => 0,
-                                'small' => 1,
-                                's_small' => 0,
-                                'no_rice' => 1,
-                            ]
-                        ],
-                        'total_amount' => 120.00,
-                        'notes' => 'Sample order notes for day 3'
-                    ],
-                    [
-                        'date' => $threeDaysLater->format('Y-m-d'),
-                        'meals' => [
-                            [
-                                'meal_id' => $defaultMeal ? $defaultMeal->id : '',
-                                'normal' => 1,
-                                'big' => 2,
-                                'small' => 1,
-                                's_small' => 1,
-                                'no_rice' => 0,
-                            ],
-                            [
-                                'meal_id' => $secondMeal ? $secondMeal->id : '',
-                                'normal' => 2,
-                                'big' => 0,
-                                'small' => 1,
-                                's_small' => 0,
-                                'no_rice' => 1,
-                            ]
-                        ],
-                        'total_amount' => 120.00,
-                        'notes' => 'Sample order notes for day 3'
-                    ]
-                ],
                 'arrival_time' => '08:00',
                 'driver_id' => $driver ? $driver->id : '',
                 'driver_route' => $driverRoute,
                 'backup_driver_id' => '',
                 'backup_driver_route' => '',
                 'driver_notes' => 'Sample driver notes',
-            ]);
+            ];
+
+            $days = 1;
+           
+            $startDate = \Carbon\Carbon::tomorrow();
+            $endDate = $startDate->copy()->addDays($days - 1);
+            $deliveryDateRange = $startDate->format('Y/m/d') . ' - ' . $endDate->format('Y/m/d');
+
+            $order_data['delivery_date_range'] = $deliveryDateRange;
+            
+            // Generate meals_by_date dynamically based on $days
+            $mealsByDate = [];
+            for ($i = 0; $i < $days; $i++) {
+                $currentDate = $startDate->copy()->addDays($i);
+                
+                // Vary the meal quantities and amounts for different days
+                $dayNumber = $i + 1;
+                $isEvenDay = ($dayNumber % 2 == 0);
+                
+                $mealsByDate[] = [
+                    'date' => $currentDate->format('Y-m-d'),
+                    'meals' => [
+                        [
+                            'meal_id' => $defaultMeal ? $defaultMeal->id : '',
+                            'normal' => $isEvenDay ? 1 : 2,
+                            'big' => $isEvenDay ? 2 : 1,
+                            'small' => 1,
+                            's_small' => $isEvenDay ? 1 : 0,
+                            'no_rice' => $isEvenDay ? 0 : 1,
+                        ],
+                        [
+                            'meal_id' => $secondMeal ? $secondMeal->id : '',
+                            'normal' => $isEvenDay ? 2 : 1,
+                            'big' => $isEvenDay ? 0 : 1,
+                            'small' => $isEvenDay ? 1 : 0,
+                            's_small' => $isEvenDay ? 0 : 1,
+                            'no_rice' => $isEvenDay ? 1 : 0,
+                        ]
+                    ],
+                    'total_amount' => $isEvenDay ? 120.00 : 100.00,
+                    'notes' => "Sample order notes for day {$dayNumber}"
+                ];
+            }
+            
+            $order_data['meals_by_date'] = $mealsByDate;
+            $this->form->fill($order_data);
         }
 
         // Initialize modal data
