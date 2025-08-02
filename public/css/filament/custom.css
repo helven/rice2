@@ -27,6 +27,18 @@ div.fi-input-wrp.rounded-lg {
     color: #000000 !important;
 }
 
+.flatpickr-calendar {
+  padding: 10px;
+  width: auto;
+}
+.flatpickr-months {
+  position: relative;
+}
+.flatpickr-days {
+  border-left-width: 0;
+  border-right-width: 0;
+}
+
 td.fi-ta-actions-cell {
     background-image: linear-gradient(rgba(0, 179, 230, 0.05), rgba(0, 179, 230, 0.05));
 }
