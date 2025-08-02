@@ -71,7 +71,7 @@
                     @foreach($formattedData['meals_by_date'] as $date => $dayOrders)
                         <div class="bg-white border border-gray-200 rounded-lg p-3">
                             <div class="font-medium text-gray-900 mb-3">
-                                {{ \Carbon\Carbon::parse($date)->format('d M Y') }}
+                                {{ \Carbon\Carbon::parse($date)->format(config('app.date_format')) }}
                             </div>
                             @include('filament.pages.order.partials.meal-table', [
                                 'meals' => $dayOrders['meals'],

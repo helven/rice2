@@ -32,6 +32,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
 use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
+use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
 use App\Models\CustomerAddressBook;
@@ -249,10 +250,50 @@ class CreateOrder extends Page
                                     }
                                 })
                         ]),
-                    DateRangePicker::make('delivery_date_range')
-                        ->label('Delivery Date')
+                    //DateRangePicker::make('delivery_date_range')
+                    //    ->label('Delivery Date')
+                    //    ->required()
+                    //    ->minDate(\Carbon\Carbon::now())
+                    //    ->live()
+                    //    ->afterStateUpdated(function ($state, callable $set) {
+                    //        if (empty($state)) {
+                    //            $set('meals_by_date', []);
+                    //            return;
+                    //        }
+
+                    //        [$startDate, $endDate] = explode(' - ', $state);
+                    //        $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
+                    //        $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
+
+                    //        $meals_by_date = [];
+                    //        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+                    //            $meals_by_date[] = [
+                    //                'date' => $date->format('Y-m-d'),
+                    //                'meals' => [
+                    //                    [
+                    //                        'meal_id' => '',
+                    //                        'normal' => 0,
+                    //                        'big' => 0,
+                    //                        'small' => 0,
+                    //                        's_small' => 0,
+                    //                        'no_rice' => 0,
+                    //                    ]
+                    //                ],
+                    //                'total_amount' => 0.00,
+                    //                'notes' => ''
+                    //            ];
+                    //        }
+
+                    //        $set('meals_by_date', $meals_by_date);
+                    //    })
+                    Flatpickr::make('delivery_dates')
+                        ->label('Delivery Dates')
+                        ->multiplePicker() // This enables multiple date selection
+                        ->format('Y-m-d')
+                        ->displayFormat(config('app.date_format'))
+                        ->conjunction(', ') // Set separator between multiple dates
+                        ->minDate(fn() => today())
                         ->required()
-                        ->minDate(\Carbon\Carbon::now())
                         ->live()
                         ->afterStateUpdated(function ($state, callable $set) {
                             if (empty($state)) {
@@ -260,12 +301,11 @@ class CreateOrder extends Page
                                 return;
                             }
 
-                            [$startDate, $endDate] = explode(' - ', $state);
-                            $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
-                            $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
-
+                            $dates = explode(',', $state);
+                            
                             $meals_by_date = [];
-                            for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+                            foreach ($dates as $dateString) {
+                                $date = \Carbon\Carbon::parse(trim($dateString));
                                 $meals_by_date[] = [
                                     'date' => $date->format('Y-m-d'),
                                     'meals' => [
@@ -298,7 +338,7 @@ class CreateOrder extends Page
                             $currentItem = $get('.');  // Gets the current repeater item's data
                             return sprintf(
                                 "Order - %s",
-                                \Carbon\Carbon::parse($currentItem['date'])->format('d M Y')
+                                \Carbon\Carbon::parse($currentItem['date'])->format(config('app.date_format'))
                             );
                         }),
                     Repeater::make('meals')
@@ -655,7 +695,7 @@ class CreateOrder extends Page
 
             // Create a collection of dates between start and end
             for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-                $delivery_dates .= ($delivery_dates != '' ? ', ' : '') . $date->format('d M Y');
+                $delivery_dates .= ($delivery_dates != '' ? ', ' : '') . $date->format(config('app.date_format'));
             }
         }
 

@@ -30,6 +30,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
+use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
 use App\Models\Driver;
@@ -152,12 +153,19 @@ ob_start();?>
                                 })
                         ]),
 
-                    DateTimePicker::make('delivery_date')
+                    //DateTimePicker::make('delivery_date')
+                    //    ->label('Delivery Date')
+                    //    ->required()
+                    //    //->minDate(\Carbon\Carbon::now())
+                    //    ->timezone('Asia/Kuala_Lumpur')
+                    //    ->displayFormat('Y/m/d') // 12-hour with AM/PM (K = AM/PM)
+                    //    ->live()
+                    Flatpickr::make('delivery_dates')
                         ->label('Delivery Date')
+                        ->format('Y-m-d')
+                        ->displayFormat(config('app.date_format'))
+                        ->conjunction(', ') // Set separator between multiple dates
                         ->required()
-                        //->minDate(\Carbon\Carbon::now())
-                        ->timezone('Asia/Kuala_Lumpur')
-                        ->displayFormat('Y/m/d') // 12-hour with AM/PM (K = AM/PM)
                         ->live()
             ]),
             Section::make('Add Order')

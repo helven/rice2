@@ -138,7 +138,7 @@ class ListOrder extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
-                    ->dateTime('d M Y')
+                    ->dateTime(config('app.date_format'))
                     ->sortable(),
                 TextColumn::make('total_amount')
                     ->label('Total Amount')
