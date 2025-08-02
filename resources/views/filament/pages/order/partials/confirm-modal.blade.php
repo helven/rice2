@@ -76,6 +76,7 @@
                             @include('filament.pages.order.partials.meal-table', [
                                 'meals' => $dayOrders['meals'],
                                 'total_amount' => $dayOrders['total_amount'],
+                                'delivery_fee' => $dayOrders['delivery_fee'] ?? 0,
                                 'notes' => $dayOrders['notes'] ?? ''
                             ])
                         </div>
@@ -86,6 +87,7 @@
                         @include('filament.pages.order.partials.meal-table', [
                             'meals' => $formattedData['meals'],
                             'total_amount' => $formattedData['total_amount'],
+                            'delivery_fee' => $formattedData['delivery_fee'] ?? 0,
                             'notes' => $formattedData['notes'] ?? ''
                         ])
                     </div>

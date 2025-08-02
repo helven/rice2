@@ -4,7 +4,6 @@ namespace App\Filament\Pages\Order;
 
 use Illuminate\Support\HtmlString;
 
-use App\Models\CustomerAddressBook;
 use App\Filament\Pages\AbstractFilamentPage;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -35,8 +34,10 @@ use Filament\Forms\Components\Toggle;
 use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
 
 use App\Models\Customer;
+use App\Models\CustomerAddressBook;
 use App\Models\Driver;
 use App\Models\Meal;
+use App\Models\Area;
 
 class CreateOrder extends Page
 {
@@ -126,20 +127,20 @@ class CreateOrder extends Page
                     'meals' => [
                         [
                             'meal_id' => $defaultMeal ? $defaultMeal->id : '',
-                            'normal' => $isEvenDay ? 1 : 2,
-                            'big' => $isEvenDay ? 2 : 1,
+                            'normal' => $isEvenDay ? 1 : 0,
+                            'big' => $isEvenDay ? 0 : 1,
                             'small' => 1,
                             's_small' => $isEvenDay ? 1 : 0,
                             'no_rice' => $isEvenDay ? 0 : 1,
                         ],
-                        [
-                            'meal_id' => $secondMeal ? $secondMeal->id : '',
-                            'normal' => $isEvenDay ? 2 : 1,
-                            'big' => $isEvenDay ? 0 : 1,
-                            'small' => $isEvenDay ? 1 : 0,
-                            's_small' => $isEvenDay ? 0 : 1,
-                            'no_rice' => $isEvenDay ? 1 : 0,
-                        ]
+                        //[
+                        //    'meal_id' => $secondMeal ? $secondMeal->id : '',
+                        //    'normal' => $isEvenDay ? 2 : 1,
+                        //    'big' => $isEvenDay ? 0 : 1,
+                        //    'small' => $isEvenDay ? 1 : 0,
+                        //    's_small' => $isEvenDay ? 0 : 1,
+                        //    'no_rice' => $isEvenDay ? 1 : 0,
+                        //]
                     ],
                     'total_amount' => $isEvenDay ? 120.00 : 100.00,
                     'notes' => "Sample order notes for day {$dayNumber}"
@@ -498,12 +499,24 @@ class CreateOrder extends Page
             // Begin transaction
             \DB::beginTransaction();
 
+            // Get customer address for delivery fee calculation
+            $address = CustomerAddressBook::find($data['address_id']);
+
             // Create an order for each date
             foreach ($data['meals_by_date'] as $date => $dateData) {
                 // Skip if no meals for this date
                 if (empty($dateData['meals'])) {
                     continue;
                 }
+
+                // Calculate total quantity for this date
+                $totalQty = 0;
+                foreach ($dateData['meals'] as $meal) {
+                    $totalQty += intval($meal['normal']) + intval($meal['big']) + intval($meal['small']) + intval($meal['s_small']) + intval($meal['no_rice']);
+                }
+
+                // Calculate delivery fee for this date
+                $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
 
                 // Get customer's payment method
                 $customer = Customer::find($data['customer_id']);
@@ -514,6 +527,7 @@ class CreateOrder extends Page
                     'address_id' => $data['address_id'],
                     'delivery_date' => $dateData['date'],
                     'total_amount' => $dateData['total_amount'],
+                    'delivery_fee' => $deliveryFee,
                     'notes' => $dateData['notes'] ?? '',
                     'arrival_time' => $data['arrival_time'],
                     'driver_id' => $data['driver_id'],
@@ -589,8 +603,11 @@ class CreateOrder extends Page
                     $meals = Meal::whereIn('id', $meal_ids)->get()->keyBy('id');
 
                     $formatted_meals = [];
+                    $total_qty = 0;
                     foreach ($dateData['meals'] as $meal) {
                         if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
+                            $meal_qty = intval($meal['normal']) + intval($meal['big']) + intval($meal['s_small']) + intval($meal['small']) + intval($meal['no_rice']);
+                            $total_qty += $meal_qty;
                             $formatted_meals[] = [
                                 'meal_id' => $meal['meal_id'],
                                 'name' => $meals[$meal['meal_id']]->name,
@@ -599,14 +616,18 @@ class CreateOrder extends Page
                                 'small' => $meal['small'],
                                 's_small' => $meal['s_small'],
                                 'no_rice' => $meal['no_rice'],
-                                'qty' => intval($meal['normal']) + intval($meal['big']) + intval($meal['s_small']) + intval($meal['small']) + intval($meal['no_rice']),
+                                'qty' => $meal_qty,
                             ];
                         }
                     }
 
+                    // Calculate delivery fee based on address area and total quantity
+                    $delivery_fee = $this->calculateDeliveryFee($address, $total_qty);
+
                     $meals_by_date[$dateData['date']] = [
                         'meals' => $formatted_meals,
                         'total_amount' => $dateData['total_amount'],
+                        'delivery_fee' => $delivery_fee,
                         'notes' => $dateData['notes'] ?? ''
                     ];
                 }
@@ -646,6 +667,7 @@ class CreateOrder extends Page
             'delivery_date' => $delivery_dates,
             'meals_by_date' => $meals_by_date,
             'total_amount' => array_sum(array_column($meals_by_date, 'total_amount')),
+            'total_delivery_fee' => array_sum(array_column($meals_by_date, 'delivery_fee')),
             'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time'])
                 ? date('h:i A', strtotime($this->data['arrival_time']))
                 : '',
@@ -707,6 +729,35 @@ class CreateOrder extends Page
     public function updatedDataDriverNotes()
     {
         $this->modalData = $this->getFormattedData();
+    }
+
+    private function calculateDeliveryFee($address, $totalQty)
+    {
+        if (!$address || !$address->area_id) {
+            return 0;
+        }
+
+        $area = Area::find($address->area_id);
+        if (!$area || !$area->delivery_fee) {
+            return 0;
+        }
+
+        $deliveryFeeRules = $area->delivery_fee;
+        
+        // Sort by qty in descending order to find the highest applicable tier
+        usort($deliveryFeeRules, function($a, $b) {
+            return $b['qty'] - $a['qty'];
+        });
+
+        // Find the appropriate delivery fee based on total quantity
+        foreach ($deliveryFeeRules as $rule) {
+            if ($totalQty >= $rule['qty']) {
+                return $rule['delivery_fee'];
+            }
+        }
+
+        // If no rule matches, return the fee for the lowest quantity tier
+        return end($deliveryFeeRules)['delivery_fee'] ?? 0;
     }
 
     public function getBreadcrumbs(): array

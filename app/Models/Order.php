@@ -17,6 +17,7 @@ class Order extends Model
         'payment_method_id',
         'delivery_date',
         'total_amount',
+        'delivery_fee',
         'notes',
         'arrival_time',
         'dropoff_time',
@@ -30,6 +31,7 @@ class Order extends Model
     protected $casts = [
         'delivery_date' => 'datetime',
         'total_amount' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
     ];
 
     public function status()
@@ -110,14 +112,32 @@ class Order extends Model
     }
 
     /**
-     * Get the total quantity of all meals in this order
+     * Calculate delivery fee based on total quantity and area delivery fee rules
      *
-     * @return int
+     * @return float
      */
-    public function getDeliveryFeeAttribute(): int
+    public function getCalculatedDeliveryFeeAttribute(): float
     {
-        return $this->meals->sum(function ($meal) {
+        if (!$this->address || !$this->address->area) {
+            return 0;
+        }
+
+        $totalQuantity = $this->meals->sum(function ($meal) {
             return $meal->normal + $meal->big + $meal->small + $meal->s_small + $meal->no_rice;
         });
+
+        $deliveryFeeRules = $this->address->area->delivery_fee;
+        
+        if (!is_array($deliveryFeeRules)) {
+            return 0;
+        }
+
+        foreach ($deliveryFeeRules as $rule) {
+            if (isset($rule['qty']) && $totalQuantity >= $rule['qty']) {
+                return $rule['delivery_fee'] ?? 0;
+            }
+        }
+
+        return 0;
     }
 }
