@@ -105,22 +105,22 @@ class CreateOrder extends Page
             ];
 
             $days = 1;
-           
+
             $startDate = \Carbon\Carbon::tomorrow();
             $endDate = $startDate->copy()->addDays($days - 1);
             $deliveryDateRange = $startDate->format('Y/m/d') . ' - ' . $endDate->format('Y/m/d');
 
             $order_data['delivery_date_range'] = $deliveryDateRange;
-            
+
             // Generate meals_by_date dynamically based on $days
             $mealsByDate = [];
             for ($i = 0; $i < $days; $i++) {
                 $currentDate = $startDate->copy()->addDays($i);
-                
+
                 // Vary the meal quantities and amounts for different days
                 $dayNumber = $i + 1;
                 $isEvenDay = ($dayNumber % 2 == 0);
-                
+
                 $mealsByDate[] = [
                     'date' => $currentDate->format('Y-m-d'),
                     'meals' => [
@@ -145,7 +145,7 @@ class CreateOrder extends Page
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
             }
-            
+
             $order_data['meals_by_date'] = $mealsByDate;
             $this->form->fill($order_data);
         }
@@ -244,7 +244,8 @@ class CreateOrder extends Page
                 <div><?php echo $address->address_1; ?><br />
                     <?php echo ($address->address_2) ? $address->address_2 . '<br />' : "";
                     ?>
-                    <?php echo $address->postcode; ?> <?php echo $address->city; ?></div>
+                    <?php echo $address->postcode; ?> <?php echo $address->city; ?>
+                </div>
             <?php
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
@@ -508,6 +509,10 @@ class CreateOrder extends Page
                     continue;
                 }
 
+                // Get customer's payment method
+                $customer = Customer::find($data['customer_id']);
+                $paymentMethodId = $customer ? $customer->payment_method_id : null;
+
                 $order = \App\Models\Order::create([
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
@@ -520,6 +525,7 @@ class CreateOrder extends Page
                     'backup_driver_id' => $data['backup_driver_id'] ?? 0,
                     'backup_driver_route' => $data['backup_driver_route'] ?? '',
                     'driver_notes' => $data['driver_notes'] ?? '',
+                    'payment_method_id' => $paymentMethodId,
                 ]);
 
                 // Create order meals for this date
