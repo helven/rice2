@@ -35,6 +35,7 @@ use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Meal;
 use App\Models\Order;
+use App\Models\Area;
 
 class EditOrder extends Page
 {
@@ -392,12 +393,23 @@ ob_start();?>
             // Begin transaction
             \DB::beginTransaction();
             
+            // Calculate total quantity for delivery fee calculation
+            $totalQty = 0;
+            foreach ($data['meals'] as $meal) {
+                $totalQty += intval($meal['normal']) + intval($meal['big']) + intval($meal['small']) + intval($meal['s_small']) + intval($meal['no_rice']);
+            }
+
+            // Calculate delivery fee
+            $address = CustomerAddressBook::find($data['address_id']);
+            $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
+            
             // Update the order
             $this->order->update([
                 'customer_id' => $data['customer_id'],
                 'address_id' => $data['address_id'],
                 'delivery_date' => \Carbon\Carbon::parse($data['delivery_date']),
                 'total_amount' => $data['total_amount'],
+                'delivery_fee' => $deliveryFee,
                 'notes' => $data['notes'],
                 'arrival_time' => $data['arrival_time'],
                 'driver_id' => $data['driver_id'],
@@ -445,8 +457,11 @@ ob_start();?>
         $meals = Meal::whereIn('id', collect($this->data['meals'])->pluck('meal_id'))->get()->keyBy('id');
 
         $temp_meals = [];
+        $total_qty = 0;
         foreach($this->data['meals'] as $meal){
             if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
+                $meal_qty = $meal['normal'] + $meal['big'] + $meal['small'] + $meal['s_small'] + $meal['no_rice'];
+                $total_qty += $meal_qty;
                 $temp_meals[] = [
                     'meal_id' => $meal['meal_id'],
                     'name' => $meals[$meal['meal_id']]->name,
@@ -455,10 +470,13 @@ ob_start();?>
                     'small' => $meal['small'],
                     's_small' => $meal['s_small'],
                     'no_rice' => $meal['no_rice'],
-                    'qty' => $meal['normal'] + $meal['big'] + $meal['small'] + $meal['s_small'] + $meal['no_rice']
+                    'qty' => $meal_qty
                 ];
             }
         }
+
+        // Calculate delivery fee based on address area and total quantity
+        $delivery_fee = $this->calculateDeliveryFee($address, $total_qty);
 
         $display_address = '';
         if($address){
@@ -481,6 +499,7 @@ ob_start();?>
                 : '',
             'meals' => $temp_meals,
             'total_amount' => $this->data['total_amount'] ?? '0.00',
+            'delivery_fee' => $delivery_fee,
             'notes' => $this->data['notes'] ?? '',
             'arrival_time' => isset($this->data['arrival_time']) && !empty($this->data['arrival_time']) 
                 ? date('h:i A', strtotime($this->data['arrival_time'])) 
@@ -553,6 +572,35 @@ ob_start();?>
     public function updatedDataDriverNotes(): void
     {
         $this->modalData = $this->getFormattedData();
+    }
+
+    private function calculateDeliveryFee($address, $totalQty)
+    {
+        if (!$address || !$address->area_id) {
+            return 0;
+        }
+
+        $area = Area::find($address->area_id);
+        if (!$area || !$area->delivery_fee) {
+            return 0;
+        }
+
+        $deliveryFeeRules = $area->delivery_fee;
+        
+        // Sort by qty in descending order to find the highest applicable tier
+        usort($deliveryFeeRules, function($a, $b) {
+            return $b['qty'] - $a['qty'];
+        });
+
+        // Find the appropriate delivery fee based on total quantity
+        foreach ($deliveryFeeRules as $rule) {
+            if ($totalQty >= $rule['qty']) {
+                return $rule['delivery_fee'];
+            }
+        }
+
+        // If no rule matches, return the fee for the lowest quantity tier
+        return end($deliveryFeeRules)['delivery_fee'] ?? 0;
     }
 
     public function getBreadcrumbs(): array
