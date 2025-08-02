@@ -31,7 +31,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
-use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
@@ -66,7 +65,7 @@ class CreateOrder extends Page
         $this->form->fill([
             'customer_id' => '',
             'address_id' => '',
-            'delivery_date_range' => '',
+            'delivery_date' => '',
             'meals_by_date' => [],
             'total_amount' => 0.00,
             'notes' => '',
@@ -109,10 +108,13 @@ class CreateOrder extends Page
             $days = 2;
 
             $startDate = \Carbon\Carbon::today();
-            $endDate = $startDate->copy()->addDays($days - 1);
-            $deliveryDateRange = $startDate->format('Y/m/d') . ' - ' . $endDate->format('Y/m/d');
-
-            $order_data['delivery_date_range'] = $deliveryDateRange;
+            
+            // Generate individual dates with comma separator
+            $dates = [];
+            for ($i = 0; $i < $days; $i++) {
+                $dates[] = $startDate->copy()->addDays($i)->format(config('app.date_format'));
+            }
+            $order_data['delivery_date'] = $dates;
 
             // Generate meals_by_date dynamically based on $days
             $mealsByDate = [];
@@ -124,7 +126,7 @@ class CreateOrder extends Page
                 $isEvenDay = ($dayNumber % 2 == 0);
 
                 $mealsByDate[] = [
-                    'date' => $currentDate->format('Y-m-d'),
+                    'date' => $currentDate->format(config('app.date_format')),
                     'meals' => [
                         [
                             'meal_id' => $defaultMeal ? $defaultMeal->id : '',
@@ -180,14 +182,7 @@ class CreateOrder extends Page
                                 ->options(Customer::query()->pluck('name', 'id'))
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
-                                    // Reset address when customer changes
                                     $set('address_id', null);
-                                    
-                                    // Clear all driver fields when customer changes
-                                    //$set('driver_id', null);
-                                    //$set('driver_route', null);
-                                    //$set('backup_driver_id', null);
-                                    //$set('backup_driver_route', null);
                                 }),
 
                             Select::make('address_id')
@@ -212,16 +207,13 @@ class CreateOrder extends Page
                                         ->mapWithKeys(function ($address) {
                                             $address->address_1 = trim($address->address_1);
                                             $address->address_2 = trim($address->address_2);
-                                            ob_start(); ?>
-                <div class="hidden"><?php echo "{$address->name}|{$address->city}"; ?></div>
-                <span class="font-bold"><?php echo $address->name; ?></span><?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : "";
-                                                                            ?>
-                <div><?php echo $address->address_1; ?><br />
-                    <?php echo ($address->address_2) ? $address->address_2 . '<br />' : "";
-                    ?>
-                    <?php echo $address->postcode; ?> <?php echo $address->city; ?>
-                </div>
-            <?php
+ob_start();?>
+<div class="hidden"><?php echo "{$address->name}|{$address->city}";?></div>
+<span class="font-bold"><?php echo $address->name;?></span><?php echo $address->is_default?'<span class="italic text-xs text-gray-400"> (default)</span>':"";?>
+<div><?php echo $address->address_1;?><br />
+<?php echo ($address->address_2)?$address->address_2.'<br />':"";?>
+<?php echo $address->postcode;?> <?php echo $address->city;?></div>
+<?php
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
                                         });
@@ -268,7 +260,7 @@ class CreateOrder extends Page
                     //        $meals_by_date = [];
                     //        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
                     //            $meals_by_date[] = [
-                    //                'date' => $date->format('Y-m-d'),
+                    //                'date' => $date->format(config('app.date_format')),
                     //                'meals' => [
                     //                    [
                     //                        'meal_id' => '',
@@ -286,10 +278,10 @@ class CreateOrder extends Page
 
                     //        $set('meals_by_date', $meals_by_date);
                     //    })
-                    Flatpickr::make('delivery_dates')
+                    Flatpickr::make('delivery_date')
                         ->label('Delivery Dates')
                         ->multiplePicker() // This enables multiple date selection
-                        ->format('Y-m-d')
+                        ->format(config('app.date_format'))
                         ->displayFormat(config('app.date_format'))
                         ->conjunction(', ') // Set separator between multiple dates
                         ->minDate(fn() => today())
@@ -307,7 +299,7 @@ class CreateOrder extends Page
                             foreach ($dates as $dateString) {
                                 $date = \Carbon\Carbon::parse(trim($dateString));
                                 $meals_by_date[] = [
-                                    'date' => $date->format('Y-m-d'),
+                                    'date' => $date->format(config('app.date_format')),
                                     'meals' => [
                                         [
                                             'meal_id' => '',
@@ -349,7 +341,7 @@ class CreateOrder extends Page
                         ->cloneable()
                         ->columns(7)
                         ->addAction(
-                            fn($action) => $action
+                            fn ($action) => $action
                                 ->label('Add Meal')
                                 ->extraAttributes([
                                     'class' => '',
@@ -475,7 +467,7 @@ class CreateOrder extends Page
                                     }
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn(callable $get): bool => blank($get('driver_id')))
+                                ->disabled(fn (callable $get): bool => blank($get('driver_id')))
                         ]),
                     Grid::make(2)
                         ->schema([
@@ -525,7 +517,7 @@ class CreateOrder extends Page
         $this->validate([
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
-            'data.delivery_date_range' => ['required', 'string'],
+            'data.delivery_date' => ['required', 'string'],
             'data.arrival_time' => ['required'],
             'data.meals_by_date' => ['required', 'array', 'min:1'],
             'data.driver_id' => ['required', 'exists:drivers,id'],
@@ -685,17 +677,16 @@ class CreateOrder extends Page
             $display_address = trim(ob_get_clean());
         }
 
-        $delivery_dates = '';
+        $delivery_date = '';
 
         // Parse the date range
-        if ($this->data['delivery_date_range'] !== '') {
-            [$startDate, $endDate] = explode(' - ', $this->data['delivery_date_range']);
-            $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
-            $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
-
-            // Create a collection of dates between start and end
-            for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-                $delivery_dates .= ($delivery_dates != '' ? ', ' : '') . $date->format(config('app.date_format'));
+        if ($this->data['delivery_date'] !== '') {
+            // Parse comma-separated dates
+            $dateStrings = explode(', ', $this->data['delivery_date']);
+            
+            foreach ($dateStrings as $dateString) {
+                $date = \Carbon\Carbon::parse(str_replace('/', '-', $dateString));
+                $delivery_date .= ($delivery_date != '' ? ', ' : '') . $date->format(config('app.date_format'));
             }
         }
 
@@ -704,7 +695,7 @@ class CreateOrder extends Page
             'customer_name' => $customer ? $customer->name : '',
             'address_id' => $this->data['address_id'],
             'address' => $address ? $display_address : '',
-            'delivery_date' => $delivery_dates,
+            'delivery_date' => $delivery_date,
             'meals_by_date' => $meals_by_date,
             'total_amount' => array_sum(array_column($meals_by_date, 'total_amount')),
             'total_delivery_fee' => array_sum(array_column($meals_by_date, 'delivery_fee')),

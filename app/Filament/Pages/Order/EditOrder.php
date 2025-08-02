@@ -29,7 +29,6 @@ use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
-use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
@@ -93,7 +92,6 @@ class EditOrder extends Page
 
     protected function getFormSchema(): array
     {
-        //DateTimePicker::configureUsing(fn (DateTimePicker $component) => $component->native(false));
         return [
             Section::make('Order Information')
                 ->collapsible()
@@ -122,15 +120,12 @@ class EditOrder extends Page
                                 ->searchable()
                                 ->allowHtml()
                                 ->live()
-                                ->disabled(fn (callable $get): bool => blank($get('customer_id')))
-                                //->dehydrated(fn (callable $get): bool => filled($get('customer_id')))
+                                ->disabled(fn(callable $get): bool => blank($get('customer_id')))
                                 ->options(function (callable $get) {
                                     $customerId = $get('customer_id');
-        
                                     if (blank($customerId)) {
                                         return [];
                                     }
-        
                                     return CustomerAddressBook::query()
                                         ->where('customer_id', $customerId)
                                         ->where('status_id', 1)
@@ -160,11 +155,10 @@ ob_start();?>
                     //    ->timezone('Asia/Kuala_Lumpur')
                     //    ->displayFormat('Y/m/d') // 12-hour with AM/PM (K = AM/PM)
                     //    ->live()
-                    Flatpickr::make('delivery_dates')
+                    Flatpickr::make('delivery_date')
                         ->label('Delivery Date')
-                        ->format('Y-m-d')
+                        ->format(config('app.date_format'))
                         ->displayFormat(config('app.date_format'))
-                        ->conjunction(', ') // Set separator between multiple dates
                         ->required()
                         ->live()
             ]),
@@ -311,17 +305,17 @@ ob_start();?>
                                 }),
                             Select::make('driver_route')
                                 ->label('Route')
-                                ->placeholder('Select Route') 
+                                ->placeholder('Select Route')
                                 ->required()
                                 ->searchable()
                                 ->live()
                                 ->options(function (callable $get) {
                                     $driverId = $get('driver_id');
-                            
+
                                     if (blank($driverId)) {
                                         return [];
                                     }
-                            
+
                                     $driver = \App\Models\Driver::find($driverId);
                                     if (!$driver || !$driver->route) {
                                         return [];
@@ -330,7 +324,7 @@ ob_start();?>
                                 })
                                 ->disabled(fn (callable $get): bool => blank($get('driver_id')))
                         ]),
-                        Grid::make(2)
+                    Grid::make(2)
                         ->schema([
                             Select::make('backup_driver_id')
                                 ->label('Backup Driver')
@@ -344,29 +338,28 @@ ob_start();?>
                                 }),
                             Select::make('backup_driver_route')
                                 ->label('Route')
-                                ->placeholder('Select Route') 
+                                ->placeholder('Select Route')
                                 ->searchable()
                                 ->live()
                                 ->options(function (callable $get) {
                                     $driverId = $get('backup_driver_id');
-                            
+
                                     if (blank($driverId)) {
                                         return [];
                                     }
-                            
+
                                     $driver = \App\Models\Driver::find($driverId);
                                     if (!$driver || !$driver->route) {
                                         return [];
                                     }
-
                                     return collect($driver->route)->pluck('route_name', 'route_name');
                                 })
-                                ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                ->disabled(fn(callable $get): bool => blank($get('backup_driver_id')))
                         ]),
-                        Textarea::make('driver_notes')
-                            ->label('Notes')
-                            ->rows(5)
-                            ->live()
+                    Textarea::make('driver_notes')
+                        ->label('Notes')
+                        ->rows(5)
+                        ->live()
                 ]),
         ];
     }
@@ -503,7 +496,7 @@ ob_start();?>
             'address_id' => $this->data['address_id'],
             'address' => $address ? $display_address : '',
             'delivery_date' => isset($this->data['delivery_date']) && !empty($this->data['delivery_date']) 
-                ? date('Y-m-d', strtotime($this->data['delivery_date'])) 
+                ? date(config('app.date_format'), strtotime($this->data['delivery_date'])) 
                 : '',
             'meals' => $temp_meals,
             'total_amount' => $this->data['total_amount'] ?? '0.00',
