@@ -6,7 +6,7 @@
             
         }
         td.fi-table-cell-payment-status\.label:hover,
-        td.fi-table-cell-invoice\.invoice-no:hover
+        td.fi-table-cell-invoice\.invoice-no:hover {
             text-decoration: underline;
         }
     </style>

@@ -4,10 +4,10 @@
     <div class="print_page_title">No Order found.</div>
 <?php } else { ?>
     <div class="print_page_title">Order Sheet, please select <b>Portrait</b>, A4 paper for best printing result</div>
-    <?php $order_per_page = 4; ?>
-    <?php $page_ctr = 0; ?>
-    <?php $page_item_ctr = 0; ?>
-    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
+    <?php $pageCtr = 0; ?>
+    <?php $rowCtr = 1; ?>
+    <?php $pageItemCtr = 0; ?>
+    <div id="div_Page-<?php echo ($pageCtr + 1); ?>" class="print_page_portrait">
         <div class="invoice_payment_method">
             {{ $order->payment_method->name }}<br />
             {{ $order->payment_method->address_1 }}<br />
@@ -39,10 +39,24 @@
         <div>
             <div class="order_info">
                 <table>
+                <thead>
                     <tr>
-                        <th>Order No.</th>
-                        <td>{{ $order->order_no }}</td>
+                        <th></th>
+                        <th>Description</th>
+                        <th class="screen_80px print_80px">Qty</th>
                     </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($order->meals as $meal){ ?>
+                        <tr>
+                            <th>{{ $rowCtr }}.</th>
+                            <td>{{ $meal->meal->name }}</td>
+                            <td>{{ $meal->total_qty }}</td>
+                        </tr>
+                        <?php $rowCtr++; ?>
+                        <?php $pageItemCtr++; ?>
+                    <?php } ?>
+                </tbody>
                 </table>
             </div>
             <div class="payment_terms">
