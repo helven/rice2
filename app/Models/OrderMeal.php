@@ -40,4 +40,14 @@ class OrderMeal extends Model
     {
         return $this->belongsTo(Meal::class);
     }
+
+    /**
+     * Get the total quantity of a meal in this order
+     *
+     * @return int
+     */
+    public function getTotalQtyAttribute(): int
+    {
+        return $this->normal + $this->big + $this->small + $this->s_small + $this->no_rice;
+    }
 }
