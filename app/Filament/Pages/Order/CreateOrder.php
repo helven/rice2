@@ -582,8 +582,7 @@ class CreateOrder extends Page
                 ]);
 
                 // Create invoice for this order
-                $billingAddress = $customer->name . "\n" .
-                    $address->address_1 . "\n" .
+                $billingAddress = $address->address_1 . "\n" .
                     ($address->address_2 ? $address->address_2 . "\n" : '') .
                     $address->mall_or_area;
 
