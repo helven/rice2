@@ -36,7 +36,8 @@ class ReportController extends AdminController
         if (request()->has('date_range') && !empty(request()->get('date_range'))) {
             switch (request()->get('date_range')) {
                 case 'daily':
-                    $query->where('delivery_date', '=', request()->get('daily_date'));
+                    $query->where('delivery_date', '>=', date('Y-m-d 00:00:00', strtotime(request()->get('daily_date'))));
+                    $query->where('delivery_date', '<=', date('Y-m-d 23:59:59', strtotime(request()->get('daily_date'))));
                     break;
                 case 'monthly':
                     $month = request()->get('month');
@@ -61,9 +62,9 @@ class ReportController extends AdminController
         // Driver ID filter
         if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
             if (is_array(request()->get('driver_id'))) {
-                $driver_ids = array_filter(request()->get('driver_id'));
-                if (!empty($driver_ids)) {
-                    $query->whereIn('driver_id', $driver_ids);
+                $driverIds = array_filter(request()->get('driver_id'));
+                if (!empty($driverIds)) {
+                    $query->whereIn('driver_id', $driverIds);
                 }
             } else {
                 $query->where('driver_id', request()->get('driver_id'));
@@ -76,15 +77,15 @@ class ReportController extends AdminController
             request()->has('eorder_no') && request()->get('eorder_no') != ''
         ) {
 
-            $start_order = request()->get('sorder_no');
-            $end_order = request()->get('eorder_no');
+            $startOrder = request()->get('sorder_no');
+            $endOrder = request()->get('eorder_no');
 
             // Add suffix if no dash present
-            if (strpos($end_order, '-') === false) {
-                $end_order .= '-999';
+            if (strpos($endOrder, '-') === false) {
+                $endOrder .= '-999';
             }
 
-            $query->whereBetween('id', [$start_order, $end_order]);
+            $query->whereBetween('id', [$startOrder, $endOrder]);
         }
 
         if (request()->has('delivery_date') && !empty(request()->get('delivery_date'))) {
@@ -114,21 +115,21 @@ class ReportController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
 
         // SPLIT list by payment method
-        $this->v_data['daily_sales_list'] = array();
-        foreach ($orders_list as $order) {
-            $payment_method = $order->payment_method->key;
-            if ($payment_method == '') {
-                $payment_method = 'NULL_METHOD';
+        $this->vData['daily_sales_list'] = array();
+        foreach ($ordersList as $order) {
+            $paymentMethod = $order->payment_method->key;
+            if ($paymentMethod == '') {
+                $paymentMethod = 'NULL_METHOD';
             }
-            $this->v_data['daily_sales_list']['date_'.date('Ymd', strtotime($order->delivery_date))]['payment_' . $payment_method][]  = $order;
-            //$this->v_data['daily_sales_list']['payment_' . $payment_method][]  = $order;
+            $this->vData['daily_sales_list']['date_'.date('Ymd', strtotime($order->delivery_date))]['payment_' . $paymentMethod][]  = $order;
+            //$this->vData['daily_sales_list']['payment_' . $paymentMethod][]  = $order;
         }
-            //dd($this->v_data['daily_sales_list']);
+            //dd($this->vData['daily_sales_list']);
 
-        return view('admin.report.print_daily_bank_sales_report', $this->v_data);
+        return view('admin.report.print_daily_bank_sales_report', $this->vData);
     }
 
     /**
@@ -154,13 +155,13 @@ class ReportController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
 
         // SPLIT list by meal
-        $this->v_data['daily_qty_list'] = array();
-        foreach ($orders_list as $order) {
+        $this->vData['daily_qty_list'] = array();
+        foreach ($ordersList as $order) {
             foreach ($order->meals as $orderMeal) {
-                $this->v_data['daily_qty_list']['meal_'.$orderMeal->meal->code]  = array(
+                $this->vData['daily_qty_list']['meal_'.$orderMeal->meal->code]  = array(
                     'code' => $orderMeal->meal->code,
                     'date' => $order->delivery_date,
                     'meal' => $orderMeal->meal->name,
@@ -173,7 +174,7 @@ class ReportController extends AdminController
             }
         }
 
-        return view('admin.report.print_daily_qty_report', $this->v_data);
+        return view('admin.report.print_daily_qty_report', $this->vData);
     }
 
     /**
@@ -199,29 +200,29 @@ class ReportController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
 
         // SPLIT list by day method
-        $this->v_data['monthly_sales_list'] = array();
+        $this->vData['monthly_sales_list'] = array();
         $month = request()->get('month');
-        $last_day = date('t', strtotime($month));
-        $this->v_data['payment_methods'] = AttrPaymentMethod::pluck('key');
+        $lastDay = date('t', strtotime($month));
+        $this->vData['payment_methods'] = AttrPaymentMethod::pluck('key');
 
-        for ($i = 1; $i < $last_day; $i++) {
-            $this->v_data['monthly_sales_list']['date_'. date('Ymd', strtotime($month.'-'.$i))] = array();
-            $this->v_data['monthly_sales_list']['date_'. date('Ymd', strtotime($month.'-'.$i))]['date'] = date('Y-m-d', strtotime($month.'-'.$i));
-            foreach($this->v_data['payment_methods'] as $payment_method) {
-                $this->v_data['monthly_sales_list']['date_'.date('Ymd', strtotime($month.'-'.$i))]['payment_'.$payment_method] = 0;
+        for ($i = 1; $i < $lastDay; $i++) {
+            $this->vData['monthly_sales_list']['date_'. date('Ymd', strtotime($month.'-'.$i))] = array();
+            $this->vData['monthly_sales_list']['date_'. date('Ymd', strtotime($month.'-'.$i))]['date'] = date('Y-m-d', strtotime($month.'-'.$i));
+            foreach($this->vData['payment_methods'] as $paymentMethod) {
+                $this->vData['monthly_sales_list']['date_'.date('Ymd', strtotime($month.'-'.$i))]['payment_'.$paymentMethod] = 0;
             }
         }
 
-        foreach ($orders_list as $order) {
+        foreach ($ordersList as $order) {
             if($order->payment_status_id == 4){
-                $this->v_data['monthly_sales_list']['date_'.date('Ymd', strtotime($order->delivery_date))]['payment_'.$order->payment_method->key] += $order->total_amount;
+                $this->vData['monthly_sales_list']['date_'.date('Ymd', strtotime($order->delivery_date))]['payment_'.$order->payment_method->key] += $order->total_amount;
             }
-            //$this->v_data['monthly_sales_list']['date_'. date('Ymd', strtotime($order->delivery_date))][]  = $order;
+            //$this->vData['monthly_sales_list']['date_'. date('Ymd', strtotime($order->delivery_date))][]  = $order;
         }
 
-        return view('admin.report.print_monthly_sales_report', $this->v_data);
+        return view('admin.report.print_monthly_sales_report', $this->vData);
     }
 }

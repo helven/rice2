@@ -35,15 +35,16 @@ class OrderController extends AdminController
         if (request()->has('date_range') && !empty(request()->get('date_range'))) {
             switch (request()->get('date_range')) {
                 case 'daily':
-                    $query->where('delivery_date', '=', request()->get('daily_date'));
+                    $query->where('delivery_date', '>=', date('Y-m-d 00:00:00', strtotime(request()->get('daily_date'))));
+                    $query->where('delivery_date', '<=', date('Y-m-d 23:59:59', strtotime(request()->get('daily_date'))));
                     break;
                 case 'this_week':
                     $query->where('delivery_date', '>=', date('Y-m-d', strtotime('last sunday')));
                     $query->where('delivery_date', '<=', date('Y-m-d', strtotime('next sunday')));
                     break;
                 case 'this_month':
-                    $query->where('delivery_date', '>=', date('Y-m-01'));
-                    $query->where('delivery_date', '<=', date('Y-m-d'));
+                    $query->where('delivery_date', '>=', date('Y-m-01 00:00:00'));
+                    $query->where('delivery_date', '<=', date('Y-m-d 23:59:59'));
                     break;
                 case 'custom':
                     $query->where('delivery_date', '>=', request()->get('start_date'));
@@ -55,9 +56,9 @@ class OrderController extends AdminController
         // Driver ID filter
         if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
             if (is_array(request()->get('driver_id'))) {
-                $driver_ids = array_filter(request()->get('driver_id'));
-                if (!empty($driver_ids)) {
-                    $query->whereIn('driver_id', $driver_ids);
+                $driverIds = array_filter(request()->get('driver_id'));
+                if (!empty($driverIds)) {
+                    $query->whereIn('driver_id', $driverIds);
                 }
             } else {
                 $query->where('driver_id', request()->get('driver_id'));
@@ -70,15 +71,15 @@ class OrderController extends AdminController
             request()->has('eorder_no') && request()->get('eorder_no') != ''
         ) {
 
-            $start_order = request()->get('sorder_no');
-            $end_order = request()->get('eorder_no');
+            $startOrder = request()->get('sorder_no');
+            $endOrder = request()->get('eorder_no');
 
             // Add suffix if no dash present
-            if (strpos($end_order, '-') === false) {
-                $end_order .= '-999';
+            if (strpos($endOrder, '-') === false) {
+                $endOrder .= '-999';
             }
 
-            $query->whereBetween('id', [$start_order, $end_order]);
+            $query->whereBetween('id', [$startOrder, $endOrder]);
         }
 
         if (request()->has('delivery_date') && !empty(request()->get('delivery_date'))) {
@@ -109,11 +110,11 @@ class OrderController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
 
-        $this->v_data['orders_list'] = $orders_list;
+        $this->vData['orders_list'] = $ordersList;
 
-        return view('admin.order.print_data', $this->v_data);
+        return view('admin.order.print_data', $this->vData);
     }
 
     /**
@@ -138,41 +139,41 @@ class OrderController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
         // SPLIT list by driver
-        $this->v_data['orders_list'] = array();
-        foreach ($orders_list as $order) {
-            $this->v_data['orders_list']['driver_' . $order->driver->id][]  = $order;
+        $this->vData['orders_list'] = array();
+        foreach ($ordersList as $order) {
+            $this->vData['orders_list']['driver_' . $order->driver->id][]  = $order;
         }
 
-        $orders_per_driver = 20;
-        foreach ($this->v_data['orders_list']  as $driver_id => &$driver) {
-            if (count($driver) > $orders_per_driver) {
-                $a_temp         = array();
-                $order_ctr      = 0;
-                $separate_ctr   = 0;
+        $ordersPerDriver  = 20;
+        foreach ($this->vData['orders_list']  as $driverId => &$driver) {
+            if (count($driver) > $ordersPerDriver ) {
+                $aTemp         = array();
+                $orderCtr      = 0;
+                $separateCtr   = 0;
 
                 foreach ($driver as $order) {
-                    if ($order_ctr < $orders_per_driver) {
-                        array_push($a_temp, $order);
+                    if ($orderCtr < $ordersPerDriver ) {
+                        array_push($aTemp, $order);
                     } else {
-                        $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                        $separate_ctr++;
+                        $this->vData['orders_list'][$driverId . '-' . $separateCtr] = $aTemp;
+                        $separateCtr++;
 
                         // RESET
-                        $a_temp = array();
-                        $order_ctr    = 0;
-                        array_push($a_temp, $order);
+                        $aTemp = array();
+                        $orderCtr    = 0;
+                        array_push($aTemp, $order);
                     }
-                    $order_ctr++;
+                    $orderCtr++;
                 }
-                $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                unset($this->v_data['orders_list'][$driver_id]);
+                $this->vData['orders_list'][$driverId . '-' . $separateCtr] = $aTemp;
+                unset($this->vData['orders_list'][$driverId]);
             }
         }
-        ksort($this->v_data['orders_list']); // sort by [driver_name]_[driver_id]-ctr
+        ksort($this->vData['orders_list']); // sort by [driver_name]_[driver_id]-ctr
 
-        return view('admin.order.print_dropoff', $this->v_data);
+        return view('admin.order.print_dropoff', $this->vData);
     }
 
     /**
@@ -197,42 +198,42 @@ class OrderController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
 
         // SPLIT list by driver
-        $this->v_data['orders_list'] = array();
-        foreach ($orders_list as $order) {
-            $this->v_data['orders_list']['driver_' . $order->driver->id][]  = $order;
+        $this->vData['orders_list'] = array();
+        foreach ($ordersList as $order) {
+            $this->vData['orders_list']['driver_' . $order->driver->id][]  = $order;
         }
 
-        $orders_per_driver = 3;
-        foreach ($this->v_data['orders_list']  as $driver_id => &$driver) {
-            if (count($driver) > $orders_per_driver) {
-                $a_temp         = array();
-                $order_ctr      = 0;
-                $separate_ctr   = 0;
+        $ordersPerDriver  = 3;
+        foreach ($this->vData['orders_list']  as $driverId => &$driver) {
+            if (count($driver) > $ordersPerDriver ) {
+                $aTemp = array();
+                $orderCtr = 0;
+                $separateCtr = 0;
 
                 foreach ($driver as $order) {
-                    if ($order_ctr < $orders_per_driver) {
-                        array_push($a_temp, $order);
+                    if ($orderCtr < $ordersPerDriver ) {
+                        array_push($aTemp, $order);
                     } else {
-                        $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                        $separate_ctr++;
+                        $this->vData['orders_list'][$driverId . '-' . $separateCtr] = $aTemp;
+                        $separateCtr++;
 
                         // RESET
-                        $a_temp = array();
-                        $order_ctr    = 0;
-                        array_push($a_temp, $order);
+                        $aTemp = array();
+                        $orderCtr = 0;
+                        array_push($aTemp, $order);
                     }
-                    $order_ctr++;
+                    $orderCtr++;
                 }
-                $this->v_data['orders_list'][$driver_id . '-' . $separate_ctr] = $a_temp;
-                unset($this->v_data['orders_list'][$driver_id]);
+                $this->vData['orders_list'][$driverId . '-' . $separateCtr] = $aTemp;
+                unset($this->vData['orders_list'][$driverId]);
             }
         }
-        ksort($this->v_data['orders_list']); // sort by [driver_name]_[driver_id]-ctr
+        ksort($this->vData['orders_list']); // sort by [driver_name]_[driver_id]-ctr
 
-        return view('admin.order.print_driver_sheet_1', $this->v_data);
+        return view('admin.order.print_driver_sheet_1', $this->vData);
     }
 
     /**
@@ -257,10 +258,33 @@ class OrderController extends AdminController
 
         $this->applyOrderFilters($query);
 
-        $orders_list = $query->get();
+        $ordersList = $query->get();
 
-        $this->v_data['orders_list'] = $orders_list;
+        $this->vData['orders_list'] = $ordersList;
 
-        return view('admin.order.print_driver_sheet_2', $this->v_data);
+        return view('admin.order.print_driver_sheet_2', $this->vData);
+    }
+
+    /**
+     * Print Invoice
+     *
+     * @return \Illuminate\Http\Response
+     */
+    function printInvoice($order_id) {
+        $query = Order::query();
+
+        $query
+            ->with([
+                'meals.meal',
+                'customer',
+            ])
+            ->leftjoin('invoices', 'invoices.order_id', '=', 'orders.id')
+            ->where('orders.id', $order_id);
+
+        $order = $query->get();
+
+        $this->vData['order'] = $order;
+
+        return view('admin.order.print_invoice', $this->vData);
     }
 }
