@@ -26,7 +26,7 @@
             <td colspan="6" class="pt-2 text-sm text-gray-600">
                 <div class="space-y-1">
                     <div class="text-right font-bold">Amount: RM{{ number_format($total_amount, 2) }}</div>
-                    @if(isset($delivery_fee) && $delivery_fee > 0)
+                    @if(isset($delivery_fee))
                         <div class="text-right font-bold text-blue-600">Delivery Fee: RM{{ number_format($delivery_fee, 2) }}</div>
                         <div class="text-right font-bold text-green-600 border-t pt-1">Total: RM{{ number_format($total_amount + $delivery_fee, 2) }}</div>
                     @endif

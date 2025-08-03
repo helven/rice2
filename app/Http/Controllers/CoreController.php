@@ -7,7 +7,7 @@ use DB;
 
 class CoreController extends Controller
 {
-    protected $v_data = array();
+    protected $vData = array();
 
     function __construct()
     {

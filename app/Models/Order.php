@@ -29,7 +29,7 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'delivery_date' => 'datetime',
+        'delivery_date' => 'date',
         'total_amount' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
     ];

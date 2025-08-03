@@ -401,9 +401,9 @@ class EditOrder extends Page
             }
 
             // Calculate delivery fee
-            $address = CustomerAddressBook::find($data['address_id']);
+            $address = CustomerAddressBook::find($data['address_id']);dd($address);
             $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
-
+dd($deliveryFee);
             // Update the order
             $this->order->update([
                 'customer_id' => $data['customer_id'],
@@ -435,7 +435,7 @@ class EditOrder extends Page
                 // Create new invoice
                 \App\Models\Invoice::create([
                     'order_id' => $this->order->id,
-                    'invoice_number' => $this->order->invoice_no,
+                    'invoice_no' => $this->order->invoice_no,
                     'billing_name' => $customer->name,
                     'billing_address' => $billingAddress,
                     'tax_amount' => config('app.tax_rate'),

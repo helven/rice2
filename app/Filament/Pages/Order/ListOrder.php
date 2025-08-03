@@ -15,8 +15,11 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
+use App\Models\Invoice;
 
 class ListOrder extends Page implements HasTable
 {
@@ -31,6 +34,8 @@ class ListOrder extends Page implements HasTable
     protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.order.list-order';
+
+
 
     public $dateFilter = 'today';
 
@@ -145,6 +150,28 @@ class ListOrder extends Page implements HasTable
                     ->numeric(2, '.', ',')
                     ->prefix('RM ')
                     ->sortable(),
+                TextColumn::make('status.label')
+                    ->label('Status')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color(function (Order $record): string {
+                        if ($record->status_id === 1) return 'success';
+                        if ($record->status_id === 2) return 'warning';
+                        return 'gray';
+                    })
+                    ->toggleable(true),
+                TextColumn::make('created_at')
+                    ->label('Ordered On')
+                    ->dateTime(config('app.date_format'))
+                    ->sortable()
+                    ->toggleable(true),
+                TextColumn::make('updated_at')
+                    ->label('Last Modified')
+                    ->dateTime(config('app.datetime_format'))
+                    ->sortable()
+                    ->toggleable(true)
+                    ->toggledHiddenByDefault(),
                 TextColumn::make('payment_status.label')
                     ->label('Payment')
                     ->formatStateUsing(function (Order $record): string {
@@ -192,6 +219,7 @@ class ListOrder extends Page implements HasTable
                                     })
                                     ->disabled(fn(callable $get) => (string)$get('payment_status_id') === 3)
                             ])
+                            ->modalSubmitActionLabel('Save')
                             ->action(function (Order $record, array $data): void {
                                 $data['payment_method_id'] = (string)$data['payment_status_id'] === 3 ? null : $data['payment_method_id'];
                                 $record->update([
@@ -201,28 +229,63 @@ class ListOrder extends Page implements HasTable
                             })
                             ->icon('heroicon-m-pencil-square')
                     ),
-                TextColumn::make('status.label')
-                    ->label('Status')
+                TextColumn::make('invoice.invoice_no')
+                    ->label('Invoice')
+                    ->formatStateUsing(function (Order $record): string {
+                        return $record->invoice ? $record->invoice->invoice_no : 'No Invoice';
+                    })
                     ->searchable()
                     ->sortable()
-                    ->badge()
-                    ->color(function (Order $record): string {
-                        if ($record->status_id === 1) return 'success';
-                        if ($record->status_id === 2) return 'warning';
-                        return 'gray';
-                    })
-                    ->toggleable(true),
-                TextColumn::make('created_at')
-                    ->label('Ordered On')
-                    ->dateTime('Y-m-d H:i')
-                    ->sortable()
-                    ->toggleable(true),
-                TextColumn::make('updated_at')
-                    ->label('Last Modified')
-                    ->dateTime('Y-m-d H:i:s')
-                    ->sortable()
-                    ->toggleable(true)
-                    ->toggledHiddenByDefault(),
+                    ->action(
+                        TableAction::make('editInvoice')
+                            ->form([
+                                TextInput::make('invoice_no')
+                                    ->label('Invoice Number')
+                                    ->required()
+                                    ->default(function (Order $record): ?string {
+                                        return $record->invoice?->invoice_no ?? str_pad($record->id, config('app.order_id_padding'), '0', STR_PAD_LEFT);
+                                    }),
+                                TextInput::make('ref_no')
+                                    ->label('Reference Number')
+                                    ->default(function (Order $record): ?string {
+                                        return $record->invoice?->ref_no;
+                                    }),
+                                TextInput::make('billing_name')
+                                    ->label('Name')
+                                    ->required()
+                                    ->default(function (Order $record): ?string {
+                                        return $record->invoice?->billing_name;
+                                    }),
+                                Textarea::make('billing_address')
+                                    ->label('Billing Address')
+                                    ->required()
+                                    ->rows(6)
+                                    ->default(function (Order $record): ?string {
+                                        return $record->invoice?->billing_address;
+                                    })
+                            ])
+                            ->action(function (Order $record, array $data): void {
+                                $invoice = $record->invoice;
+                                if (!$invoice) {
+                                    $invoice = new Invoice();
+                                    $invoice->order_id = $record->id;
+                                    $invoice->issue_date = now();
+                                    $invoice->due_date = now()->addDays(30);
+                                }
+                                
+                                $invoice->invoice_no = $data['invoice_no'];
+                                $invoice->ref_no = $data['ref_no'];
+                                $invoice->billing_name = $data['billing_name'];
+                                $invoice->billing_address = $data['billing_address'];
+                                $invoice->save();
+                                
+                                // Show success notification
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Invoice saved successfully')
+                                    ->success()
+                                    ->send();
+                            })
+                    )
             ])
             ->filters([
                 Filter::make('date_range')
@@ -363,6 +426,11 @@ class ListOrder extends Page implements HasTable
                     ->relationship('driver', 'name'),
             ])
             ->actions([
+                TableAction::make('print_invoice')
+                    ->label('Print Invoice')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn(Order $record): string => "/backend/orders/print-invoice/{$record->id}")
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()
                     ->url(fn(Order $record): string => "/backend/orders/{$record->id}/edit"),
                 Tables\Actions\DeleteAction::make()
@@ -389,7 +457,9 @@ class ListOrder extends Page implements HasTable
 
     protected function query(): Builder
     {
-        return Order::query()->whereIn('status_id', [1, 2]);
+        return Order::query()
+            ->with(['invoice', 'customer', 'address'])
+            ->whereIn('status_id', [1, 2]);
     }
 
     protected function getHeaderActions(): array

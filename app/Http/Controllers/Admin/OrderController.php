@@ -277,11 +277,12 @@ class OrderController extends AdminController
             ->with([
                 'meals.meal',
                 'customer',
+                'payment_method',
             ])
             ->leftjoin('invoices', 'invoices.order_id', '=', 'orders.id')
             ->where('orders.id', $order_id);
 
-        $order = $query->get();
+        $order = $query->first();
 
         $this->vData['order'] = $order;
 

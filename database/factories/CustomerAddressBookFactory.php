@@ -12,7 +12,7 @@ class CustomerAddressBookFactory extends Factory
     public function definition(): array
     {
         $isMall = fake()->boolean(); // Randomly decide between mall and area
-
+        $isMall = false;
         // Malaysian cities list
         $malaysianCities = [
             'Kuala Lumpur', 'George Town', 'Ipoh', 'Shah Alam', 'Subang Jaya',

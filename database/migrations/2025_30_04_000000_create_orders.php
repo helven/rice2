@@ -27,7 +27,7 @@ return new class extends Migration
             $table->integer('status_id')->default(1);
             $table->integer('payment_status_id')->default(3);
             $table->integer('payment_method_id')->default(0);
-            $table->datetime('delivery_date');
+            $table->date('delivery_date');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->decimal('delivery_fee', 10, 2)->default(0);
             $table->text('notes')->nullable();

@@ -28,10 +28,6 @@
 @parent
 <style>
     @media screen {
-        body {
-            padding: 40px;
-        }
-
         div.print_data {
             margin: 40px 0;
         }

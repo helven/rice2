@@ -92,9 +92,11 @@ class CreateOrder extends Page
             // Get two different meals for variety
             $defaultMeal = Meal::where('status_id', 1)->first();
             $secondMeal = Meal::where('status_id', 1)->where('id', '!=', $defaultMeal->id)->first();
+            // Get a random active meal using Laravel's built-in methods
+            $randomMeal = Meal::where('status_id', 1)->inRandomOrder()->first();
             if (!$secondMeal) $secondMeal = $defaultMeal; // Fallback to same meal if no other exists
 
-            $order_data = [
+            $orderData = [
                 'customer_id' => $customer ? $customer->id : '',
                 'address_id' => $address ? $address->id : '',
                 'arrival_time' => '08:00',
@@ -105,7 +107,7 @@ class CreateOrder extends Page
                 'driver_notes' => 'Sample driver notes',
             ];
 
-            $days = 2;
+            $days = 1;
 
             $startDate = \Carbon\Carbon::today();
 
@@ -114,7 +116,7 @@ class CreateOrder extends Page
             for ($i = 0; $i < $days; $i++) {
                 $dates[] = $startDate->copy()->addDays($i)->format(config('app.date_format'));
             }
-            $order_data['delivery_date'] = $dates;
+            $orderData['delivery_date'] = $dates;
 
             // Generate meals_by_date dynamically based on $days
             $mealsByDate = [];
@@ -125,33 +127,42 @@ class CreateOrder extends Page
                 $dayNumber = $i + 1;
                 $isEvenDay = ($dayNumber % 2 == 0);
 
-                $mealsByDate[] = [
+                $tempMeals = [
                     'date' => $currentDate->format(config('app.date_format')),
                     'meals' => [
                         [
-                            'meal_id' => $defaultMeal ? $defaultMeal->id : '',
-                            'normal' => $isEvenDay ? 1 : 0,
-                            'big' => $isEvenDay ? 0 : 1,
-                            'small' => 1,
-                            's_small' => $isEvenDay ? 1 : 0,
-                            'no_rice' => $isEvenDay ? 0 : 1,
+                            'meal_id' => $randomMeal->id,
+                            'normal' => 1,
+                            'big' => 0,
+                            'small' => 0,
+                            's_small' => 0,
+                            'no_rice' => 1
                         ],
-                        //[
-                        //    'meal_id' => $secondMeal ? $secondMeal->id : '',
-                        //    'normal' => $isEvenDay ? 2 : 1,
-                        //    'big' => $isEvenDay ? 0 : 1,
-                        //    'small' => $isEvenDay ? 1 : 0,
-                        //    's_small' => $isEvenDay ? 0 : 1,
-                        //    'no_rice' => $isEvenDay ? 1 : 0,
-                        //]
                     ],
                     'total_amount' => $isEvenDay ? 120.00 : 100.00,
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
+
+                $meals_no = rand(1, 3);
+                for($j = 0; $j <= $meals_no; $j++){
+                    array_push($tempMeals['meals'], [
+                        'meal_id' => $randomMeal->id,
+                        'normal' => rand(0, 3),
+                        'big' => rand(0, 3),
+                        'small' => rand(0, 3),
+                        's_small' => rand(0, 3),
+                        'no_rice' => rand(0, 3)
+                    ]);
+                }
+                $mealsByDate[] = $tempMeals;
             }
 
-            $order_data['meals_by_date'] = $mealsByDate;
-            $this->form->fill($order_data);
+            
+
+
+
+            $orderData['meals_by_date'] = $mealsByDate;
+            $this->form->fill($orderData);
         }
 
         // Initialize modal data
@@ -578,7 +589,7 @@ class CreateOrder extends Page
 
                 $invoice = \App\Models\Invoice::create([
                     'order_id' => $order->id,
-                    'invoice_number' => $order->invoice_no,
+                    'invoice_no' => $order->invoice_no,
                     'billing_name' => $customer->name,
                     'billing_address' => $billingAddress,
                     'tax_amount' => config('app.tax_rate'),

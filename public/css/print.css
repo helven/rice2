@@ -137,6 +137,9 @@ table.order_detail tbody tr:last-child td {
   :root {
     font-size: 10px;
   }
+  body {
+    padding: 0;
+  }
 
   .print_20px {
     width: 20px;
