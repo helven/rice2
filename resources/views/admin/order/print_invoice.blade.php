@@ -114,6 +114,7 @@
         font-weight: 700;
         text-align: left;
         padding: 5px 10px 5px 0;
+        white-space: nowrap;
         width: 80px;
     }
 
@@ -121,6 +122,7 @@
         text-align: left;
         padding: 5px 0;
         min-width: 120px;
+        white-space: nowrap;
     }
 
     /* Order Info Table */
@@ -185,6 +187,12 @@
         width: 45%;
         font-weight: bold;
         text-align: center;
+    }
+
+    @media print {
+        body {
+            font-size: 14px;
+        }
     }
 </style>
 @endsection
