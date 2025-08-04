@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('status_id')->default(1);
             $table->string('name')->default('');
             $table->string('postal')->default('');
-            $table->text('delivery_fee')->nullable(); // json encoded string for delivery fee structure
+            $table->json('delivery_fee')->nullable(); // json encoded string for delivery fee structure
             $table->timestamps();
 
             $table->index('status_id');

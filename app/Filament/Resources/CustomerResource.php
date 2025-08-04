@@ -129,7 +129,9 @@ class CustomerResource extends Resource
                                 TextInput::make('address_2')
                                     ->label('Address Line 2')
                                     ->maxLength(128)
-                                    ->default(''),
+                                    ->required(false)
+                                    ->default('')
+                                    ->dehydrateStateUsing(fn ($state) => $state ?? ''),
                                 //Grid::make(3)
                                 //    ->schema([
                                 //        TextInput::make('postal_code')
@@ -166,20 +168,20 @@ class CustomerResource extends Resource
                                             ->searchable()
                                             ->options(function (callable $get) {
                                                 $driverId = $get('driver_id');
-                                        
+
                                                 if (blank($driverId)) {
                                                     return [];
                                                 }
-                                        
+
                                                 $driver = \App\Models\Driver::find($driverId);
                                                 if (!$driver || !$driver->route) {
                                                     return [];
                                                 }
                                                 return collect($driver->route)->pluck('route_name', 'route_name');
                                             })
-                                            ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                            ->disabled(fn(callable $get): bool => blank($get('driver_id')))
                                     ]),
-                                    Grid::make(2)
+                                Grid::make(2)
                                     ->schema([
                                         Select::make('backup_driver_id')
                                             ->label('Backup Driver')
@@ -197,18 +199,18 @@ class CustomerResource extends Resource
                                             ->searchable()
                                             ->options(function (callable $get) {
                                                 $driverId = $get('backup_driver_id');
-                                        
+
                                                 if (blank($driverId)) {
                                                     return [];
                                                 }
-                                        
+
                                                 $driver = \App\Models\Driver::find($driverId);
                                                 if (!$driver || !$driver->route) {
                                                     return [];
                                                 }
                                                 return collect($driver->route)->pluck('route_name', 'route_name');
                                             })
-                                            ->disabled(fn (callable $get): bool => blank($get('driver_id')))
+                                            ->disabled(fn(callable $get): bool => blank($get('driver_id')))
                                     ]),
                             ])
                             ->addActionLabel('Add Address')
@@ -220,7 +222,7 @@ class CustomerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status_id', [1, 2]))
+            ->modifyQueryUsing(fn(Builder $query) => $query->whereIn('status_id', [1, 2]))
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -229,15 +231,15 @@ class CustomerResource extends Resource
                     ->label('Contact No')
                     ->searchable(),
                 TextColumn::make('status.label')
-                        ->label('Status')
-                        ->searchable()
-                        ->sortable()
-                        ->badge()
-                        ->color(function (Customer $record): string {
-                            if ($record->status_id === 1) return 'success';
-                            if ($record->status_id === 2) return 'warning';
-                            return 'gray';
-                        }),
+                    ->label('Status')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color(function (Customer $record): string {
+                        if ($record->status_id === 1) return 'success';
+                        if ($record->status_id === 2) return 'warning';
+                        return 'gray';
+                    }),
                 TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime('Y-m-d H:i:s')
