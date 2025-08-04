@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('mall_statuses', function (Blueprint $table) {
             $table->integer('id')->primary();
-            $table->string('label');
+            $table->string('label')->default('');
             $table->string('description')->nullable();
             $table->boolean('is_system')->default(false);
             $table->timestamps();

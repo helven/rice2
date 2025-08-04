@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('driver_statuses', function (Blueprint $table) {
             $table->integer('id')->primary();
-            $table->string('label');
-            $table->string('description')->nullable();
+            $table->string('label')->default('');
+            $table->string('description')->default('');
             $table->boolean('is_system')->default(false);
             $table->timestamps();
         });
@@ -30,7 +30,7 @@ return new class extends Migration
             $table->text('route')->nullable();
             $table->timestamps();
 
-            $table->index('status_id');
+            $table->index('status_id')->default(0);
         });
     }
 

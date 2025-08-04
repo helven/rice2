@@ -16,7 +16,7 @@ class CreateAttrStatusesTable extends Migration
         Schema::create('attr_statuses', function (Blueprint $table) {
             $table->id();
             $table->string('key')->index();
-            $table->string('label');
+            $table->string('label')->default('');
         });
     }
 

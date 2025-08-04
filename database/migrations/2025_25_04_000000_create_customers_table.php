@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('customer_statuses', function (Blueprint $table) {
             $table->integer('id')->primary();
-            $table->string('label');
-            $table->string('description')->nullable();
+            $table->string('label')->default('');
+            $table->string('description')->default('');
             $table->boolean('is_system')->default(false);
             $table->timestamps();
         });
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->integer('status_id')->default(1);
             $table->string('name')->default('');
             $table->string('contact')->default('');
-            $table->string('payment_method_id')->default(0)->nullable();
+            $table->integer('payment_method_id')->default(0);
             $table->timestamps();
 
             $table->index('status_id');
