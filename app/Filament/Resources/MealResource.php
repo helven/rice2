@@ -35,10 +35,12 @@ class MealResource extends Resource
             NavigationItem::make('Manage Meals')
                 ->icon('heroicon-o-cake')
                 ->group(static::getNavigationGroup())
+                ->sort(1)
                 ->url(static::getUrl('index')),
             NavigationItem::make('New Meal')
                 ->icon('heroicon-o-plus')
                 ->group(static::getNavigationGroup())
+                ->sort(2)
                 ->url(static::getUrl('create')),
         ];
     }

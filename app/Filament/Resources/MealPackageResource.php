@@ -24,7 +24,7 @@ use Filament\Navigation\NavigationItem;
 
 class MealPackageResource extends Resource
 {
-    protected static ?string $navigationGroup = 'Meal Packages';
+    protected static ?string $navigationGroup = 'Meals';
     protected static ?string $navigationIcon = 'heroicon-o-cube';
     protected static ?string $navigationLabel = 'Manage Meal Packages';
 
@@ -35,10 +35,12 @@ class MealPackageResource extends Resource
             NavigationItem::make('Manage Meal Packages')
                 ->icon('heroicon-o-cube')
                 ->group(static::getNavigationGroup())
+                ->sort(3)
                 ->url(static::getUrl('index')),
             NavigationItem::make('New Meal Package')
                 ->icon('heroicon-o-plus')
                 ->group(static::getNavigationGroup())
+                ->sort(4)
                 ->url(static::getUrl('create')),
         ];
     }
