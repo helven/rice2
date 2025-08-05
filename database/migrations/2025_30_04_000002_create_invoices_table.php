@@ -15,12 +15,12 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('order_id');
             $table->string('invoice_no')->default('')->index();
-            $table->string('ref_no')->default('')->nullable();
-            $table->string('billing_name')->default('')->nullable();
+            $table->string('ref_no')->default('');
+            $table->string('billing_name')->default('');
             $table->text('billing_address')->nullable();
-            $table->string('tax_no')->default('')->nullable();
+            $table->string('tax_no')->default('');
             $table->decimal('tax_amount', 10, 2)->default(0.00);
-            $table->date('issue_date')->index();
+            $table->date('issue_date')->nullable();
             $table->date('due_date')->nullable();
             $table->timestamps();
             
