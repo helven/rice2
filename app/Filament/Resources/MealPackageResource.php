@@ -69,6 +69,7 @@ class MealPackageResource extends Resource
                         FileUpload::make('main_image')
                             ->label('Main Image')
                             ->image()
+                            //->disk('public_direct')
                             ->directory('meal-packages/main')
                             ->visibility('public')
                             ->columnSpanFull(),
@@ -86,6 +87,7 @@ class MealPackageResource extends Resource
                                 FileUpload::make('image')
                                     ->label('Dish Image')
                                     ->image()
+                                    //->disk('public_direct')
                                     ->directory('meal-packages/dishes')
                                     ->visibility('public')
                                     ->required(),
