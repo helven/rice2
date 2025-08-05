@@ -401,9 +401,9 @@ class EditOrder extends Page
             }
 
             // Calculate delivery fee
-            $address = CustomerAddressBook::find($data['address_id']);dd($address);
+            $address = CustomerAddressBook::find($data['address_id']);
             $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
-dd($deliveryFee);
+
             // Update the order
             $this->order->update([
                 'customer_id' => $data['customer_id'],
