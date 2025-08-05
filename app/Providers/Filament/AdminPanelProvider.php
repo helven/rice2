@@ -73,6 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 'Customers',
                 'Meals',
                 'Drivers',
+                'Flyer Distributions',
             ])
             ->authMiddleware([
                 Authenticate::class,
