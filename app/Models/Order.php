@@ -146,7 +146,7 @@ class Order extends Model
         }
 
         foreach ($deliveryFeeRules as $rule) {
-            if (isset($rule['qty']) && $totalQuantity >= $rule['qty']) {
+            if (isset($rule['qty']) && $totalQuantity <= $rule['qty']) {
                 return $rule['delivery_fee'] ?? 0;
             }
         }
