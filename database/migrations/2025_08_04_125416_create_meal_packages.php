@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('meal_id');
             $table->string('name')->default('');
             $table->string('main_image')->default('')->nullable();
-            $table->json('dish_images')->default('')->nullable();
+            $table->json('dish_images')->nullable();
             $table->timestamps();
         });
     }
