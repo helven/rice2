@@ -31,7 +31,6 @@ class MealPackageResource extends Resource
     public static function getNavigationItems(): array
     {
         return [
-            ...parent::getNavigationItems(),
             NavigationItem::make('Manage Meal Packages')
                 ->icon('heroicon-o-cube')
                 ->group(static::getNavigationGroup())
