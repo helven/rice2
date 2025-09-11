@@ -141,8 +141,8 @@ class CreateOrder extends Page
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
 
-                $meals_no = rand(1, 3);
-                for($j = 0; $j <= $meals_no; $j++){
+                $meals_no = 1;//rand(1, 3);
+                for($j = 1; $j < $meals_no; $j++){
                     array_push($tempMeals['meals'], [
                         'meal_id' => $randomMeal->id,
                         'normal' => rand(0, 3),
@@ -367,6 +367,9 @@ class CreateOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $this->calculateTotal($set, $get);
+                                })
                                 ->required(),
                             TextInput::make('big')
                                 ->label('Big')
@@ -375,6 +378,9 @@ class CreateOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $this->calculateTotal($set, $get);
+                                })
                                 ->required(),
                             TextInput::make('small')
                                 ->label('Small')
@@ -383,6 +389,9 @@ class CreateOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $this->calculateTotal($set, $get);
+                                })
                                 ->required(),
                             TextInput::make('s_small')
                                 ->label('S.Small')
@@ -391,6 +400,9 @@ class CreateOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $this->calculateTotal($set, $get);
+                                })
                                 ->required(),
                             TextInput::make('no_rice')
                                 ->label('No Rice')
@@ -399,6 +411,9 @@ class CreateOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $this->calculateTotal($set, $get);
+                                })
                                 ->required(),
                         ]),
 
@@ -409,11 +424,7 @@ class CreateOrder extends Page
                         ->default(0.00)
                         ->prefix('RM')
                         ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->live()
-                        ->afterStateUpdated(function ($state, callable $set) {
-                            $state = (int)ltrim($state, '0') ?: 0;
-                            $set('total_amount', $state);
-                        }),
+                        ->live(),
 
                     Textarea::make('notes')
                         ->label('Notes')
@@ -777,6 +788,47 @@ class CreateOrder extends Page
 
         // If no rule matches, return the fee for the lowest quantity tier
         return end($deliveryFeeRules)['delivery_fee'] ?? 0;
+    }
+
+    private function calculateTotal(callable $set, callable $get)
+    {
+        // Get the current form state to work with complete data
+        $formData = $this->form->getState();
+
+        // Get current date context - we need to find which meals_by_date item we're in
+        $currentItem = $get('../../');  // Go up to the meals_by_date item level
+        
+        if (!isset($currentItem['date']) || !isset($formData['meals_by_date'])) {
+            return;
+        }
+        
+        // Find the current date item and calculate total for its meals
+        foreach ($formData['meals_by_date'] as $index => &$dateItem) {
+            if ($dateItem['date'] === $currentItem['date']) {
+                $meals = $dateItem['meals'] ?? [];
+                
+                // Calculate total quantity for all meals in this date
+                $totalMeals = 0;
+                foreach ($meals as $meal) {
+                    $totalMeals += intval($meal['normal'] ?? 0) + 
+                                  intval($meal['big'] ?? 0) + 
+                                  intval($meal['small'] ?? 0) + 
+                                  intval($meal['s_small'] ?? 0) + 
+                                  intval($meal['no_rice'] ?? 0);
+                }
+
+                // Get MEAL_PRICE from .env
+                $mealPrice = floatval(env('MEAL_PRICE', 8));
+                $totalAmount = $totalMeals * $mealPrice;
+                
+                // Update the total_amount for this date
+                $dateItem['total_amount'] = $totalAmount;
+                
+                // Refill the form with updated data
+                $this->form->fill($formData);
+                break;
+            }
+        }
     }
 
     public function getBreadcrumbs(): array
