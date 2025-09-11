@@ -105,7 +105,7 @@ class CreateOrder extends Page
                 'driver_notes' => 'Sample driver notes',
             ];
 
-            $days = 1;
+            $days = 3;
 
             $startDate = \Carbon\Carbon::today();
 
@@ -294,6 +294,7 @@ class CreateOrder extends Page
                     //        $set('meals_by_date', $meals_by_date);
                     //    })
                     Flatpickr::make('delivery_date')
+                        ->id('delivery_date')
                         ->label('Delivery Dates')
                         ->multiplePicker() // This enables multiple date selection
                         ->format(config('app.date_format'))
@@ -309,7 +310,8 @@ class CreateOrder extends Page
                                 return;
                             }
 
-                            $dates = explode(',', $state);
+                            // Handle both string and array formats
+                            $dates = is_array($state) ? $state : explode(',', $state);
                             $existingMealsByDate = $get('meals_by_date') ?? [];
                             
                             // Create a lookup array for existing dates
@@ -354,17 +356,47 @@ class CreateOrder extends Page
             Repeater::make('meals_by_date')
                 ->label('')
                 ->reorderable(false)
-                ->deletable(false)
+                ->deletable(true)
                 ->disableItemCreation()
+                ->collapsible()
+                ->itemLabel(function (array $state) {
+                    if (isset($state['date'])) {
+                        return new \Illuminate\Support\HtmlString(sprintf(
+                            '<h3 class="fi-section-header-heading text-sm font-semibold leading-6 text-gray-950 dark:text-white">Order - %s</h3>',
+                            \Carbon\Carbon::parse($state['date'])->format(config('app.date_format'))
+                        ));
+                    }
+                    return null;
+                })
+                ->live()
+                ->reactive()
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    // Extract dates from remaining meals_by_date items
+                    $dates = [];
+                    if (is_array($state)) {
+                        foreach ($state as $item) {
+                            if (isset($item['date']) && !empty($item['date'])) {
+                                $dates[] = $item['date'];
+                            }
+                        }
+                    }
+                    
+                    // Update both fields
+                    $set('delivery_date', implode(', ', $dates));
+                    
+                    // Force Flatpickr to update using direct JavaScript
+                    $this->js('
+                        setTimeout(() => {
+                            let input = document.querySelector("#delivery_date.flatpickr-input");
+                            
+                            if (input && input._flatpickr) {
+                                input._flatpickr.clear();
+                                input._flatpickr.setDate("' . implode(', ', $dates) . '", true);
+                            }
+                        }, 10);
+                    ');
+                })
                 ->schema([
-                    Placeholder::make('date_label')
-                        ->label(function (callable $get) {
-                            $currentItem = $get('.');  // Gets the current repeater item's data
-                            return sprintf(
-                                "Order - %s",
-                                \Carbon\Carbon::parse($currentItem['date'])->format(config('app.date_format'))
-                            );
-                        }),
                     Repeater::make('meals')
                         ->label('Meals')
                         ->defaultItems(1)
@@ -715,8 +747,8 @@ class CreateOrder extends Page
 
         // Parse the date range
         if ($this->data['delivery_date'] !== '') {
-            // Parse comma-separated dates
-            $dateStrings = explode(', ', $this->data['delivery_date']);
+            // Handle both string and array formats
+            $dateStrings = is_array($this->data['delivery_date']) ? $this->data['delivery_date'] : explode(',', $this->data['delivery_date']);
 
             foreach ($dateStrings as $dateString) {
                 $date = \Carbon\Carbon::parse(str_replace('/', '-', $dateString));
