@@ -78,7 +78,6 @@ class EditOrder extends Page
             'driver_id' => $this->order->driver_id,
             'driver_route' => $this->order->driver_route,
             'backup_driver_id' => ($this->order->backup_driver_id !== 0) ? $this->order->backup_driver_id : '',
-            'backup_driver_route' => $this->order->backup_driver_route,
             'driver_notes' => $this->order->driver_notes,
         ]);
     }
@@ -333,28 +332,6 @@ class EditOrder extends Page
                                 ->preload()
                                 ->options(Driver::query()->pluck('name', 'id'))
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('backup_driver_route', null);
-                                }),
-                            Select::make('backup_driver_route')
-                                ->label('Route')
-                                ->placeholder('Select Route')
-                                ->searchable()
-                                ->live()
-                                ->options(function (callable $get) {
-                                    $driverId = $get('backup_driver_id');
-
-                                    if (blank($driverId)) {
-                                        return [];
-                                    }
-
-                                    $driver = \App\Models\Driver::find($driverId);
-                                    if (!$driver || !$driver->route) {
-                                        return [];
-                                    }
-                                    return collect($driver->route)->pluck('route_name', 'route_name');
-                                })
-                                ->disabled(fn(callable $get): bool => blank($get('backup_driver_id')))
                         ]),
                     Textarea::make('driver_notes')
                         ->label('Notes')
@@ -386,7 +363,6 @@ class EditOrder extends Page
             'data.driver_id' => ['required', 'exists:drivers,id'],
             'data.driver_route' => ['required', 'string'],
             'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
-            'data.backup_driver_route' => ['nullable', 'string'],
             'data.driver_notes' => ['nullable', 'string'],
         ]);
 
@@ -416,7 +392,6 @@ class EditOrder extends Page
                 'driver_id' => $data['driver_id'],
                 'driver_route' => $data['driver_route'],
                 'backup_driver_id' => $data['backup_driver_id'] ?? 0,
-                'backup_driver_route' => $data['backup_driver_route'] ?? '',
                 'driver_notes' => $data['driver_notes'],
             ]);
 
@@ -534,7 +509,6 @@ class EditOrder extends Page
             'driver_route' => $this->data['driver_route'] ?? '',
             'backup_driver_id' => $this->data['backup_driver_id'] ?? '',
             'backup_driver_name' => Driver::find($this->data['backup_driver_id'] ?? null)?->name ?? '',
-            'backup_driver_route' => $this->data['backup_driver_route'] ?? '',
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
     }
@@ -585,11 +559,6 @@ class EditOrder extends Page
     }
 
     public function updatedDataBackupDriverId(): void
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataBackupDriverRoute(): void
     {
         $this->modalData = $this->getFormattedData();
     }

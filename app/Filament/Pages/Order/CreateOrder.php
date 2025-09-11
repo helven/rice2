@@ -73,14 +73,13 @@ class CreateOrder extends Page
             'driver_id' => '',
             'driver_route' => '',
             'backup_driver_id' => '',
-            'backup_driver_route' => '',
             'driver_notes' => '',
         ]);
 
 
-        $dev_autofill = TRUE;
+        $devAutofill = TRUE;
         // For development: Get first active customer, their default address, and first active meal
-        if ($dev_autofill && app()->environment('local')) {
+        if ($devAutofill && app()->environment('local')) {
             $customer = Customer::where('status_id', 1)->first();
             $address = $customer ? CustomerAddressBook::where('customer_id', $customer->id)
                 ->where('status_id', 1)
@@ -103,7 +102,6 @@ class CreateOrder extends Page
                 'driver_id' => $driver ? $driver->id : '',
                 'driver_route' => $driverRoute,
                 'backup_driver_id' => '',
-                'backup_driver_route' => '',
                 'driver_notes' => 'Sample driver notes',
             ];
 
@@ -156,10 +154,6 @@ class CreateOrder extends Page
                 }
                 $mealsByDate[] = $tempMeals;
             }
-
-            
-
-
 
             $orderData['meals_by_date'] = $mealsByDate;
             $this->form->fill($orderData);
@@ -245,9 +239,6 @@ class CreateOrder extends Page
                                             // Use pre-assigned backup driver information from the address only if current fields are empty
                                             if ($address->backup_driver_id && !$get('backup_driver_id')) {
                                                 $set('backup_driver_id', $address->backup_driver_id);
-                                                if ($address->backup_driver_route && !$get('backup_driver_route')) {
-                                                    $set('backup_driver_route', $address->backup_driver_route);
-                                                }
                                             }
                                         }
                                     }
@@ -298,6 +289,7 @@ class CreateOrder extends Page
                         ->minDate(fn() => today())
                         ->required()
                         ->live()
+                        ->debounce(0) // Wait 500ms after last change
                         ->afterStateUpdated(function ($state, callable $set) {
                             if (empty($state)) {
                                 $set('meals_by_date', []);
@@ -489,28 +481,6 @@ class CreateOrder extends Page
                                 ->preload()
                                 ->options(Driver::query()->pluck('name', 'id'))
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('backup_driver_route', null);
-                                }),
-                            Select::make('backup_driver_route')
-                                ->label('Route')
-                                ->placeholder('Select Route')
-                                ->searchable()
-                                ->live()
-                                ->options(function (callable $get) {
-                                    $driverId = $get('backup_driver_id');
-
-                                    if (blank($driverId)) {
-                                        return [];
-                                    }
-
-                                    $driver = \App\Models\Driver::find($driverId);
-                                    if (!$driver || !$driver->route) {
-                                        return [];
-                                    }
-                                    return collect($driver->route)->pluck('route_name', 'route_name');
-                                })
-                                ->disabled(fn(callable $get): bool => blank($get('backup_driver_id')))
                         ]),
                     Textarea::make('driver_notes')
                         ->label('Notes')
@@ -534,7 +504,6 @@ class CreateOrder extends Page
             'data.driver_id' => ['required', 'exists:drivers,id'],
             'data.driver_route' => ['required', 'string'],
             'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
-            'data.backup_driver_route' => ['nullable', 'string'],
             'data.driver_notes' => ['nullable', 'string'],
         ]);
 
@@ -576,7 +545,6 @@ class CreateOrder extends Page
                     'driver_id' => $data['driver_id'],
                     'driver_route' => $data['driver_route'],
                     'backup_driver_id' => $data['backup_driver_id'] ?? 0,
-                    'backup_driver_route' => $data['backup_driver_route'] ?? '',
                     'driver_notes' => $data['driver_notes'] ?? '',
                     'payment_method_id' => $paymentMethodId,
                 ]);
@@ -733,7 +701,6 @@ class CreateOrder extends Page
             'driver_route' => $this->data['driver_route'] ?? '',
             'backup_driver_id' => $this->data['backup_driver_id'] ?? '',
             'backup_driver_name' => Driver::find($this->data['backup_driver_id'] ?? null) ? Driver::find($this->data['backup_driver_id'] ?? null)->name : '',
-            'backup_driver_route' => $this->data['backup_driver_route'] ?? '',
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
     }
@@ -774,11 +741,6 @@ class CreateOrder extends Page
     }
 
     public function updatedDataBackupDriverId()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataBackupDriverRoute()
     {
         $this->modalData = $this->getFormattedData();
     }

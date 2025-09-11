@@ -41,7 +41,7 @@
             const driverSelect = document.querySelector('[name="data.driver_id"]');
             const driverRoute = document.querySelector('[name="data.driver_route"]');
             const backupDriverSelect = document.querySelector('[name="data.backup_driver_id"]');
-            const backupDriverRoute = document.querySelector('[name="data.backup_driver_route"]');
+
             const driverNotes = document.querySelector('[name="data.driver_notes"]');
             
             // Update modal content with form values
@@ -97,11 +97,7 @@
                 const backupDriverCell = findTableCellByText(modal, 'Backup Driver:');
                 if (backupDriverCell) backupDriverCell.textContent = backupDriverName;
                 
-                // Update backup route
-                const backupRouteCell = findTableCellByText(modal, 'Backup Route:');
-                if (backupRouteCell && backupDriverRoute) {
-                    backupRouteCell.textContent = backupDriverRoute.value;
-                }
+
                 
                 // Update driver notes
                 const notesCell = findTableCellByText(modal, 'Driver Notes:');

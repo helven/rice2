@@ -48,10 +48,6 @@
                                 <td class="py-2 font-medium text-gray-700">Backup Driver:</td>
                                 <td class="py-2">{{ $formattedData['backup_driver_name'] }}</td>
                             </tr>
-                            <tr>
-                                <td class="py-2 font-medium text-gray-700">Backup Route:</td>
-                                <td class="py-2">{{ $formattedData['backup_driver_route'] }}</td>
-                            </tr>
                         @endif
                         <tr>
                             <td class="py-2 font-medium text-gray-700">Driver Notes:</td>
