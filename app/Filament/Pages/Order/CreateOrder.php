@@ -290,32 +290,48 @@ class CreateOrder extends Page
                         ->required()
                         ->live()
                         ->debounce(0) // Wait 500ms after last change
-                        ->afterStateUpdated(function ($state, callable $set) {
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
                             if (empty($state)) {
                                 $set('meals_by_date', []);
                                 return;
                             }
 
                             $dates = explode(',', $state);
+                            $existingMealsByDate = $get('meals_by_date') ?? [];
+                            
+                            // Create a lookup array for existing dates
+                            $existingDateLookup = [];
+                            foreach ($existingMealsByDate as $existingItem) {
+                                $existingDateLookup[$existingItem['date']] = $existingItem;
+                            }
 
                             $meals_by_date = [];
                             foreach ($dates as $dateString) {
                                 $date = \Carbon\Carbon::parse(trim($dateString));
-                                $meals_by_date[] = [
-                                    'date' => $date->format(config('app.date_format')),
-                                    'meals' => [
-                                        [
-                                            'meal_id' => '',
-                                            'normal' => 0,
-                                            'big' => 0,
-                                            'small' => 0,
-                                            's_small' => 0,
-                                            'no_rice' => 0,
-                                        ]
-                                    ],
-                                    'total_amount' => 0.00,
-                                    'notes' => ''
-                                ];
+                                $formattedDate = $date->format(config('app.date_format'));
+                                
+                                // Check if this date already exists in the form data
+                                if (isset($existingDateLookup[$formattedDate])) {
+                                    // Retain existing data for this date
+                                    $meals_by_date[] = $existingDateLookup[$formattedDate];
+                                } else {
+                                    // Create new entry for new date
+                                    $meals_by_date[] = [
+                                        'date' => $formattedDate,
+                                        'meals' => [
+                                            [
+                                                'meal_id' => '',
+                                                'normal' => 0,
+                                                'big' => 0,
+                                                'small' => 0,
+                                                's_small' => 0,
+                                                'no_rice' => 0,
+                                            ]
+                                        ],
+                                        'total_amount' => 0.00,
+                                        'notes' => ''
+                                    ];
+                                }
                             }
 
                             $set('meals_by_date', $meals_by_date);
