@@ -196,9 +196,10 @@ class EditOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('normal', $state);
+                                    $this->calculateTotalAmountByMealQty($get, $set);
                                 })
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
@@ -208,9 +209,10 @@ class EditOrder extends Page
                                 ->default(0)
                                 ->extraInputAttributes(['min' => 0, 'max' => 1000])
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('big', $state);
+                                    $this->calculateTotalAmountByMealQty($get, $set);
                                 })
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
@@ -221,9 +223,10 @@ class EditOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('small', $state);
+                                    $this->calculateTotalAmountByMealQty($get, $set);
                                 })
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
@@ -234,9 +237,10 @@ class EditOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('s_small', $state);
+                                    $this->calculateTotalAmountByMealQty($get, $set);
                                 })
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
@@ -247,9 +251,10 @@ class EditOrder extends Page
                                 ->minValue(0)
                                 ->maxValue(1000)
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $state = (int)ltrim($state, '0') ?: 0;
                                     $set('no_rice', $state);
+                                    $this->calculateTotalAmountByMealQty($get, $set);
                                 })
                                 ->step(1)
                                 ->rules(['required', 'integer', 'min:0', 'max:1000']),
@@ -566,6 +571,30 @@ class EditOrder extends Page
     public function updatedDataDriverNotes(): void
     {
         $this->modalData = $this->getFormattedData();
+    }
+
+    private function calculateTotalAmountByMealQty(callable $get, callable $set)
+    {
+        // Get all meals from the form
+        $formData = $this->form->getState();
+        $meals = $formData['meals'] ?? [];
+        
+        $totalMeals = 0;
+        foreach ($meals as $meal) {
+            $totalMeals += intval($meal['normal'] ?? 0) + 
+                          intval($meal['big'] ?? 0) + 
+                          intval($meal['small'] ?? 0) + 
+                          intval($meal['s_small'] ?? 0) + 
+                          intval($meal['no_rice'] ?? 0);
+        }
+        
+        // Get MEAL_PRICE from .env
+        $mealPrice = floatval(env('MEAL_PRICE', 8));
+        $totalAmount = $totalMeals * $mealPrice;
+        
+        // Update the form data and refill
+        $formData['total_amount'] = number_format($totalAmount, 2);
+        $this->form->fill($formData);
     }
 
     private function calculateDeliveryFee($address, $totalQty)

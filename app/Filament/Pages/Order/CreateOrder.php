@@ -137,7 +137,7 @@ class CreateOrder extends Page
                             'no_rice' => 1
                         ],
                     ],
-                    'total_amount' => $isEvenDay ? 120.00 : 100.00,
+                    'total_amount' => 0.00, // Will be calculated below
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
 
@@ -152,6 +152,19 @@ class CreateOrder extends Page
                         'no_rice' => rand(0, 3)
                     ]);
                 }
+                
+                // Calculate total_amount based on meal quantities
+                $totalMeals = 0;
+                foreach ($tempMeals['meals'] as $meal) {
+                    $totalMeals += intval($meal['normal'] ?? 0) + 
+                                  intval($meal['big'] ?? 0) + 
+                                  intval($meal['small'] ?? 0) + 
+                                  intval($meal['s_small'] ?? 0) + 
+                                  intval($meal['no_rice'] ?? 0);
+                }
+                $mealPrice = floatval(env('MEAL_PRICE', 8));
+                $tempMeals['total_amount'] = number_format($totalMeals * $mealPrice, 2);
+                
                 $mealsByDate[] = $tempMeals;
             }
 
@@ -384,7 +397,7 @@ class CreateOrder extends Page
                                 ->maxValue(1000)
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotal($set, $get);
+                                    $this->calculateTotalAmountByMealQty($set, $get);
                                 })
                                 ->required(),
                             TextInput::make('big')
@@ -395,7 +408,7 @@ class CreateOrder extends Page
                                 ->maxValue(1000)
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotal($set, $get);
+                                    $this->calculateTotalAmountByMealQty($set, $get);
                                 })
                                 ->required(),
                             TextInput::make('small')
@@ -406,7 +419,7 @@ class CreateOrder extends Page
                                 ->maxValue(1000)
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotal($set, $get);
+                                    $this->calculateTotalAmountByMealQty($set, $get);
                                 })
                                 ->required(),
                             TextInput::make('s_small')
@@ -417,7 +430,7 @@ class CreateOrder extends Page
                                 ->maxValue(1000)
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotal($set, $get);
+                                    $this->calculateTotalAmountByMealQty($set, $get);
                                 })
                                 ->required(),
                             TextInput::make('no_rice')
@@ -428,7 +441,7 @@ class CreateOrder extends Page
                                 ->maxValue(1000)
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotal($set, $get);
+                                    $this->calculateTotalAmountByMealQty($set, $get);
                                 })
                                 ->required(),
                         ]),
@@ -806,7 +819,7 @@ class CreateOrder extends Page
         return end($deliveryFeeRules)['delivery_fee'] ?? 0;
     }
 
-    private function calculateTotal(callable $set, callable $get)
+    private function calculateTotalAmountByMealQty(callable $set, callable $get)
     {
         // Get the current form state to work with complete data
         $formData = $this->form->getState();
@@ -838,7 +851,7 @@ class CreateOrder extends Page
                 $totalAmount = $totalMeals * $mealPrice;
                 
                 // Update the total_amount for this date
-                $dateItem['total_amount'] = $totalAmount;
+                $dateItem['total_amount'] = number_format($totalAmount, 2);
                 
                 // Refill the form with updated data
                 $this->form->fill($formData);
