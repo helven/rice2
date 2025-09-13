@@ -104,11 +104,9 @@ class MealPackageResource extends Resource
             ->columns([
                 TextColumn::make('meal.name')
                     ->label('Meal')
-                    ->searchable()
                     ->sortable(),
                 TextColumn::make('name')
                     ->label('Package Name')
-                    ->searchable()
                     ->sortable(),
                 ImageColumn::make('main_image')
                     ->label('Main Image')
@@ -154,7 +152,50 @@ class MealPackageResource extends Resource
                 ]),
             ])
             ->defaultSort('created_at', 'desc')
-            ->striped();
+            ->striped()
+            ->searchable()
+            ->searchDebounce('500ms');
+
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return $query = parent::getEloquentQuery()->with(['meal']);
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'dish_images'];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->where(function (Builder $query) {
+            $search = request()->get('search', '');
+            if (filled($search)) {  // Remove the duplicate assignment here
+                $searchLower = strtolower($search);
+                $mysqlVersion = \DB::select('SELECT VERSION() as version')[0]->version;
+                $supportsJson = version_compare($mysqlVersion, '5.7.0', '>=');
+
+                if($supportsJson){
+                    $query->where(function (Builder $subQuery) use ($searchLower) {
+                        $subQuery->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"])
+                            ->orWhereRaw("JSON_SEARCH(LOWER(dish_images), 'all', ?) IS NOT NULL", ["%{$searchLower}%"]);
+                    });
+                }else{
+                    $query->where(function (Builder $subQuery) use ($searchLower) {
+                        $subQuery->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"])
+                            ->orWhereRaw('LOWER(dish_images) LIKE ?', ["%{$searchLower}%"]);
+                    });
+                }
+
+                $sql = $query->toSql();
+                $bindings = $query->getBindings();
+                foreach ($bindings as $binding) {
+                    $sql = preg_replace('/\?/', "'{$binding}'", $sql, 1);
+                }
+            }
+        });
     }
 
     public static function getRelations(): array
