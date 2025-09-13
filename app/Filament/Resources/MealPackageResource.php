@@ -115,7 +115,17 @@ class MealPackageResource extends Resource
                     ->size(60),
                 TextColumn::make('dish_images')
                     ->label('Dish Images Count')
-                    ->formatStateUsing(fn ($state) => is_array($state) ? count($state) : 0)
+                    ->getStateUsing(function ($record) {
+                        $dishImages = $record->dish_images; // This gets the properly cast array
+                        if (empty($dishImages) || !is_array($dishImages)) {
+                            return 0;
+                        }
+                        
+                        return count(array_filter($dishImages, function ($item) {
+                            return isset($item['dish_name']) && isset($item['image']) && 
+                                !empty($item['dish_name']) && !empty($item['image']);
+                        }));
+                    })
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Created At')
