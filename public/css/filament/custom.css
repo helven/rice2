@@ -78,7 +78,7 @@ td.fi-ta-actions-cell {
 /* Position notifications relative to fi-main using CSS variables */
 .fi-no-notification {
     position: fixed !important;
-    top: calc(var(--fi-main-top, 1rem) + 1rem) !important;
+    top: 5rem !important;
     left: calc(var(--fi-main-left, 50%) + var(--fi-main-width, 0px) / 2) !important;
     transform: translateX(-50%) !important;
     z-index: 9999 !important;

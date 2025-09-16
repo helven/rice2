@@ -10,7 +10,7 @@
   }
 
   function updateFiMainPosition() {
-    const fiMain = document.querySelector('.fi-main'); console.log(fiMain)
+    const fiMain = document.querySelector('.fi-main');
     if (fiMain) {
       const rect = fiMain.getBoundingClientRect();
       const root = document.documentElement;
