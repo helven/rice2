@@ -95,32 +95,14 @@ class CustomerResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->options(Mall::query()->pluck('name', 'id'))
-                                            ->live()
-                                            ->nullable()
-                                            ->required(function (callable $get) {
-                                                return !filled($get('area_id'));
-                                            })
-                                            ->afterStateUpdated(function ($state, callable $set) {
-                                                if (filled($state)) {
-                                                    $set('area_id', null);
-                                                }
-                                            }),
+                                            ->nullable(),
                                         Select::make('area_id')
                                             ->label('Area')
                                             ->placeholder('Select Area')
                                             ->searchable()
                                             ->preload()
                                             ->options(Area::query()->pluck('name', 'id'))
-                                            ->live()
-                                            ->nullable()
-                                            ->required(function (callable $get) {
-                                                return !filled($get('mall_id'));
-                                            })
-                                            ->afterStateUpdated(function ($state, callable $set) {
-                                                if (filled($state)) {
-                                                    $set('mall_id', null);
-                                                }
-                                            }),
+                                            ->required(),
                                     ]),
                                 TextInput::make('address_1')
                                     ->label('Address Line 1')
