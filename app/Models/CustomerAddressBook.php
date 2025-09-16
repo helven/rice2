@@ -35,27 +35,27 @@ class CustomerAddressBook extends Model
         'is_default' => 'boolean',
     ];
 
-    protected static function booted()
-    {
-        static::saving(function ($model) {
-            // Ensure at least one of mall_id or area_id is selected
-            if (!$model->mall_id && !$model->area_id) {
-                throw new ModelNotFoundException('Please select either a Mall or an Area.');
-            }
+    //protected static function booted()
+    //{
+    //    static::saving(function ($model) {
+    //        // Ensure at least one of mall_id or area_id is selected
+    //        if (!$model->mall_id && !$model->area_id) {
+    //            throw new ModelNotFoundException('Please select either a Mall or an Area.');
+    //        }
 
-            // Ensure only one is selected
-            if ($model->mall_id && $model->area_id) {
-                throw new ModelNotFoundException('Please select either a Mall or an Area, not both.');
-            }
+    //        // Ensure only one is selected
+    //        if ($model->mall_id && $model->area_id) {
+    //            throw new ModelNotFoundException('Please select either a Mall or an Area, not both.');
+    //        }
 
-            // Set unselected field to null
-            if ($model->mall_id) {
-                $model->area_id = null;
-            } else if ($model->area_id) {
-                $model->mall_id = null;
-            }
-        });
-    }
+    //        // Set unselected field to null
+    //        if ($model->mall_id) {
+    //            $model->area_id = null;
+    //        } else if ($model->area_id) {
+    //            $model->mall_id = null;
+    //        }
+    //    });
+    //}
 
     public function customer()
     {

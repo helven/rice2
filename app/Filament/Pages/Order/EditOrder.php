@@ -607,6 +607,10 @@ class EditOrder extends Page
 
     private function calculateDeliveryFee($address, $totalQty)
     {
+        if ($address && $address->mall_id) {
+            return 0;
+        }
+
         if (!$address || !$address->area_id) {
             return 0;
         }

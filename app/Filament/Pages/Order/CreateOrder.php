@@ -141,8 +141,8 @@ class CreateOrder extends Page
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
 
-                $meals_no = 1;//rand(1, 3);
-                for($j = 1; $j < $meals_no; $j++){
+                $meals_no = 1; //rand(1, 3);
+                for ($j = 1; $j < $meals_no; $j++) {
                     array_push($tempMeals['meals'], [
                         'meal_id' => $randomMeal->id,
                         'normal' => rand(0, 3),
@@ -152,19 +152,19 @@ class CreateOrder extends Page
                         'no_rice' => rand(0, 3)
                     ]);
                 }
-                
+
                 // Calculate total_amount based on meal quantities
                 $totalMeals = 0;
                 foreach ($tempMeals['meals'] as $meal) {
-                    $totalMeals += intval($meal['normal'] ?? 0) + 
-                                  intval($meal['big'] ?? 0) + 
-                                  intval($meal['small'] ?? 0) + 
-                                  intval($meal['s_small'] ?? 0) + 
-                                  intval($meal['no_rice'] ?? 0);
+                    $totalMeals += intval($meal['normal'] ?? 0) +
+                        intval($meal['big'] ?? 0) +
+                        intval($meal['small'] ?? 0) +
+                        intval($meal['s_small'] ?? 0) +
+                        intval($meal['no_rice'] ?? 0);
                 }
                 $mealPrice = floatval(env('MEAL_PRICE', 8));
                 $tempMeals['total_amount'] = number_format($totalMeals * $mealPrice, 2);
-                
+
                 $mealsByDate[] = $tempMeals;
             }
 
@@ -313,7 +313,7 @@ class CreateOrder extends Page
                             // Handle both string and array formats
                             $dates = is_array($state) ? $state : explode(',', $state);
                             $existingMealsByDate = $get('meals_by_date') ?? [];
-                            
+
                             // Create a lookup array for existing dates
                             $existingDateLookup = [];
                             foreach ($existingMealsByDate as $existingItem) {
@@ -324,7 +324,7 @@ class CreateOrder extends Page
                             foreach ($dates as $dateString) {
                                 $date = \Carbon\Carbon::parse(trim($dateString));
                                 $formattedDate = $date->format(config('app.date_format'));
-                                
+
                                 // Check if this date already exists in the form data
                                 if (isset($existingDateLookup[$formattedDate])) {
                                     // Retain existing data for this date
@@ -380,10 +380,10 @@ class CreateOrder extends Page
                             }
                         }
                     }
-                    
+
                     // Update both fields
                     $set('delivery_date', implode(', ', $dates));
-                    
+
                     // Force Flatpickr to update using direct JavaScript
                     $this->js('
                         setTimeout(() => {
@@ -422,8 +422,8 @@ class CreateOrder extends Page
                                     return Meal::query()
                                         ->where('status_id', 1)
                                         ->where('category_id', 1)
-                                        //->whereNotNull('name')
-                                        //->where('name', '!=', '')
+                                        ->whereNotNull('name')
+                                        ->where('name', '!=', '')
                                         ->pluck('name', 'id')
                                         ->toArray();
                                 })
@@ -832,6 +832,10 @@ class CreateOrder extends Page
 
     private function calculateDeliveryFee($address, $totalQty)
     {
+        if ($address && $address->mall_id) {
+            return 0;
+        }
+
         if (!$address || !$address->area_id) {
             return 0;
         }
@@ -866,33 +870,33 @@ class CreateOrder extends Page
 
         // Get current date context - we need to find which meals_by_date item we're in
         $currentItem = $get('../../');  // Go up to the meals_by_date item level
-        
+
         if (!isset($currentItem['date']) || !isset($formData['meals_by_date'])) {
             return;
         }
-        
+
         // Find the current date item and calculate total for its meals
         foreach ($formData['meals_by_date'] as $index => &$dateItem) {
             if ($dateItem['date'] === $currentItem['date']) {
                 $meals = $dateItem['meals'] ?? [];
-                
+
                 // Calculate total quantity for all meals in this date
                 $totalMeals = 0;
                 foreach ($meals as $meal) {
-                    $totalMeals += intval($meal['normal'] ?? 0) + 
-                                  intval($meal['big'] ?? 0) + 
-                                  intval($meal['small'] ?? 0) + 
-                                  intval($meal['s_small'] ?? 0) + 
-                                  intval($meal['no_rice'] ?? 0);
+                    $totalMeals += intval($meal['normal'] ?? 0) +
+                        intval($meal['big'] ?? 0) +
+                        intval($meal['small'] ?? 0) +
+                        intval($meal['s_small'] ?? 0) +
+                        intval($meal['no_rice'] ?? 0);
                 }
 
                 // Get MEAL_PRICE from .env
                 $mealPrice = floatval(env('MEAL_PRICE', 8));
                 $totalAmount = $totalMeals * $mealPrice;
-                
+
                 // Update the total_amount for this date
                 $dateItem['total_amount'] = number_format($totalAmount, 2);
-                
+
                 // Refill the form with updated data
                 $this->form->fill($formData);
                 break;
