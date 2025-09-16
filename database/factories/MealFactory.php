@@ -16,7 +16,8 @@ class MealFactory extends Factory
         return [
             'name' => 'Meal: '.fake()->words(2, true),
             'code' => fake()->unique()->regexify('[A-Z]{2}[0-9]{3}'),
-            'status_id' => fake()->randomElement([1, 2]),
+            'status_id' => fake()->randomElement([1]),
+            'category_id' => fake()->randomElement([1, 2]),
         ];
     }
 }

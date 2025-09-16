@@ -19,9 +19,17 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('meal_categories', function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('label')->default('');
+            $table->string('description')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('meals', function (Blueprint $table) {
             $table->id();
             $table->integer('status_id')->default(1);
+            $table->integer('category_id')->default(1);
             $table->string('name')->default('');
             $table->string('code')->default('');
             $table->timestamps();
@@ -35,6 +43,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('meal_statuses');
+        Schema::dropIfExists('meal_categories');
         Schema::dropIfExists('meals');
     }
 };

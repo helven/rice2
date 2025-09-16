@@ -13,6 +13,7 @@ class Meal extends Model
         'name',
         'code',
         'status_id',
+        'category_id',
     ];
 
     protected $casts = [
@@ -22,5 +23,10 @@ class Meal extends Model
     public function status()
     {
         return $this->belongsTo(MealStatus::class, 'status_id', 'id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(MealCategory::class, 'category_id', 'id');
     }
 }

@@ -36,7 +36,23 @@ class MealSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $numberOfMeals = 10; // You can adjust this number
+        DB::table('meal_categories')->insert([
+            'id' => 1,
+            'label' => 'Daily Order',
+            'description' => 'Daily Order.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('meal_categories')->insert([
+            'id' => 2,
+            'label' => 'Catering',
+            'description' => 'Catering.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $numberOfMeals = 15; // You can adjust this number
         Meal::factory()->count($numberOfMeals)->create();
     }
 }

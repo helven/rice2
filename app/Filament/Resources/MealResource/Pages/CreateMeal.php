@@ -5,6 +5,7 @@ namespace App\Filament\Resources\MealResource\Pages;
 use App\Filament\Resources\MealResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Notifications\Notification;
 
 class CreateMeal extends CreateRecord
 {
@@ -26,5 +27,10 @@ class CreateMeal extends CreateRecord
             $this->getCreateAnotherFormAction()->label('Save & Create another'),
             $this->getCancelFormAction()->label('Cancel'),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

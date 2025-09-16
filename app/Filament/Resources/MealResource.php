@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MealResource\Pages;
 use App\Filament\Resources\MealResource\RelationManagers;
 use App\Models\Meal;
+use App\Models\MealCategory;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,6 +19,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Navigation\NavigationItem;
@@ -57,6 +59,11 @@ class MealResource extends Resource
                     TextInput::make('code')
                         ->required()
                         ->maxLength(64),
+                    Select::make('category_id')
+                        ->label('Category')
+                        ->options(MealCategory::all()->pluck('label', 'id'))
+                        ->required()
+                        ->searchable(),
                 ])
             ]);
     }
@@ -82,6 +89,10 @@ class MealResource extends Resource
                         if ($record->status_id === 2) return 'warning';
                         return 'gray';
                     }),
+                TextColumn::make('category.label')
+                    ->label('category')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable()
@@ -98,7 +109,10 @@ class MealResource extends Resource
                     ->options([
                         1 => 'Active',
                         2 => 'Inactive'
-                    ])
+                    ]),
+                SelectFilter::make('category_id')
+                    ->label('Category')
+                    ->options(MealCategory::all()->pluck('label', 'id'))
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
