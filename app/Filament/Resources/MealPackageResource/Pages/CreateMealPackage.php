@@ -28,4 +28,9 @@ class CreateMealPackage extends CreateRecord
             $this->getCancelFormAction()->label('Cancel'),
         ];
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
