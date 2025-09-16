@@ -10,6 +10,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -32,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->assets([
                 Css::make('app-css', \Illuminate\Support\Facades\Vite::asset('resources/css/app.css')),
                 Css::make('custom-style', asset('css/filament/custom.css')),
+                Js::make('fi-main-position', asset('js/filament/fi-main-position.js')),
             ])
             // Conditional login based on config
             ->when(Config::get('app.username_login', false), function (Panel $panel) {

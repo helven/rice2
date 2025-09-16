@@ -1,4 +1,10 @@
 
+:root {
+    --fi-main-top: 1rem;
+    --fi-main-left: 50%;
+    --fi-main-width: 0px;
+}
+
 header.fi-sidebar-header > div {
     height: 100% !important;
 }
@@ -68,3 +74,16 @@ td.fi-ta-actions-cell {
     page-break-before: always;
   }
 }
+
+/* Position notifications relative to fi-main using CSS variables */
+.fi-no-notification {
+    position: fixed !important;
+    top: calc(var(--fi-main-top, 1rem) + 1rem) !important;
+    left: calc(var(--fi-main-left, 50%) + var(--fi-main-width, 0px) / 2) !important;
+    transform: translateX(-50%) !important;
+    z-index: 9999 !important;
+    max-width: 400px !important;
+    margin: 0 !important;
+}
+
+/* JavaScript will update these CSS variables based on fi-main position */
