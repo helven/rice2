@@ -9,3 +9,21 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Light mode: use dark notification (like original dark mode) */
+.fi-no-notification {
+    @apply !bg-gray-900 !ring-white/10;
+}
+
+.fi-no-notification .fi-no-notification-title {
+    @apply !text-white;
+}
+
+/* Dark mode: use light notification (like original light mode) */
+.dark .fi-no-notification {
+    @apply !bg-white !ring-gray-950/5;
+}
+
+.dark .fi-no-notification .fi-no-notification-title {
+    @apply !text-gray-950;
+}
