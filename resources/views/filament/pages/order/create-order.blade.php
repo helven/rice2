@@ -107,7 +107,7 @@
             }
         }
     </script>
-    <form wire:submit="create" class="fi-form grid gap-y-6" enctype="multipart/form-data">
+    <form class="fi-form grid gap-y-6" enctype="multipart/form-data">
         {{ $this->form }}
 
         <div class="fi-form-actions">
@@ -138,6 +138,28 @@
                     Save
                 </x-filament::button>
 
+                <x-filament::button
+                    x-on:click="
+                        () => {
+                            // Client-side form validation
+                            const form = document.querySelector('form');
+                            if (form.checkValidity()) {
+                                // Set a flag to indicate 'Save & Create Another' action
+                                window.createAnotherAction = true;
+                                // Populate modal with form data
+                                populateConfirmModal();
+                                $dispatch('open-modal', { id: 'confirm-modal' });
+                            } else {
+                                // Show validation errors
+                                form.reportValidity();
+                            }
+                        }
+                    "
+                    color="gray"
+                >
+                    Save & Create another
+                </x-filament::button>
+
                 <x-filament::button tag="a" href="/backend/orders" color="gray">
                     Cancel
                 </x-filament::button>
@@ -163,7 +185,17 @@
             <x-slot name="footerActions">
                 <div class="w-full gap-3 flex flex-wrap items-center justify-center">
                     <x-filament::button
-                        type="submit"
+                        x-on:click="
+                            () => {
+                                if (window.createAnotherAction) {
+                                    $wire.createAnother();
+                                    window.createAnotherAction = false;
+                                } else {
+                                    $wire.create();
+                                }
+                                $dispatch('close-modal', { id: 'confirm-modal' });
+                            }
+                        "
                         class="mt-4"
                     >
                         Submit

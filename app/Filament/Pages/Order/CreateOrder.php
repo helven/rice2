@@ -570,7 +570,37 @@ class CreateOrder extends Page
         ];
     }
 
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('create')
+                ->label('Save')
+                ->action('create')
+                ->keyBindings(['mod+s'])
+                ->color('primary'),
+            Action::make('createAnother')
+                ->label('Save & Create another')
+                ->action('createAnother')
+                ->keyBindings(['mod+shift+s'])
+                ->color('gray'),
+            Action::make('cancel')
+                ->label('Cancel')
+                ->url('/' . config('filament.path', 'backend') . '/orders')
+                ->color('gray'),
+        ];
+    }
+
     public function create()
+    {
+        $this->createOrder(false);
+    }
+
+    public function createAnother()
+    {
+        $this->createOrder(true);
+    }
+
+    protected function createOrder(bool $createAnother = false)
     {
         // Validate the form data
         $data = $this->form->getState();
@@ -665,7 +695,25 @@ class CreateOrder extends Page
                 ->title('Orders created successfully')
                 ->send();
 
-            $this->redirect('/' . config('filament.path', 'backend') . '/orders');
+            if ($createAnother) {
+                // Reset the form for creating another order
+                $this->form->fill([
+                    'customer_id' => '',
+                    'address_id' => '',
+                    'delivery_date' => '',
+                    'meals_by_date' => [],
+                    'total_amount' => 0.00,
+                    'notes' => '',
+                    'arrival_time' => '',
+                    'driver_id' => '',
+                    'driver_route' => '',
+                    'backup_driver_id' => '',
+                    'driver_notes' => '',
+                ]);
+                $this->modalData = [];
+            } else {
+                $this->redirect('/' . config('filament.path', 'backend') . '/orders');
+            }
         } catch (\Exception $e) {
             \DB::rollBack();
             Notification::make()

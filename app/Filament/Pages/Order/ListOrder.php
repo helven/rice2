@@ -35,9 +35,20 @@ class ListOrder extends Page implements HasTable
 
     protected static string $view = 'filament.pages.order.list-order';
 
-
+    public $dailyReportDate;
+    public $monthlyReportMonth;
+    public $driverSheetDate;
+    public $driverList;
 
     public $dateFilter = 'today';
+
+    public function mount(): void
+    {
+        $this->dailyReportDate = Carbon::today()->format('Y-m-d');
+        $this->monthlyReportMonth = Carbon::today()->format('Y-m');
+        $this->driverSheetDate = Carbon::today()->format('Y-m-d');
+        $this->driverList = null;
+    }
 
     public function table(Table $table): Table
     {
@@ -102,37 +113,6 @@ class ListOrder extends Page implements HasTable
 
         return $table
             ->query($this->query())
-            ->headerActions([
-                TableAction::make('printData')
-                    ->label('Print Data')
-                    ->button()
-                    ->icon('heroicon-o-printer')
-                    ->url(function () {
-                        $params = filterParams($this);
-
-                        return route('admin.order.print_data', $params);
-                    }, true),
-
-                TableAction::make('printDriverSheet1')
-                    ->label('Print Driver Sheet 1')
-                    ->button()
-                    ->icon('heroicon-o-printer')
-                    ->url(function () {
-                        $params = filterParams($this);
-
-                        return route('admin.order.print_driver_sheet_1', $params);
-                    }, true),
-
-                TableAction::make('printDriverSheet2')
-                    ->label('Print Driver Sheet 2')
-                    ->button()
-                    ->icon('heroicon-o-printer')
-                    ->url(function () {
-                        $params = filterParams($this);
-
-                        return route('admin.order.print_driver_sheet_2', $params);
-                    }, true),
-            ])
             ->columns([
                 TextColumn::make('formatted_id')
                     ->label('Order No')
@@ -478,5 +458,175 @@ class ListOrder extends Page implements HasTable
             '/' . config('filament.path', 'backend') . '/orders' => 'Orders',
             '' => 'Manage Orders',
         ];
+    }
+
+    private function getFilterParams(): array
+    {
+        $params = [];
+
+        $search = $this->getTableSearch();
+        if ($search) {
+            $params['search'] = $search;
+        }
+
+        $dateRangeFilter = $this->getTableFilterState('date_range');
+        if ($dateRangeFilter) {
+            if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
+                $params['date_range'] = $dateRangeFilter['range_type'];
+
+                switch($dateRangeFilter['range_type']){
+                    case 'daily':
+                        if (isset($dateRangeFilter['daily_date']) && $dateRangeFilter['daily_date']) {
+                            $params['daily_date'] = $dateRangeFilter['daily_date'];
+                        }
+                        break;
+                    case 'this_week':
+                        if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
+                            $params['start_date'] = $dateRangeFilter['start_date'];
+                        }
+                        break;
+                    case 'this_month':
+                        if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
+                            $params['end_date'] = $dateRangeFilter['end_date'];
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        $statusFilter = $this->getTableFilterState('payment_status_id');
+        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+            $params['payment_status_id'] = $statusFilter['value'];
+        }
+
+        $statusFilter = $this->getTableFilterState('status_id');
+        if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
+            $params['status_id'] = $statusFilter['value'];
+        }
+
+        $customerFilter = $this->getTableFilterState('customer_id');
+        if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
+            $params['customer_id'] = $customerFilter['value'];
+        }
+
+        $driverFilter = $this->getTableFilterState('driver_id');
+        if ($driverFilter && isset($driverFilter['value']) && $driverFilter['value']) {
+            $params['driver_id'] = $driverFilter['value'];
+        }
+
+        return $params;
+    }
+
+    
+
+    public function getDriversProperty()
+    {
+        return \App\Models\Driver::where('status_id', 1)
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+
+    public function printData()
+    {
+        $params = [];
+        
+        if (!$this->dailyReportDate || $this->dailyReportDate == '') {
+            $this->dailyReportDate = Carbon::today()->format('Y-m-d');
+        }
+
+        $params['daily_date'] = $this->dailyReportDate;
+        $params['date_range'] = 'daily';
+        
+        $url = route('admin.order.print_data', $params);
+        
+        $this->js("window.open('$url', '_blank')");
+    }
+
+    public function PrintDailyBankSalesReport()
+    {
+        $params = [];
+        
+        if (!$this->dailyReportDate || $this->dailyReportDate == '') {
+            $this->dailyReportDate = Carbon::today()->format('Y-m-d');
+        }
+
+        $params['daily_date'] = $this->dailyReportDate;
+        $params['date_range'] = 'daily';
+        
+        $url = route('admin.report.print_daily_bank_sales_report', $params);
+        
+        $this->js("window.open('$url', '_blank')");
+    }
+
+    public function PrintDailyOrderQuantityReport()
+    {
+        $params = [];
+        
+        if (!$this->dailyReportDate || $this->dailyReportDate == '') {
+            $this->dailyReportDate = Carbon::today()->format('Y-m-d');
+        }
+
+        $params['daily_date'] = $this->dailyReportDate;
+        $params['date_range'] = 'daily';
+        
+        $url = route('admin.report.print_daily_order_quantity_report', $params);
+        
+        $this->js("window.open('$url', '_blank')");
+    }
+
+    public function printMonthlySalesReport()
+    {
+        $params = [];
+
+        if (!$this->monthlyReportMonth || $this->monthlyReportMonth == '') {
+            $this->monthlyReportMonth = Carbon::today()->format('Y-m');
+        }
+
+        $params['month'] = $this->monthlyReportMonth;
+        $params['date_range'] = 'monthly';
+        
+        $url = route('admin.report.print_monthly_sales_report', $params);
+        
+        $this->js("window.open('$url', '_blank')");
+    }
+
+    public function printDriverSheet1()
+    {
+        $params = [];
+
+        if (!$this->driverSheetDate || $this->driverSheetDate == '') {
+            $this->driverSheetDate = Carbon::today()->format('Y-m-d');
+        }
+
+        $params['daily_date'] = $this->driverSheetDate;
+        $params['date_range'] = 'daily';
+        
+        if ($this->driverList) {
+            $params['driver_id'] = $this->driverList;
+        }
+        
+        $url = route('admin.order.print_driver_sheet_1', $params);
+        
+        $this->js("window.open('$url', '_blank')");
+    }
+
+    public function printDriverSheet2()
+    {
+        $params = [];
+
+        if (!$this->driverSheetDate || $this->driverSheetDate == '') {
+            $this->driverSheetDate = Carbon::today()->format('Y-m-d');
+        }
+
+        $params['daily_date'] = $this->driverSheetDate;
+        $params['date_range'] = 'daily';
+        
+        $url = route('admin.order.print_driver_sheet_2', $params);
+        
+        $this->js("window.open('$url', '_blank')");
     }
 }
