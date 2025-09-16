@@ -22,7 +22,7 @@ class EditMeal extends EditRecord
                     $record = $this->getRecord();
                     $record->status_id = 11;
                     $record->save();
-                    
+
                     $this->redirect($this->getResource()::getUrl('index'));
                 }),
         ];
@@ -31,7 +31,7 @@ class EditMeal extends EditRecord
     public function getBreadcrumbs(): array
     {
         return [
-            '/'.config('filament.path', 'backend').'/meals' => 'Meals',
+            '/' . config('filament.path', 'backend') . '/meals' => 'Meals',
             '' => $this->record->name ?? 'Edit Meal',
         ];
     }

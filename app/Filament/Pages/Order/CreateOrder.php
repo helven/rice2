@@ -418,7 +418,15 @@ class CreateOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->preload()
-                                ->options(Meal::query()->where('status_id', 1)->pluck('name', 'id'))
+                                ->options(function () {
+                                    return Meal::query()
+                                        ->where('status_id', 1)
+                                        ->where('category_id', 1)
+                                        //->whereNotNull('name')
+                                        //->where('name', '!=', '')
+                                        ->pluck('name', 'id')
+                                        ->toArray();
+                                })
                                 ->live()
                                 ->columnSpan(2),
                             TextInput::make('normal')

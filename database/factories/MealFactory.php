@@ -10,11 +10,20 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MealFactory extends Factory
 {
+    public function configure()
+    {
+        return $this->afterCreating(function ($meal) {
+            $prefix = $meal->category_id == 1 ? '[Daily]' : '[Cater]';
+            $meal->update([
+                'name' => $prefix . '[' . $meal->id . '] ' . ucwords(fake()->words(1, true)),
+            ]);
+        });
+    }
 
     public function definition(): array
     {
         return [
-            'name' => 'Meal: '.fake()->words(2, true),
+            'name' => 'Temporary Name', // Will be updated in configure()
             'code' => fake()->unique()->regexify('[A-Z]{2}[0-9]{3}'),
             'status_id' => fake()->randomElement([1]),
             'category_id' => fake()->randomElement([1, 2]),
