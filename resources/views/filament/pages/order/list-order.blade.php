@@ -12,9 +12,11 @@
     </style>
     
     {{ $this->table }}
-    
+    <h1 class="mt-6 fi-header-heading text-2xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-3xl">
+        Print Orders
+    </h1>
     <!-- Print Report Card -->
-    <div class="mt-6 bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Daily Report</h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -55,7 +57,7 @@
                 icon="heroicon-o-printer" 
                 color="primary" 
             > 
-                Print DailyOrderQuantityReport 
+                Print Daily Order Quantity Report 
             </x-filament::button>
         </div>
     </div>
