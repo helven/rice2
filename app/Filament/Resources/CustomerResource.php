@@ -87,6 +87,16 @@ class CustomerResource extends Resource
                                     ->label('Company Name')
                                     ->required()
                                     ->maxLength(64),
+                                TextInput::make('address_1')
+                                    ->label('Address Line 1')
+                                    ->required()
+                                    ->maxLength(128),
+                                TextInput::make('address_2')
+                                    ->label('Address Line 2')
+                                    ->maxLength(128)
+                                    ->required(false)
+                                    ->default('')
+                                    ->dehydrateStateUsing(fn ($state) => $state ?? ''),
                                 Grid::make(2)
                                     ->schema([
                                         Select::make('mall_id')
@@ -104,16 +114,6 @@ class CustomerResource extends Resource
                                             ->options(Area::query()->pluck('name', 'id'))
                                             ->required(),
                                     ]),
-                                TextInput::make('address_1')
-                                    ->label('Address Line 1')
-                                    ->required()
-                                    ->maxLength(128),
-                                TextInput::make('address_2')
-                                    ->label('Address Line 2')
-                                    ->maxLength(128)
-                                    ->required(false)
-                                    ->default('')
-                                    ->dehydrateStateUsing(fn ($state) => $state ?? ''),
                                 //Grid::make(3)
                                 //    ->schema([
                                 //        TextInput::make('postal_code')
@@ -174,25 +174,7 @@ class CustomerResource extends Resource
                                             ->reactive()
                                             ->afterStateUpdated(function ($state, callable $set) {
                                                 $set('backup_driver_route', null);
-                                            }),
-                                        Select::make('backup_driver_route')
-                                            ->label('Route')
-                                            ->placeholder('Select Route')
-                                            ->searchable()
-                                            ->options(function (callable $get) {
-                                                $driverId = $get('backup_driver_id');
-
-                                                if (blank($driverId)) {
-                                                    return [];
-                                                }
-
-                                                $driver = \App\Models\Driver::find($driverId);
-                                                if (!$driver || !$driver->route) {
-                                                    return [];
-                                                }
-                                                return collect($driver->route)->pluck('route_name', 'route_name');
                                             })
-                                            ->disabled(fn(callable $get): bool => blank($get('driver_id')))
                                     ]),
                             ])
                             ->addActionLabel('Add Address')
