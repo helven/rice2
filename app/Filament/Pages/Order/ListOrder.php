@@ -120,7 +120,8 @@ class ListOrder extends Page implements HasTable
                 TextColumn::make('customer.name')
                     ->label('Customer')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(true),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
                     ->dateTime(config('app.date_format'))
@@ -162,6 +163,7 @@ class ListOrder extends Page implements HasTable
                     ->html()
                     ->searchable()
                     ->sortable()
+                    ->toggleable(true)
                     ->color(function (Order $record): string {
                         if ($record->payment_status_id === 4) return 'success';
                         if ($record->payment_status_id === 3) return 'warning';
@@ -397,12 +399,14 @@ class ListOrder extends Page implements HasTable
                 SelectFilter::make('payment_status_id')
                     ->label('Payment')
                     ->options([
-                        3 => 'Paid',
-                        4 => 'Unpaid',
+                        3 => 'Unpaid',
+                        4 => 'Paid',
                     ]),
                 SelectFilter::make('customer_id')
+                    ->label('Customer')
                     ->relationship('customer', 'name'),
                 SelectFilter::make('driver_id')
+                    ->label('Driver')
                     ->relationship('driver', 'name'),
             ])
             ->actions([

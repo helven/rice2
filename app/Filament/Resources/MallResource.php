@@ -59,12 +59,12 @@ class MallResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->label('Mall Name'),
-                            ]),
-                        Select::make('status_id')
-                            ->label('Status')
-                            ->options(MallStatus::pluck('label', 'id'))
-                            ->default(1)
-                            ->required(),
+                                Select::make('status_id')
+                                    ->label('Status')
+                                    ->options(MallStatus::pluck('label', 'id'))
+                                    ->default(1)
+                                    ->required(),
+                            ])
                     ]),
             ]);
     }
