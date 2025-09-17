@@ -11,17 +11,11 @@ class Mall extends Model
 
     protected $fillable = [
         'status_id',
-        'name',
-        'payment_medthod_id'
+        'name'
     ];
 
     public function status()
     {
         return $this->belongsTo(MallStatus::class, 'status_id', 'id');
-    }
-
-    public function paymentMethod()
-    {
-        return $this->belongsTo(AttrPaymentMethod::class, 'payment_medthod_id', 'id');
     }
 }

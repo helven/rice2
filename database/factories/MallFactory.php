@@ -14,7 +14,6 @@ class MallFactory extends Factory
         return [
             'name' => 'Mall: '.fake()->company(),
             'status_id' => fake()->randomElement([1, 2]),
-            'payment_medthod_id' => fake()->randomElement([1, 2, 3]),
         ];
     }
 }

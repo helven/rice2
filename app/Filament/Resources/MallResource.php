@@ -59,11 +59,6 @@ class MallResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->label('Mall Name'),
-                                Select::make('payment_medthod_id')
-                                    ->label('Payment Method')
-                                    ->options(AttrPaymentMethod::pluck('label', 'id'))
-                                    ->required()
-                                    ->searchable(),
                             ]),
                         Select::make('status_id')
                             ->label('Status')
@@ -117,9 +112,6 @@ class MallResource extends Resource
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options(MallStatus::pluck('label', 'id')),
-                SelectFilter::make('payment_medthod_id')
-                    ->label('Payment Method')
-                    ->options(AttrPaymentMethod::pluck('label', 'id')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
