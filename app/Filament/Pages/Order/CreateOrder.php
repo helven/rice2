@@ -197,6 +197,18 @@ class CreateOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->preload()
+                                ->getSearchResultsUsing(function (string $search) {
+                                    return Customer::query()
+                                        ->where(function ($q) use ($search) {
+                                            $q->where('name', 'like', "%{$search}%")
+                                              ->orWhere('contact', 'like', "%{$search}%");
+                                        })
+                                        ->orderBy('name')
+                                        ->limit(50)
+                                        ->pluck('name', 'id')
+                                        ->toArray();
+                                })
+                                //->getOptionLabelUsing(fn ($value): ?string => Customer::find($value) ? Customer::find($value)->name : null)
                                 ->options(Customer::query()->pluck('name', 'id'))
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set) {
@@ -242,15 +254,15 @@ class CreateOrder extends Page
                                         $address = CustomerAddressBook::find($state);
                                         if ($address) {
                                             // Use pre-assigned driver information from the address only if current fields are empty
-                                            if ($address->driver_id && !$get('driver_id')) {
+                                            if ($address->driver_id) {
                                                 $set('driver_id', $address->driver_id);
-                                                if ($address->driver_route && !$get('driver_route')) {
+                                                if ($address->driver_route) {
                                                     $set('driver_route', $address->driver_route);
                                                 }
                                             }
 
                                             // Use pre-assigned backup driver information from the address only if current fields are empty
-                                            if ($address->backup_driver_id && !$get('backup_driver_id')) {
+                                            if ($address->backup_driver_id) {
                                                 $set('backup_driver_id', $address->backup_driver_id);
                                             }
                                         }

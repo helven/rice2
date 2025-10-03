@@ -281,7 +281,7 @@ class ListOrder extends Page implements HasTable
                                 'this_month' => "This month's Order",
                                 'custom' => 'Custom Range'
                             ])
-                            ->default('daily')
+                            //->default('daily')
                             ->placeholder(false)
                             ->selectablePlaceholder(false)
                             ->live(),

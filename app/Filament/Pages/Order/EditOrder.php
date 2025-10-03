@@ -145,6 +145,26 @@ class EditOrder extends Page
                                             return [$address->id => $displayAddress];
                                         });
                                 })
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    // Load driver information based on selected address
+                                    if ($state) {
+                                        $address = CustomerAddressBook::find($state);
+                                        if ($address) {
+                                            // Use pre-assigned driver information from the address only if current fields are empty
+                                            if ($address->driver_id) {
+                                                $set('driver_id', $address->driver_id);
+                                                if ($address->driver_route) {
+                                                    $set('driver_route', $address->driver_route);
+                                                }
+                                            }
+
+                                            // Use pre-assigned backup driver information from the address only if current fields are empty
+                                            if ($address->backup_driver_id) {
+                                                $set('backup_driver_id', $address->backup_driver_id);
+                                            }
+                                        }
+                                    }
+                                })
                         ]),
 
                     //DateTimePicker::make('delivery_date')
