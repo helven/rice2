@@ -662,8 +662,8 @@ class EditOrder extends Page
 
     private function calculateTotalAmountByMealQty(callable $get, callable $set)
     {
-        // Get all meals from the form
-        $formData = $this->form->getState();
+        // Get all meals from the form without validation to avoid validation errors
+        $formData = $this->form->getRawState();
         $meals = $formData['meals'] ?? [];
         
         $totalMeals = 0;

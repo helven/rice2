@@ -990,7 +990,7 @@ class CreateOrder extends Page
     private function calculateTotalAmountByMealQty(callable $set, callable $get)
     {
         // Get the current form state to work with complete data
-        $formData = $this->form->getState();
+        $formData = $this->form->getRawState();
 
         // Get current date context - we need to find which meals_by_date item we're in
         $currentItem = $get('../../');  // Go up to the meals_by_date item level
