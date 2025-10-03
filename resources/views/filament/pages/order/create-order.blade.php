@@ -1,5 +1,8 @@
 <x-filament::page x-data="{ showModal: false }">
     <script>
+        // Global variable to store disabled dates
+        let disabledDates = [];
+        
         function findTableCellByText(container, labelText) {
             const rows = container.querySelectorAll('tr');
             for (let row of rows) {
@@ -10,6 +13,97 @@
             }
             return null;
         }
+        
+        // Function to fetch existing delivery dates for customer/address combination
+        async function fetchExistingDeliveryDates(customerId, addressId) {
+            if (!customerId || !addressId) {
+                disabledDates = [];
+                updateFlatpickrDisabledDates();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/orders/existing-delivery-dates?customer_id=${customerId}&address_id=${addressId}`);
+                const data = await response.json();
+                disabledDates = data.dates || [];
+                updateFlatpickrDisabledDates();
+            } catch (error) {
+                console.error('Error fetching existing delivery dates:', error);
+                disabledDates = [];
+                updateFlatpickrDisabledDates();
+            }
+        }
+        
+        // Function to update flatpickr with disabled dates
+        function updateFlatpickrDisabledDates() {
+            const deliveryDateInput = document.querySelector('#delivery_date');
+            if (deliveryDateInput && deliveryDateInput._flatpickr) {
+                const flatpickrInstance = deliveryDateInput._flatpickr;
+                
+                // Get current selected dates
+                const currentSelectedDates = flatpickrInstance.selectedDates;
+                
+                // Convert disabled dates to Date objects for comparison
+                const disabledDateObjects = disabledDates.map(date => new Date(date));
+                
+                // Filter out any selected dates that are now disabled
+                const validSelectedDates = currentSelectedDates.filter(selectedDate => {
+                    return !disabledDateObjects.some(disabledDate => 
+                        selectedDate.toDateString() === disabledDate.toDateString()
+                    );
+                });
+                
+                // Update flatpickr with disabled dates
+                flatpickrInstance.set('disable', disabledDateObjects);
+                
+                // If some dates were removed, update the selection
+                if (validSelectedDates.length !== currentSelectedDates.length) {
+                    flatpickrInstance.setDate(validSelectedDates, true);
+                }
+            }
+        }
+        
+        // Function to setup event listeners for customer and address changes
+        function setupDateDisabling() {
+            // Wait for the DOM to be ready
+            setTimeout(() => {
+                const customerSelect = document.querySelector('[name="data.customer_id"]');
+                const addressSelect = document.querySelector('[name="data.address_id"]');
+                
+                if (customerSelect) {
+                    customerSelect.addEventListener('change', function() {
+                        const customerId = this.value;
+                        const addressId = addressSelect ? addressSelect.value : null;
+                        fetchExistingDeliveryDates(customerId, addressId);
+                    });
+                }
+                
+                if (addressSelect) {
+                    addressSelect.addEventListener('change', function() {
+                        const addressId = this.value;
+                        const customerId = customerSelect ? customerSelect.value : null;
+                        fetchExistingDeliveryDates(customerId, addressId);
+                    });
+                }
+                
+                // Also check for initial values if they exist
+                const initialCustomerId = customerSelect ? customerSelect.value : null;
+                const initialAddressId = addressSelect ? addressSelect.value : null;
+                if (initialCustomerId && initialAddressId) {
+                    fetchExistingDeliveryDates(initialCustomerId, initialAddressId);
+                }
+            }, 1000);
+        }
+        
+        // Initialize when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setupDateDisabling();
+        });
+        
+        // Also setup when Livewire updates the page
+        document.addEventListener('livewire:navigated', function() {
+            setupDateDisabling();
+        });
         
         function formatDeliveryDateRange(dateRange) {
             if (!dateRange) return '';

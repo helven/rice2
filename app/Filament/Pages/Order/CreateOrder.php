@@ -38,6 +38,8 @@ use App\Models\CustomerAddressBook;
 use App\Models\Driver;
 use App\Models\Meal;
 use App\Models\Area;
+use App\Models\AttrPaymentMethod;
+use App\Models\OrderStatus;
 
 class CreateOrder extends Page
 {
@@ -65,6 +67,8 @@ class CreateOrder extends Page
         $this->form->fill([
             'customer_id' => '',
             'address_id' => '',
+            'payment_status_id' => 3, // Default payment status
+            'payment_method_id' => '',
             'delivery_date' => '',
             'meals_by_date' => [],
             'total_amount' => 0.00,
@@ -98,6 +102,8 @@ class CreateOrder extends Page
             $orderData = [
                 'customer_id' => $customer ? $customer->id : '',
                 'address_id' => $address ? $address->id : '',
+                'payment_status_id' => 3, // Default payment status
+                'payment_method_id' => $customer ? $customer->payment_method_id : '',
                 'arrival_time' => '08:00',
                 'driver_id' => $driver ? $driver->id : '',
                 'driver_route' => $driverRoute,
@@ -211,8 +217,27 @@ class CreateOrder extends Page
                                 //->getOptionLabelUsing(fn ($value): ?string => Customer::find($value) ? Customer::find($value)->name : null)
                                 ->options(Customer::query()->pluck('name', 'id'))
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $set('address_id', null);
+                                    
+                                    // Auto-select payment method based on customer's default
+                                    if ($state) {
+                                        $customer = Customer::find($state);
+                                        if ($customer && $customer->payment_method_id) {
+                                            $set('payment_method_id', $customer->payment_method_id);
+                                        }
+                                    }
+                                    
+                                    // Trigger JavaScript to update disabled dates
+                                    $this->js('
+                                        setTimeout(() => {
+                                            const customerId = "' . $state . '";
+                                            const addressId = null; // Address is reset when customer changes
+                                            if (typeof fetchExistingDeliveryDates === "function") {
+                                                fetchExistingDeliveryDates(customerId, addressId);
+                                            }
+                                        }, 100);
+                                    ');
                                 }),
 
                             Select::make('address_id')
@@ -267,7 +292,45 @@ class CreateOrder extends Page
                                             }
                                         }
                                     }
+                                    
+                                    // Trigger JavaScript to update disabled dates
+                                    $customerId = $get('customer_id');
+                                    $this->js('
+                                        setTimeout(() => {
+                                            const customerId = "' . $customerId . '";
+                                            const addressId = "' . $state . '";
+                                            if (typeof fetchExistingDeliveryDates === "function") {
+                                                fetchExistingDeliveryDates(customerId, addressId);
+                                            }
+                                        }, 100);
+                                    ');
                                 })
+                        ]),
+                    
+                    Grid::make(2)
+                        ->schema([
+                            Select::make('payment_status_id')
+                                ->label('Payment Status')
+                                ->placeholder('Select Payment Status')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->options(OrderStatus::query()->pluck('label', 'id'))
+                                ->default(3)
+                                ->live(),
+
+                            Select::make('payment_method_id')
+                                ->label('Payment Method')
+                                ->placeholder('Select Payment Method')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->options(function () {
+                                    return AttrPaymentMethod::query()
+                                        ->pluck('label', 'id')
+                                        ->toArray();
+                                })
+                                ->live(),
                         ]),
                     //DateRangePicker::make('delivery_date_range')
                     //    ->label('Delivery Date')
@@ -620,6 +683,8 @@ class CreateOrder extends Page
         $this->validate([
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
+            'data.payment_status_id' => ['required', 'exists:order_statuses,id'],
+            'data.payment_method_id' => ['required', 'exists:attr_payment_methods,id'],
             'data.delivery_date' => ['required', 'string'],
             'data.arrival_time' => ['required'],
             'data.meals_by_date' => ['required', 'array', 'min:1'],
@@ -652,13 +717,11 @@ class CreateOrder extends Page
                 // Calculate delivery fee for this date
                 $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
 
-                // Get customer's payment method
-                $customer = Customer::find($data['customer_id']);
-                $paymentMethodId = $customer ? $customer->payment_method_id : null;
-
                 $order = \App\Models\Order::create([
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
+                    'payment_status_id' => $data['payment_status_id'],
+                    'payment_method_id' => $data['payment_method_id'],
                     'delivery_date' => $dateData['date'],
                     'total_amount' => $dateData['total_amount'],
                     'delivery_fee' => $deliveryFee,
@@ -668,7 +731,6 @@ class CreateOrder extends Page
                     'driver_route' => $data['driver_route'],
                     'backup_driver_id' => $data['backup_driver_id'] ?? 0,
                     'driver_notes' => $data['driver_notes'] ?? '',
-                    'payment_method_id' => $paymentMethodId,
                 ]);
 
                 // Create invoice for this order
@@ -712,6 +774,8 @@ class CreateOrder extends Page
                 $this->form->fill([
                     'customer_id' => '',
                     'address_id' => '',
+                    'payment_status_id' => 3, // Default payment status
+                    'payment_method_id' => '',
                     'delivery_date' => '',
                     'meals_by_date' => [],
                     'total_amount' => 0.00,

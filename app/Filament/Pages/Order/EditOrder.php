@@ -35,7 +35,10 @@ use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Meal;
 use App\Models\Order;
+use App\Models\OrderStatus;
 use App\Models\Area;
+use App\Models\AttrPaymentMethod;
+use App\Models\AttrStatus;
 
 class EditOrder extends Page
 {
@@ -62,6 +65,8 @@ class EditOrder extends Page
             'customer_id' => $this->order->customer_id,
             'address_id' => $this->order->address_id,
             'delivery_date' => $this->order->delivery_date,
+            'payment_status_id' => $this->order->payment_status_id,
+            'payment_method_id' => $this->order->payment_method_id,
             'meals' => $this->order->meals->map(function ($meal) {
                 return [
                     'meal_id' => $meal->meal_id,
@@ -108,8 +113,21 @@ class EditOrder extends Page
                                 ->preload()
                                 ->options(Customer::query()->pluck('name', 'id'))
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $set('address_id', null);
+                                    
+                                    // Trigger JavaScript to update disabled dates for Edit Order
+                                    $orderId = $get('id'); // Get current order ID
+                                    $this->js('
+                                        setTimeout(() => {
+                                            const customerId = "' . $state . '";
+                                            const addressId = null; // Address is reset when customer changes
+                                            const orderId = "' . $orderId . '";
+                                            if (typeof fetchExistingDeliveryDates === "function") {
+                                                fetchExistingDeliveryDates(customerId, addressId, orderId);
+                                            }
+                                        }, 100);
+                                    ');
                                 }),
 
                             Select::make('address_id')
@@ -164,7 +182,43 @@ class EditOrder extends Page
                                             }
                                         }
                                     }
+                                    
+                                    // Trigger JavaScript to update disabled dates for Edit Order
+                                    $customerId = $get('customer_id');
+                                    $orderId = $get('id'); // Get current order ID
+                                    $this->js('
+                                        setTimeout(() => {
+                                            const customerId = "' . $customerId . '";
+                                            const addressId = "' . $state . '";
+                                            const orderId = "' . $orderId . '";
+                                            if (typeof fetchExistingDeliveryDates === "function") {
+                                                fetchExistingDeliveryDates(customerId, addressId, orderId);
+                                            }
+                                        }, 100);
+                                    ');
                                 })
+                        ]),
+
+                    // Payment Information
+                    Grid::make(2)
+                        ->schema([
+                            Select::make('payment_status_id')
+                                ->label('Payment Status')
+                                ->placeholder('Select Payment Status')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->options(OrderStatus::query()->pluck('label', 'id'))
+                                ->live(),
+
+                            Select::make('payment_method_id')
+                                ->label('Payment Method')
+                                ->placeholder('Select Payment Method')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->options(AttrPaymentMethod::query()->pluck('label', 'id'))
+                                ->live(),
                         ]),
 
                     //DateTimePicker::make('delivery_date')
@@ -175,6 +229,7 @@ class EditOrder extends Page
                     //    ->displayFormat('Y/m/d') // 12-hour with AM/PM (K = AM/PM)
                     //    ->live()
                     Flatpickr::make('delivery_date')
+                        ->id('delivery_date')
                         ->label('Delivery Date')
                         ->format(config('app.date_format'))
                         ->displayFormat(config('app.date_format'))
@@ -383,6 +438,8 @@ class EditOrder extends Page
             'data.customer_id' => ['required', 'exists:customers,id'],
             'data.address_id' => ['required', 'exists:customer_address_books,id'],
             'data.delivery_date' => ['required', 'string'],
+            'data.payment_status_id' => ['required', 'exists:order_statuses,id'],
+            'data.payment_method_id' => ['required', 'exists:attr_payment_methods,id'],
             'data.arrival_time' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
             'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
@@ -418,6 +475,8 @@ class EditOrder extends Page
                 'customer_id' => $data['customer_id'],
                 'address_id' => $data['address_id'],
                 'delivery_date' => \Carbon\Carbon::parse($data['delivery_date']),
+                'payment_status_id' => $data['payment_status_id'],
+                'payment_method_id' => $data['payment_method_id'],
                 'total_amount' => $data['total_amount'],
                 'delivery_fee' => $deliveryFee,
                 'notes' => $data['notes'],
