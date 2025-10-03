@@ -105,7 +105,9 @@ class CustomerResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->options(Mall::query()->pluck('name', 'id'))
-                                            ->nullable(),
+                                            ->nullable()
+                                            ->dehydrateStateUsing(fn ($state) => $state === 0 ? null : $state)
+                                            ->formatStateUsing(fn ($state) => $state === 0 ? null : $state),
                                         Select::make('area_id')
                                             ->label('Area')
                                             ->placeholder('Select Area')
