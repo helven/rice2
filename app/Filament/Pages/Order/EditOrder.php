@@ -3,25 +3,19 @@
 namespace App\Filament\Pages\Order;
 
 use App\Models\CustomerAddressBook;
+use App\Services\DeliveryService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Form;
 use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Meal;
 use App\Models\Order;
-use App\Models\OrderStatus;
-use App\Models\Area;
-use App\Models\AttrPaymentMethod;
 use App\Traits\OrderFormTrait;
 
 class EditOrder extends Page
@@ -40,7 +34,10 @@ class EditOrder extends Page
 
     public function mount($id): void
     {
-        $this->order = Order::with(['meals', 'customer', 'address', 'driver', 'backup_driver'])->findOrFail($id);
+        $this->order = Order::with(['meals', 'customer', 'address', 'deliveries'])->findOrFail($id);
+        
+        // Get delivery data from deliveries table
+        $delivery = $this->order->deliveries->first();
 
         $this->form->fill([
             'id' => $this->order->formatted_id,
@@ -61,11 +58,12 @@ class EditOrder extends Page
             })->toArray(),
             'total_amount' => $this->order->total_amount,
             'notes' => $this->order->notes,
-            'arrival_time' => $this->order->arrival_time,
-            'driver_id' => $this->order->driver_id,
-            'driver_route' => $this->order->driver_route,
-            'backup_driver_id' => ($this->order->backup_driver_id !== 0) ? $this->order->backup_driver_id : '',
-            'driver_notes' => $this->order->driver_notes,
+            // Load driver data from deliveries table
+            'arrival_time' => $delivery?->arrival_time ?? '',
+            'driver_id' => $delivery?->driver_id ?? '',
+            'driver_route' => $delivery?->driver_route ?? '',
+            'backup_driver_id' => $delivery?->backup_driver_id ?? '',
+            'driver_notes' => $delivery?->driver_notes ?? '',
         ]);
     }
 
@@ -76,10 +74,8 @@ class EditOrder extends Page
             ->statePath('data');
     }
 
-    // EditOrder specific handlers
     public function onCustomerChanged($state, callable $set, callable $get)
     {
-        // EditOrder specific JavaScript
         $orderId = $get('id');
         $this->js('
             setTimeout(() => {
@@ -95,7 +91,6 @@ class EditOrder extends Page
 
     public function onAddressChanged($state, callable $set, callable $get)
     {
-        // EditOrder specific JavaScript
         $customerId = $get('customer_id');
         $orderId = $get('id');
         $this->js('
@@ -159,17 +154,13 @@ class EditOrder extends Page
         ]));
 
         try {
-            // Begin transaction
             \DB::beginTransaction();
 
-            // Calculate total quantity for delivery fee calculation
             $totalQty = $this->calculateTotalQuantity($data['meals']);
-
-            // Calculate delivery fee
             $address = CustomerAddressBook::find($data['address_id']);
             $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
 
-            // Update the order
+            // Update order (financial data only)
             $this->order->update([
                 'customer_id' => $data['customer_id'],
                 'address_id' => $data['address_id'],
@@ -179,22 +170,20 @@ class EditOrder extends Page
                 'total_amount' => $data['total_amount'],
                 'delivery_fee' => $deliveryFee,
                 'notes' => $data['notes'],
-                'arrival_time' => $data['arrival_time'],
-                'driver_id' => $data['driver_id'],
-                'driver_route' => $data['driver_route'],
-                'backup_driver_id' => $data['backup_driver_id'] ?? 0,
-                'driver_notes' => $data['driver_notes'],
             ]);
+
+            // Update delivery data using DeliveryService
+            $deliveryService = new DeliveryService();
+            $deliveryService->storeDeliveryData($this->order, $data);
 
             // Check if invoice already exists for this order
             $invoice = \App\Models\Invoice::where('order_id', $this->order->id)->first();
-
             if (!$invoice) {
                 $this->createInvoice($this->order, $address);
             }
 
-            // Update or create meals
-            $this->order->meals()->delete(); // Remove existing meals
+            // Update meals
+            $this->order->meals()->delete();
             foreach ($data['meals'] as $meal) {
                 $this->order->meals()->create([
                     'meal_id' => $meal['meal_id'],

@@ -308,6 +308,7 @@ class CreateOrder extends Page
                 // Calculate delivery fee for this date
                 $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
 
+                // Create order with only order-related fields
                 $order = \App\Models\Order::create([
                     'customer_id' => $data['customer_id'],
                     'address_id' => $data['address_id'],
@@ -317,12 +318,18 @@ class CreateOrder extends Page
                     'total_amount' => $dateData['total_amount'],
                     'delivery_fee' => $deliveryFee,
                     'notes' => $dateData['notes'] ?? '',
+                ]);
+
+                // Create delivery record with driver-related fields
+                $deliveryService = app(\App\Services\DeliveryService::class);
+                $deliveryData = [
                     'arrival_time' => $data['arrival_time'],
                     'driver_id' => $data['driver_id'],
                     'driver_route' => $data['driver_route'],
-                    'backup_driver_id' => $data['backup_driver_id'] ?? 0,
+                    'backup_driver_id' => $data['backup_driver_id'] ?? null,
                     'driver_notes' => $data['driver_notes'] ?? '',
-                ]);
+                ];
+                $deliveryService->storeDeliveryData($order, $deliveryData);
 
                 // Create invoice for this order
                 $this->createInvoice($order, $address);

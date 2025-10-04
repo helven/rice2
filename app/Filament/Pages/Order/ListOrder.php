@@ -142,6 +142,33 @@ class ListOrder extends Page implements HasTable
                         return 'gray';
                     })
                     ->toggleable(true),
+                TextColumn::make('driver_name')
+                    ->label('Driver')
+                    ->getStateUsing(function (Order $record): string {
+                        $delivery = $record->deliveries->first();
+                        
+                        if (!$delivery || !$delivery->driver_id) {
+                            return '';
+                        }
+
+                        return $delivery->driver->name;
+                    })
+                    ->searchable(false)
+                    ->sortable(false)
+                    ->toggleable(true),
+                TextColumn::make('arrival_time')
+                    ->label('Arrival Time')
+                    ->getStateUsing(function (Order $record): string {
+                        $delivery = $record->deliveries->first();
+                        if (!$delivery || !$delivery->arrival_time) {
+                            return '';
+                        }
+                        return date(config('app.time_format'), strtotime($delivery->arrival_time));
+                    })
+                    ->searchable(false)
+                    ->sortable(false)
+                    ->toggleable(true),
+                    //->toggledHiddenByDefault(),
                 TextColumn::make('created_at')
                     ->label('Ordered On')
                     ->dateTime(config('app.date_format'))
@@ -407,7 +434,15 @@ class ListOrder extends Page implements HasTable
                     ->relationship('customer', 'name'),
                 SelectFilter::make('driver_id')
                     ->label('Driver')
-                    ->relationship('driver', 'name'),
+                    ->options(\App\Models\Driver::where('status_id', 1)->pluck('name', 'id'))
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'],
+                            fn (Builder $query, $value): Builder => $query->whereHas('deliveries', function (Builder $query) use ($value) {
+                                $query->where('driver_id', $value);
+                            })
+                        );
+                    }),
             ])
             ->actions([
                 TableAction::make('print_invoice')
@@ -442,7 +477,7 @@ class ListOrder extends Page implements HasTable
     protected function query(): Builder
     {
         return Order::query()
-            ->with(['invoice', 'customer', 'address'])
+            ->with(['invoice', 'customer', 'address', 'deliveries.driver'])
             ->whereIn('status_id', [1, 2]);
     }
 

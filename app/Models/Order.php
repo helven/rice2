@@ -18,14 +18,7 @@ class Order extends Model
         'delivery_date',
         'total_amount',
         'delivery_fee',
-        'notes',
-        'arrival_time',
-        'dropoff_time',
-        'driver_id',
-        'driver_route',
-        'backup_driver_id',
-        'backup_driver_route',
-        'driver_notes'
+        'notes'
     ];
 
     protected $casts = [
@@ -59,15 +52,7 @@ class Order extends Model
         return $this->belongsTo(CustomerAddressBook::class, 'address_id');
     }
 
-    public function driver(): BelongsTo
-    {
-        return $this->belongsTo(Driver::class);
-    }
 
-    public function backup_driver(): BelongsTo
-    {
-        return $this->belongsTo(Driver::class, 'backup_driver_id');
-    }
 
     public function meals(): HasMany
     {
@@ -78,6 +63,13 @@ class Order extends Model
     {
         return $this->hasOne(Invoice::class);
     }
+
+    public function deliveries()
+    {
+        return $this->morphMany(Delivery::class, 'deliverable');
+    }
+
+
 
     /**
      * Get the formatted order ID with zero padding and location suffix
@@ -211,6 +203,4 @@ class Order extends Model
         // Return the next counter (existing count + 1)
         return $existingCount + 1;
     }
-
-
 }

@@ -119,8 +119,14 @@ trait OrderFormTrait
                 })
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     if ($state) {
-                        $address = CustomerAddressBook::find($state);
+                        $address = CustomerAddressBook::with(['driver', 'backup_driver'])->find($state);
                         if ($address) {
+                            // Clear existing driver data first
+                            $set('driver_id', null);
+                            $set('driver_route', null);
+                            $set('backup_driver_id', null);
+                            
+                            // Set new driver data if available
                             if ($address->driver_id) {
                                 $set('driver_id', $address->driver_id);
                                 if ($address->driver_route) {
@@ -132,6 +138,11 @@ trait OrderFormTrait
                                 $set('backup_driver_id', $address->backup_driver_id);
                             }
                         }
+                    } else {
+                        // Clear driver data when no address is selected
+                        $set('driver_id', null);
+                        $set('driver_route', null);
+                        $set('backup_driver_id', null);
                     }
                     
                     // Call the specific handler if it exists
@@ -175,7 +186,8 @@ trait OrderFormTrait
                 ->required()
                 ->searchable()
                 ->preload()
-                ->options(Driver::query()->pluck('name', 'id'))
+                ->options(Driver::where('status_id', 1)->pluck('name', 'id'))
+                ->getOptionLabelUsing(fn ($value): ?string => Driver::find($value)?->name)
                 ->live()
                 ->afterStateUpdated(function ($state, callable $set) {
                     $set('driver_route', null);
@@ -187,6 +199,7 @@ trait OrderFormTrait
                 ->required()
                 ->searchable()
                 ->live()
+                ->reactive()
                 ->options(function (callable $get) {
                     $driverId = $get('driver_id');
                     if (blank($driverId)) {
@@ -211,7 +224,8 @@ trait OrderFormTrait
                 ->placeholder('Select Backup Driver')
                 ->searchable()
                 ->preload()
-                ->options(Driver::query()->pluck('name', 'id'))
+                ->options(Driver::where('status_id', 1)->pluck('name', 'id'))
+                ->getOptionLabelUsing(fn ($value): ?string => Driver::find($value)?->name)
                 ->live()
         ]);
     }
