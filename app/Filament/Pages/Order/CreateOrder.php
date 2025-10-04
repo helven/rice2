@@ -38,9 +38,6 @@ class CreateOrder extends Page
     protected static ?int $navigationSort = 2;
 
     protected static string $view = 'filament.pages.order.create-order';
-
-    public array $data = [];
-    public array $modalData = [];
     
     // Dev toggle - set to true to enable autofill in local environment
     private bool $devAutofill = false;
@@ -75,6 +72,8 @@ class CreateOrder extends Page
             ->schema($this->getFormSchema())
             ->statePath('data');
     }
+
+
 
     // CreateOrder specific handlers
     public function onCustomerChanged($state, callable $set, callable $get)
@@ -240,43 +239,12 @@ class CreateOrder extends Page
                             $this->createMealQuantityField('no_rice', 'No Rice'),
                         ]),
 
-                    TextInput::make('total_amount')
-                        ->label('Total')
-                        ->placeholder('0.00')
-                        ->numeric()
-                        ->default(0.00)
-                        ->prefix('RM')
-                        ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->live(),
-
-                    Textarea::make('notes')
-                        ->label('Notes')
-                        ->rows(5)
-                        ->live()
+                    $this->getTotalAmountField(),
+                    $this->getNotesField()
                 ])
                 ->columns(1),
                 
-            Section::make('Driver Information')
-                ->collapsible()
-                ->schema([
-                    Grid::make(2)->schema([
-                        DateTimePicker::make('arrival_time')
-                            ->withoutDate()
-                            ->label('Arrival Time')
-                            ->placeholder('Select Arrival Time')
-                            ->required()
-                            ->displayFormat('h:i A')
-                            ->format('H:i')
-                            ->withoutSeconds()
-                            ->live()
-                    ]),
-                    $this->getDriverGrid(),
-                    $this->getBackupDriverGrid(),
-                    Textarea::make('driver_notes')
-                        ->label('Notes')
-                        ->rows(5)
-                        ->live()
-                ]),
+            $this->getDriverSection(),
         ];
     }
 
@@ -315,19 +283,10 @@ class CreateOrder extends Page
         // Validate the form data
         $data = $this->form->getState();
 
-        $this->validate([
-            'data.customer_id' => ['required', 'exists:customers,id'],
-            'data.address_id' => ['required', 'exists:customer_address_books,id'],
-            'data.payment_status_id' => ['required', 'exists:order_statuses,id'],
-            'data.payment_method_id' => ['required', 'exists:attr_payment_methods,id'],
+        $this->validate(array_merge($this->getCommonValidationRules(), [
             'data.delivery_date' => ['required', 'string'],
-            'data.arrival_time' => ['required'],
             'data.meals_by_date' => ['required', 'array', 'min:1'],
-            'data.driver_id' => ['required', 'exists:drivers,id'],
-            'data.driver_route' => ['required', 'string'],
-            'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
-            'data.driver_notes' => ['nullable', 'string'],
-        ]);
+        ]));
 
         try {
             // Begin transaction
@@ -344,10 +303,7 @@ class CreateOrder extends Page
                 }
 
                 // Calculate total quantity for this date
-                $totalQty = 0;
-                foreach ($dateData['meals'] as $meal) {
-                    $totalQty += intval($meal['normal']) + intval($meal['big']) + intval($meal['small']) + intval($meal['s_small']) + intval($meal['no_rice']);
-                }
+                $totalQty = $this->calculateTotalQuantity($dateData['meals']);
 
                 // Calculate delivery fee for this date
                 $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
@@ -369,19 +325,7 @@ class CreateOrder extends Page
                 ]);
 
                 // Create invoice for this order
-                $billingAddress = $address->address_1 . "\n" .
-                    ($address->address_2 ? $address->address_2 . "\n" : '') .
-                    $address->mall_or_area;
-
-                $invoice = \App\Models\Invoice::create([
-                    'order_id' => $order->id,
-                    'invoice_no' => $order->invoice_no,
-                    'billing_name' => $order->customer->name ?? '',
-                    'billing_address' => $billingAddress,
-                    'tax_amount' => config('app.tax_rate'),
-                    'issue_date' => now(),
-                    'due_date' => now()->addDays(30),
-                ]);
+                $this->createInvoice($order, $address);
 
                 // Create order meals for this date
                 foreach ($dateData['meals'] as $meal) {
@@ -494,16 +438,7 @@ class CreateOrder extends Page
             }
         }
 
-        $display_address = '';
-        if ($address) {
-            ob_start(); ?>
-            <?php echo e($address->name); ?><br />
-            <?php echo e($address->address_1); ?><br />
-            <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
-            <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
-            <?php
-            $display_address = trim(ob_get_clean());
-        }
+        $display_address = $this->getFormattedAddressDisplay($address);
 
         $delivery_date = '';
 
@@ -542,64 +477,11 @@ class CreateOrder extends Page
         ];
     }
 
-    public function __call($method, $parameters)
-    {
-        if (str_starts_with($method, 'updatedData')) {
-            $this->modalData = $this->getFormattedData();
-            return;
-        }
-        
-        return parent::__call($method, $parameters);
-    }
 
-    private function calculateTotalAmountByMealQty(callable $set, callable $get)
-    {
-        // Get the current form state to work with complete data
-        $formData = $this->form->getRawState();
 
-        // Get current date context - we need to find which meals_by_date item we're in
-        $currentItem = $get('../../');  // Go up to the meals_by_date item level
 
-        if (!isset($currentItem['date']) || !isset($formData['meals_by_date'])) {
-            return;
-        }
 
-        // Find the current date item and calculate total for its meals
-        foreach ($formData['meals_by_date'] as $index => &$dateItem) {
-            if ($dateItem['date'] === $currentItem['date']) {
-                $meals = $dateItem['meals'] ?? [];
 
-                // Calculate total quantity for all meals in this date
-                $totalMeals = 0;
-                foreach ($meals as $meal) {
-                    $totalMeals += intval($meal['normal'] ?? 0) +
-                        intval($meal['big'] ?? 0) +
-                        intval($meal['small'] ?? 0) +
-                        intval($meal['s_small'] ?? 0) +
-                        intval($meal['no_rice'] ?? 0);
-                }
-
-                // Get meal_price from config
-                $mealPrice = config('app.meal_price', 8.00);
-                $totalAmount = $totalMeals * $mealPrice;
-
-                // Update the total_amount for this date
-                $dateItem['total_amount'] = number_format($totalAmount, 2);
-
-                // Refill the form with updated data
-                $this->form->fill($formData);
-                break;
-            }
-        }
-    }
-
-    public function getBreadcrumbs(): array
-    {
-        return [
-            '/' . config('filament.path', 'backend') . '/orders' => 'Orders',
-            '' => 'New Order',
-        ];
-    }
 
     private function fillDevData(): void
     {

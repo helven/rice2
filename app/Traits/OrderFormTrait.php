@@ -12,6 +12,10 @@ use App\Models\OrderStatus;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
 
 trait OrderFormTrait
 {
@@ -263,5 +267,245 @@ trait OrderFormTrait
         return end($deliveryFeeRules)['delivery_fee'] ?? 0;
     }
 
+    // Common page functionality
+    public array $data = [];
+    public array $modalData = [];
+
+    public function __call($method, $parameters)
+    {
+        if (str_starts_with($method, 'updatedData')) {
+            $this->modalData = $this->getFormattedData();
+            return;
+        }
+        
+        return parent::__call($method, $parameters);
+    }
+
+    protected function getDriverSection(): Section
+    {
+        return Section::make('Driver Information')
+            ->collapsible()
+            ->schema([
+                Grid::make(2)->schema([
+                    DateTimePicker::make('arrival_time')
+                        ->withoutDate()
+                        ->label('Arrival Time')
+                        ->placeholder('Select Arrival Time')
+                        ->required()
+                        ->displayFormat('h:i A')
+                        ->format('H:i')
+                        ->withoutSeconds()
+                        ->live()
+                ]),
+                $this->getDriverGrid(),
+                $this->getBackupDriverGrid(),
+                Textarea::make('driver_notes')
+                    ->label('Notes')
+                    ->rows(5)
+                    ->live()
+            ]);
+    }
+
+    protected function getMealsRepeater(): Repeater
+    {
+        return Repeater::make('meals')
+            ->label('Meals')
+            ->defaultItems(1)
+            ->reorderable(false)
+            ->deletable(true)
+            ->cloneable()
+            ->columns(7)
+            ->addAction(
+                fn($action) => $action
+                    ->label('Add Meal')
+                    ->extraAttributes(['class' => ''])
+            )
+            ->schema([
+                $this->getMealSelect(),
+                $this->createMealQuantityField('normal', 'Normal'),
+                $this->createMealQuantityField('big', 'Big'),
+                $this->createMealQuantityField('small', 'Small'),
+                $this->createMealQuantityField('s_small', 'S.Small'),
+                $this->createMealQuantityField('no_rice', 'No Rice'),
+            ]);
+    }
+
+    protected function getTotalAmountField(): TextInput
+    {
+        return TextInput::make('total_amount')
+            ->label('Total')
+            ->placeholder('0.00')
+            ->numeric()
+            ->default(0.00)
+            ->prefix('RM')
+            ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
+            ->live()
+            ->afterStateUpdated(function ($state, callable $set) {
+                $state = (int)ltrim($state, '0') ?: 0;
+                $set('total_amount', $state);
+            });
+    }
+
+    protected function getNotesField(): Textarea
+    {
+        return Textarea::make('notes')
+            ->label('Notes')
+            ->rows(5)
+            ->live();
+    }
+
+    protected function getOrderInformationSection(): Section
+    {
+        return Section::make('Order Information')
+            ->collapsible()
+            ->schema([
+                $this->getCustomerAddressGrid(),
+                $this->getPaymentGrid(),
+            ]);
+    }
+
+    protected function getCommonValidationRules(): array
+    {
+        return [
+            'data.customer_id' => ['required', 'exists:customers,id'],
+            'data.address_id' => ['required', 'exists:customer_address_books,id'],
+            'data.payment_status_id' => ['required', 'exists:order_statuses,id'],
+            'data.payment_method_id' => ['required', 'exists:attr_payment_methods,id'],
+            'data.arrival_time' => ['required'],
+            'data.total_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'data.notes' => ['nullable', 'string'],
+            'data.driver_id' => ['required', 'exists:drivers,id'],
+            'data.driver_route' => ['required', 'string'],
+            'data.backup_driver_id' => ['nullable', 'exists:drivers,id'],
+            'data.driver_notes' => ['nullable', 'string'],
+        ];
+    }
+
+    protected function getFormattedAddressDisplay($address): string
+    {
+        if (!$address) {
+            return '';
+        }
+
+        ob_start(); ?>
+        <?php echo e($address->name); ?><br />
+        <?php echo e($address->address_1); ?><br />
+        <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
+        <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
+        <?php
+        return trim(ob_get_clean());
+    }
+
+    protected function createInvoice($order, $address): void
+    {
+        $customer = Customer::find($order->customer_id);
+        
+        $billingAddress = $customer->name . "\n" .
+            $address->address_1 . "\n" .
+            ($address->address_2 ? $address->address_2 . "\n" : '') .
+            $address->mall_or_area;
+
+        \App\Models\Invoice::create([
+            'order_id' => $order->id,
+            'invoice_no' => $order->invoice_no,
+            'billing_name' => $customer->name,
+            'billing_address' => $billingAddress,
+            'tax_amount' => config('app.tax_rate'),
+            'issue_date' => now(),
+            'due_date' => now()->addDays(30),
+        ]);
+    }
+
+    protected function calculateTotalQuantity(array $meals): int
+    {
+        $totalQty = 0;
+        foreach ($meals as $meal) {
+            $totalQty += intval($meal['normal']) + intval($meal['big']) + 
+                        intval($meal['small']) + intval($meal['s_small']) + 
+                        intval($meal['no_rice']);
+        }
+        return $totalQty;
+    }
+
+    protected function calculateTotalAmountByMealQty(callable $set, callable $get)
+    {
+        // Check if we're in CreateOrder context (has meals_by_date)
+        $formData = $this->form->getRawState();
+        
+        if (isset($formData['meals_by_date'])) {
+            // CreateOrder logic - handle meals_by_date structure
+            $currentItem = $get('../../');  // Go up to the meals_by_date item level
+
+            if (!isset($currentItem['date']) || !isset($formData['meals_by_date'])) {
+                return;
+            }
+
+            // Find the current date item and calculate total for its meals
+            foreach ($formData['meals_by_date'] as $index => &$dateItem) {
+                if ($dateItem['date'] === $currentItem['date']) {
+                    $meals = $dateItem['meals'] ?? [];
+
+                    // Calculate total quantity for all meals in this date
+                    $totalMeals = 0;
+                    foreach ($meals as $meal) {
+                        $totalMeals += intval($meal['normal'] ?? 0) +
+                            intval($meal['big'] ?? 0) +
+                            intval($meal['small'] ?? 0) +
+                            intval($meal['s_small'] ?? 0) +
+                            intval($meal['no_rice'] ?? 0);
+                    }
+
+                    // Get meal_price from config
+                    $mealPrice = config('app.meal_price', 8.00);
+                    $totalAmount = $totalMeals * $mealPrice;
+
+                    // Update the total_amount for this date
+                    $dateItem['total_amount'] = number_format($totalAmount, 2);
+
+                    // Refill the form with updated data
+                    $this->form->fill($formData);
+                    break;
+                }
+            }
+        } else {
+            // EditOrder logic - handle direct meals structure
+            $meals = $formData['meals'] ?? [];
+            
+            $totalMeals = 0;
+            foreach ($meals as $meal) {
+                $totalMeals += intval($meal['normal'] ?? 0) + 
+                              intval($meal['big'] ?? 0) + 
+                              intval($meal['small'] ?? 0) + 
+                              intval($meal['s_small'] ?? 0) + 
+                              intval($meal['no_rice'] ?? 0);
+            }
+            
+            // Get MEAL_PRICE from config
+            $mealPrice = config('app.meal_price', 8.00);
+            $totalAmount = $totalMeals * $mealPrice;
+            
+            // Update the form data and refill
+            $formData['total_amount'] = number_format($totalAmount, 2);
+            $this->form->fill($formData);
+        }
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        $record = method_exists($this, 'getRecord') ? $this->getRecord() : null;
+        $basePath = '/' . config('filament.path', 'backend') . '/orders';
+        
+        if ($record) {
+            return [
+                $basePath => 'Orders',
+                '' => 'Order ' . $record->formatted_id,
+            ];
+        }
+        
+        return [
+            $basePath => 'Orders',
+            '' => 'New Order',
+        ];
+    }
 
 }
