@@ -133,6 +133,7 @@ return [
     'datetime_format' => env('DATETIME_FORMAT', 'Y-m-d H:i:s'),
     'date_format' => env('DATE_FORMAT', 'Y-m-d'),
     'tax_rate' => env('TAX_RATE', 0.00),
+    'meal_price' => env('MEAL_PRICE', 8.00),
 
     /*
     |--------------------------------------------------------------------------

@@ -153,4 +153,64 @@ class Order extends Model
 
         return 0;
     }
+
+    /**
+     * Generate order number in format: [orders.id]-[customers.mall_id]-[daily counter]
+     * Example: 00000001-001-1
+     *
+     * @param int $orderId
+     * @param int $mallId
+     * @param string $deliveryDate
+     * @return string
+     */
+    public static function generateOrderNumber($orderId, $mallId, $deliveryDate)
+    {
+        // Format order ID with 8 digits padding
+        $formattedOrderId = str_pad($orderId, 8, '0', STR_PAD_LEFT);
+        
+        // Format mall ID with 3 digits padding
+        $formattedMallId = str_pad($mallId, 3, '0', STR_PAD_LEFT);
+        
+        // Get daily counter for this mall and delivery date, excluding current order
+        $dailyCounter = self::getDailyCounter($mallId, $deliveryDate, $orderId);
+        
+        // Log the daily counter value for debugging
+        \Log::info("Daily Counter Debug", [
+            'order_id' => $orderId,
+            'mall_id' => $mallId,
+            'delivery_date' => $deliveryDate,
+            'daily_counter' => $dailyCounter
+        ]);
+        
+        return "{$formattedOrderId}-{$formattedMallId}-{$dailyCounter}";
+    }
+
+    /**
+     * Get the daily counter for orders in a specific mall on a specific date
+     *
+     * @param int $mallId
+     * @param string $deliveryDate
+     * @param int|null $excludeOrderId Optional order ID to exclude from count
+     * @return int
+     */
+    private static function getDailyCounter($mallId, $deliveryDate, $excludeOrderId = null)
+    {
+        // Use a more direct approach with proper join
+        $query = self::select('orders.id')
+            ->join('customer_address_books', 'orders.address_id', '=', 'customer_address_books.id')
+            ->where('customer_address_books.mall_id', $mallId)
+            ->whereDate('orders.delivery_date', $deliveryDate);
+        
+        // Exclude the current order if specified
+        if ($excludeOrderId) {
+            $query->where('orders.id', '!=', $excludeOrderId);
+        }
+        
+        $existingCount = $query->count();
+        
+        // Return the next counter (existing count + 1)
+        return $existingCount + 1;
+    }
+
+
 }

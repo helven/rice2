@@ -3,34 +3,18 @@
 namespace App\Filament\Pages\Order;
 
 use Illuminate\Support\HtmlString;
-
-use App\Filament\Pages\AbstractFilamentPage;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Facades\FilamentAsset;
-use Filament\Support\Assets\Css;
-
-use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Components\Card;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Group;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\Toggle;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
@@ -44,6 +28,9 @@ use App\Models\OrderStatus;
 class CreateOrder extends Page
 {
     use InteractsWithForms;
+
+    private const DEFAULT_PAYMENT_STATUS_ID = 3;
+    private const MEAL_QUANTITY_FIELDS = ['normal', 'big', 'small', 's_small', 'no_rice'];
 
     protected static ?string $navigationGroup = 'Orders';
     protected static ?string $navigationIcon = 'heroicon-o-plus';
@@ -62,12 +49,11 @@ class CreateOrder extends Page
     {
         // Get first active meal for default
         $defaultMeal = Meal::where('status_id', 1)->first();
-        $defaultMealId = $defaultMeal ? $defaultMeal->id : '';
 
         $this->form->fill([
             'customer_id' => '',
             'address_id' => '',
-            'payment_status_id' => 3, // Default payment status
+            'payment_status_id' => self::DEFAULT_PAYMENT_STATUS_ID,
             'payment_method_id' => '',
             'delivery_date' => '',
             'meals_by_date' => [],
@@ -81,7 +67,7 @@ class CreateOrder extends Page
         ]);
 
 
-        $devAutofill = TRUE;
+        $devAutofill = false;
         // For development: Get first active customer, their default address, and first active meal
         if ($devAutofill && app()->environment('local')) {
             $customer = Customer::where('status_id', 1)->first();
@@ -90,7 +76,7 @@ class CreateOrder extends Page
                 ->where('is_default', true)
                 ->first() : null;
             $driver = Driver::where('status_id', 1)->first();
-            $driverRoute = $driver && $driver->route ? $driver->route[0]['route_name'] : null;
+            $driverRoute = $driver && $driver->route && !empty($driver->route) ? $driver->route[0]['route_name'] : null;
 
             // Get two different meals for variety
             $defaultMeal = Meal::where('status_id', 1)->first();
@@ -147,8 +133,8 @@ class CreateOrder extends Page
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
 
-                $meals_no = 1; //rand(1, 3);
-                for ($j = 1; $j < $meals_no; $j++) {
+                $mealsNo = 1; //rand(1, 3);
+                for ($j = 1; $j < $mealsNo; $j++) {
                     array_push($tempMeals['meals'], [
                         'meal_id' => $randomMeal->id,
                         'normal' => rand(0, 3),
@@ -168,7 +154,7 @@ class CreateOrder extends Page
                         intval($meal['s_small'] ?? 0) +
                         intval($meal['no_rice'] ?? 0);
                 }
-                $mealPrice = floatval(env('MEAL_PRICE', 8));
+                $mealPrice = config('app.meal_price', 8.00);
                 $tempMeals['total_amount'] = number_format($totalMeals * $mealPrice, 2);
 
                 $mealsByDate[] = $tempMeals;
@@ -204,10 +190,19 @@ class CreateOrder extends Page
                                 ->searchable()
                                 ->preload()
                                 ->getSearchResultsUsing(function (string $search) {
+                                    // Sanitize search input
+                                    $search = trim($search);
+                                    if (empty($search) || strlen($search) > 100) {
+                                        return [];
+                                    }
+
+                                    // Escape special characters for LIKE query
+                                    $escapedSearch = str_replace(['%', '_'], ['\%', '\_'], $search);
+
                                     return Customer::query()
-                                        ->where(function ($q) use ($search) {
-                                            $q->where('name', 'like', "%{$search}%")
-                                              ->orWhere('contact', 'like', "%{$search}%");
+                                        ->where(function ($q) use ($escapedSearch) {
+                                            $q->where('name', 'like', "%{$escapedSearch}%")
+                                                ->orWhere('contact', 'like', "%{$escapedSearch}%");
                                         })
                                         ->orderBy('name')
                                         ->limit(50)
@@ -219,7 +214,7 @@ class CreateOrder extends Page
                                 ->live()
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     $set('address_id', null);
-                                    
+
                                     // Auto-select payment method based on customer's default
                                     if ($state) {
                                         $customer = Customer::find($state);
@@ -227,11 +222,11 @@ class CreateOrder extends Page
                                             $set('payment_method_id', $customer->payment_method_id);
                                         }
                                     }
-                                    
+
                                     // Trigger JavaScript to update disabled dates
                                     $this->js('
                                         setTimeout(() => {
-                                            const customerId = "' . $state . '";
+                                            const customerId = ' . json_encode($state) . ';
                                             const addressId = null; // Address is reset when customer changes
                                             if (typeof fetchExistingDeliveryDates === "function") {
                                                 fetchExistingDeliveryDates(customerId, addressId);
@@ -263,12 +258,14 @@ class CreateOrder extends Page
                                             $address->address_1 = trim($address->address_1);
                                             $address->address_2 = trim($address->address_2);
                                             ob_start(); ?>
-                <div class="hidden"><?php echo "{$address->name}|{$address->city}"; ?></div>
-                <span class="font-bold"><?php echo $address->name; ?></span><?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : ""; ?>
-                <div><?php echo $address->address_1; ?><br />
-                    <?php echo ($address->address_2) ? $address->address_2 . '<br />' : ""; ?>
-                    <?php echo $address->postcode; ?> <?php echo $address->city; ?></div>
-            <?php
+                                            <div class="hidden"><?php echo e($address->name) . '|' . e($address->city); ?></div>
+                                            <span class="font-bold"><?php echo e($address->name); ?></span>
+                                            <?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : ""; ?>
+                                            <div><?php echo e($address->address_1); ?><br />
+                                                <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
+                                                <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
+                                            </div>
+                                            <?php
                                             $displayAddress = trim(ob_get_clean());
                                             return [$address->id => $displayAddress];
                                         });
@@ -292,13 +289,13 @@ class CreateOrder extends Page
                                             }
                                         }
                                     }
-                                    
+
                                     // Trigger JavaScript to update disabled dates
                                     $customerId = $get('customer_id');
                                     $this->js('
                                         setTimeout(() => {
-                                            const customerId = "' . $customerId . '";
-                                            const addressId = "' . $state . '";
+                                            const customerId = ' . json_encode($customerId) . ';
+                                            const addressId = ' . json_encode($state) . ';
                                             if (typeof fetchExistingDeliveryDates === "function") {
                                                 fetchExistingDeliveryDates(customerId, addressId);
                                             }
@@ -306,7 +303,7 @@ class CreateOrder extends Page
                                     ');
                                 })
                         ]),
-                    
+
                     Grid::make(2)
                         ->schema([
                             Select::make('payment_status_id')
@@ -315,7 +312,7 @@ class CreateOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->preload()
-                                ->options(OrderStatus::query()->pluck('label', 'id'))
+                                ->options([3 => 'Unpaid', 4 => 'Paid'])
                                 ->default(3)
                                 ->live(),
 
@@ -325,11 +322,7 @@ class CreateOrder extends Page
                                 ->required()
                                 ->searchable()
                                 ->preload()
-                                ->options(function () {
-                                    return AttrPaymentMethod::query()
-                                        ->pluck('label', 'id')
-                                        ->toArray();
-                                })
+                                ->options(AttrPaymentMethod::query()->pluck('label', 'id'))
                                 ->live(),
                         ]),
                     //DateRangePicker::make('delivery_date_range')
@@ -504,61 +497,11 @@ class CreateOrder extends Page
                                 })
                                 ->live()
                                 ->columnSpan(2),
-                            TextInput::make('normal')
-                                ->label('Normal')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(1000)
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotalAmountByMealQty($set, $get);
-                                })
-                                ->required(),
-                            TextInput::make('big')
-                                ->label('Big')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(1000)
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotalAmountByMealQty($set, $get);
-                                })
-                                ->required(),
-                            TextInput::make('small')
-                                ->label('Small')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(1000)
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotalAmountByMealQty($set, $get);
-                                })
-                                ->required(),
-                            TextInput::make('s_small')
-                                ->label('S.Small')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(1000)
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotalAmountByMealQty($set, $get);
-                                })
-                                ->required(),
-                            TextInput::make('no_rice')
-                                ->label('No Rice')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(1000)
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $this->calculateTotalAmountByMealQty($set, $get);
-                                })
-                                ->required(),
+                            $this->createMealQuantityField('normal', 'Normal'),
+                            $this->createMealQuantityField('big', 'Big'),
+                            $this->createMealQuantityField('small', 'Small'),
+                            $this->createMealQuantityField('s_small', 'S.Small'),
+                            $this->createMealQuantityField('no_rice', 'No Rice'),
                         ]),
 
                     TextInput::make('total_amount')
@@ -741,7 +684,7 @@ class CreateOrder extends Page
                 $invoice = \App\Models\Invoice::create([
                     'order_id' => $order->id,
                     'invoice_no' => $order->invoice_no,
-                    'billing_name' => $customer->name,
+                    'billing_name' => $order->customer->name ?? '',
                     'billing_address' => $billingAddress,
                     'tax_amount' => config('app.tax_rate'),
                     'issue_date' => now(),
@@ -822,6 +765,8 @@ class CreateOrder extends Page
     {
         $customer = Customer::find($this->data['customer_id'] ?? null);
         $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
+        $driver = Driver::find($this->data['driver_id'] ?? null);
+        $backupDriver = Driver::find($this->data['backup_driver_id'] ?? null);
 
         $meals_by_date = [];
 
@@ -867,11 +812,11 @@ class CreateOrder extends Page
         $display_address = '';
         if ($address) {
             ob_start(); ?>
-            <?php echo $address->name; ?><br />
-            <?php echo $address->address_1; ?><br />
-            <?php echo ($address->address_2) ? $address->address_2 . '<br />' : ""; ?>
-            <?php echo $address->postcode; ?> <?php echo $address->city; ?>
-<?php
+            <?php echo e($address->name); ?><br />
+            <?php echo e($address->address_1); ?><br />
+            <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
+            <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
+            <?php
             $display_address = trim(ob_get_clean());
         }
 
@@ -901,58 +846,82 @@ class CreateOrder extends Page
                 ? date('h:i A', strtotime($this->data['arrival_time']))
                 : '',
             'driver_id' => $this->data['driver_id'] ?? '',
-            'driver_name' => Driver::find($this->data['driver_id'] ?? null) ? Driver::find($this->data['driver_id'] ?? null)->name : '',
+            'driver_name' => $driver?->name ?? '',
             'driver_route' => $this->data['driver_route'] ?? '',
             'backup_driver_id' => $this->data['backup_driver_id'] ?? '',
-            'backup_driver_name' => Driver::find($this->data['backup_driver_id'] ?? null) ? Driver::find($this->data['backup_driver_id'] ?? null)->name : '',
+            'backup_driver_name' => $backupDriver?->name ?? '',
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
     }
 
-    public function updatedDataCustomerId()
+    public function __call($method, $parameters)
     {
-        $this->modalData = $this->getFormattedData();
+        if (str_starts_with($method, 'updatedData')) {
+            $this->modalData = $this->getFormattedData();
+            return;
+        }
+        
+        return parent::__call($method, $parameters);
     }
 
-    public function updatedDataAddressId()
+    //public function updatedDataCustomerId()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataAddressId()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataDeliveryDateRange()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataMealsByDate()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataArrivalTime()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataDriverId()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataDriverRoute()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataBackupDriverId()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    //public function updatedDataDriverNotes()
+    //{
+    //    $this->modalData = $this->getFormattedData();
+    //}
+
+    private function createMealQuantityField(string $name, string $label): TextInput
     {
-        $this->modalData = $this->getFormattedData();
+        return TextInput::make($name)
+            ->label($label)
+            ->numeric()
+            ->default(0)
+            ->minValue(0)
+            ->maxValue(1000)
+            ->live()
+            ->afterStateUpdated(fn($state, $set, $get) => $this->calculateTotalAmountByMealQty($set, $get))
+            ->rules(['required', 'integer', 'min:0', 'max:1000']);
     }
 
-    public function updatedDataDeliveryDateRange()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataMealsByDate()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataArrivalTime()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataDriverId()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataDriverRoute()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataBackupDriverId()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
-
-    public function updatedDataDriverNotes()
-    {
-        $this->modalData = $this->getFormattedData();
-    }
 
     private function calculateDeliveryFee($address, $totalQty)
     {
@@ -1014,8 +983,8 @@ class CreateOrder extends Page
                         intval($meal['no_rice'] ?? 0);
                 }
 
-                // Get MEAL_PRICE from .env
-                $mealPrice = floatval(env('MEAL_PRICE', 8));
+                // Get meal_price from config
+                $mealPrice = config('app.meal_price', 8.00);
                 $totalAmount = $totalMeals * $mealPrice;
 
                 // Update the total_amount for this date
