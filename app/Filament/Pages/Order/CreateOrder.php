@@ -12,7 +12,6 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
@@ -24,13 +23,11 @@ use App\Models\Meal;
 use App\Models\Area;
 use App\Models\AttrPaymentMethod;
 use App\Models\OrderStatus;
+use App\Traits\OrderFormTrait;
 
 class CreateOrder extends Page
 {
-    use InteractsWithForms;
-
-    private const DEFAULT_PAYMENT_STATUS_ID = 3;
-    private const MEAL_QUANTITY_FIELDS = ['normal', 'big', 'small', 's_small', 'no_rice'];
+    use InteractsWithForms, OrderFormTrait;
 
     protected static ?string $navigationGroup = 'Orders';
     protected static ?string $navigationIcon = 'heroicon-o-plus';
@@ -47,13 +44,10 @@ class CreateOrder extends Page
 
     public function mount(): void
     {
-        // Get first active meal for default
-        $defaultMeal = Meal::where('status_id', 1)->first();
-
         $this->form->fill([
             'customer_id' => '',
             'address_id' => '',
-            'payment_status_id' => self::DEFAULT_PAYMENT_STATUS_ID,
+            'payment_status_id' => $this->getDefaultPaymentStatusId(),
             'payment_method_id' => '',
             'delivery_date' => '',
             'meals_by_date' => [],
@@ -66,7 +60,6 @@ class CreateOrder extends Page
             'driver_notes' => '',
         ]);
 
-
         $devAutofill = false;
         // For development: Get first active customer, their default address, and first active meal
         if ($devAutofill && app()->environment('local')) {
@@ -76,19 +69,17 @@ class CreateOrder extends Page
                 ->where('is_default', true)
                 ->first() : null;
             $driver = Driver::where('status_id', 1)->first();
-            $driverRoute = $driver && $driver->route && !empty($driver->route) ? $driver->route[0]['route_name'] : null;
+            $driverRoute = $driver && $driver->route && !empty($driver->route) 
+                ? $driver->route[0]['route_name'] 
+                : null;
 
-            // Get two different meals for variety
-            $defaultMeal = Meal::where('status_id', 1)->first();
-            $secondMeal = Meal::where('status_id', 1)->where('id', '!=', $defaultMeal->id)->first();
             // Get a random active meal using Laravel's built-in methods
             $randomMeal = Meal::where('status_id', 1)->inRandomOrder()->first();
-            if (!$secondMeal) $secondMeal = $defaultMeal; // Fallback to same meal if no other exists
 
             $orderData = [
                 'customer_id' => $customer ? $customer->id : '',
                 'address_id' => $address ? $address->id : '',
-                'payment_status_id' => 3, // Default payment status
+                'payment_status_id' => $this->getDefaultPaymentStatusId(),
                 'payment_method_id' => $customer ? $customer->payment_method_id : '',
                 'arrival_time' => '08:00',
                 'driver_id' => $driver ? $driver->id : '',
@@ -98,7 +89,6 @@ class CreateOrder extends Page
             ];
 
             $days = 3;
-
             $startDate = \Carbon\Carbon::today();
 
             // Generate individual dates with comma separator
@@ -112,10 +102,7 @@ class CreateOrder extends Page
             $mealsByDate = [];
             for ($i = 0; $i < $days; $i++) {
                 $currentDate = $startDate->copy()->addDays($i);
-
-                // Vary the meal quantities and amounts for different days
                 $dayNumber = $i + 1;
-                $isEvenDay = ($dayNumber % 2 == 0);
 
                 $tempMeals = [
                     'date' => $currentDate->format(config('app.date_format')),
@@ -129,21 +116,9 @@ class CreateOrder extends Page
                             'no_rice' => 1
                         ],
                     ],
-                    'total_amount' => 0.00, // Will be calculated below
+                    'total_amount' => 0.00,
                     'notes' => "Sample order notes for day {$dayNumber}"
                 ];
-
-                $mealsNo = 1; //rand(1, 3);
-                for ($j = 1; $j < $mealsNo; $j++) {
-                    array_push($tempMeals['meals'], [
-                        'meal_id' => $randomMeal->id,
-                        'normal' => rand(0, 3),
-                        'big' => rand(0, 3),
-                        'small' => rand(0, 3),
-                        's_small' => rand(0, 3),
-                        'no_rice' => rand(0, 3)
-                    ]);
-                }
 
                 // Calculate total_amount based on meal quantities
                 $totalMeals = 0;
@@ -175,203 +150,56 @@ class CreateOrder extends Page
             ->statePath('data');
     }
 
+    // CreateOrder specific handlers
+    public function onCustomerChanged($state, callable $set, callable $get)
+    {
+        // CreateOrder specific JavaScript
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($state) . ';
+                const addressId = null;
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId);
+                }
+            }, 100);
+        ');
+    }
+
+    public function onAddressChanged($state, callable $set, callable $get)
+    {
+        // CreateOrder specific JavaScript
+        $customerId = $get('customer_id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($customerId) . ';
+                const addressId = ' . json_encode($state) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId);
+                }
+            }, 100);
+        ');
+    }
+
     protected function getFormSchema(): array
     {
         return [
             Section::make('Order Information')
                 ->collapsible()
                 ->schema([
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('customer_id')
-                                ->label('Customer Name')
-                                ->placeholder('Select Customer')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->getSearchResultsUsing(function (string $search) {
-                                    // Sanitize search input
-                                    $search = trim($search);
-                                    if (empty($search) || strlen($search) > 100) {
-                                        return [];
-                                    }
-
-                                    // Escape special characters for LIKE query
-                                    $escapedSearch = str_replace(['%', '_'], ['\%', '\_'], $search);
-
-                                    return Customer::query()
-                                        ->where(function ($q) use ($escapedSearch) {
-                                            $q->where('name', 'like', "%{$escapedSearch}%")
-                                                ->orWhere('contact', 'like', "%{$escapedSearch}%");
-                                        })
-                                        ->orderBy('name')
-                                        ->limit(50)
-                                        ->pluck('name', 'id')
-                                        ->toArray();
-                                })
-                                //->getOptionLabelUsing(fn ($value): ?string => Customer::find($value) ? Customer::find($value)->name : null)
-                                ->options(Customer::query()->pluck('name', 'id'))
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $set('address_id', null);
-
-                                    // Auto-select payment method based on customer's default
-                                    if ($state) {
-                                        $customer = Customer::find($state);
-                                        if ($customer && $customer->payment_method_id) {
-                                            $set('payment_method_id', $customer->payment_method_id);
-                                        }
-                                    }
-
-                                    // Trigger JavaScript to update disabled dates
-                                    $this->js('
-                                        setTimeout(() => {
-                                            const customerId = ' . json_encode($state) . ';
-                                            const addressId = null; // Address is reset when customer changes
-                                            if (typeof fetchExistingDeliveryDates === "function") {
-                                                fetchExistingDeliveryDates(customerId, addressId);
-                                            }
-                                        }, 100);
-                                    ');
-                                }),
-
-                            Select::make('address_id')
-                                ->label('Delivery Location')
-                                ->placeholder('Select Company or City')
-                                ->required()
-                                ->searchable()
-                                ->allowHtml()
-                                ->live()
-                                ->disabled(fn(callable $get): bool => blank($get('customer_id')))
-                                ->options(function (callable $get) {
-                                    $customerId = $get('customer_id');
-                                    if (blank($customerId)) {
-                                        return [];
-                                    }
-                                    return CustomerAddressBook::query()
-                                        ->where('customer_id', $customerId)
-                                        ->where('status_id', 1)
-                                        ->orderBy('is_default', 'desc')
-                                        ->orderBy('name', 'asc')
-                                        ->get()
-                                        ->mapWithKeys(function ($address) {
-                                            $address->address_1 = trim($address->address_1);
-                                            $address->address_2 = trim($address->address_2);
-                                            ob_start(); ?>
-                                            <div class="hidden"><?php echo e($address->name) . '|' . e($address->city); ?></div>
-                                            <span class="font-bold"><?php echo e($address->name); ?></span>
-                                            <?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : ""; ?>
-                                            <div><?php echo e($address->address_1); ?><br />
-                                                <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
-                                                <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
-                                            </div>
-                                            <?php
-                                            $displayAddress = trim(ob_get_clean());
-                                            return [$address->id => $displayAddress];
-                                        });
-                                })
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    // Load driver information based on selected address
-                                    if ($state) {
-                                        $address = CustomerAddressBook::find($state);
-                                        if ($address) {
-                                            // Use pre-assigned driver information from the address only if current fields are empty
-                                            if ($address->driver_id) {
-                                                $set('driver_id', $address->driver_id);
-                                                if ($address->driver_route) {
-                                                    $set('driver_route', $address->driver_route);
-                                                }
-                                            }
-
-                                            // Use pre-assigned backup driver information from the address only if current fields are empty
-                                            if ($address->backup_driver_id) {
-                                                $set('backup_driver_id', $address->backup_driver_id);
-                                            }
-                                        }
-                                    }
-
-                                    // Trigger JavaScript to update disabled dates
-                                    $customerId = $get('customer_id');
-                                    $this->js('
-                                        setTimeout(() => {
-                                            const customerId = ' . json_encode($customerId) . ';
-                                            const addressId = ' . json_encode($state) . ';
-                                            if (typeof fetchExistingDeliveryDates === "function") {
-                                                fetchExistingDeliveryDates(customerId, addressId);
-                                            }
-                                        }, 100);
-                                    ');
-                                })
-                        ]),
-
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('payment_status_id')
-                                ->label('Payment Status')
-                                ->placeholder('Select Payment Status')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options([3 => 'Unpaid', 4 => 'Paid'])
-                                ->default(3)
-                                ->live(),
-
-                            Select::make('payment_method_id')
-                                ->label('Payment Method')
-                                ->placeholder('Select Payment Method')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options(AttrPaymentMethod::query()->pluck('label', 'id'))
-                                ->live(),
-                        ]),
-                    //DateRangePicker::make('delivery_date_range')
-                    //    ->label('Delivery Date')
-                    //    ->required()
-                    //    ->minDate(\Carbon\Carbon::now())
-                    //    ->live()
-                    //    ->afterStateUpdated(function ($state, callable $set) {
-                    //        if (empty($state)) {
-                    //            $set('meals_by_date', []);
-                    //            return;
-                    //        }
-
-                    //        [$startDate, $endDate] = explode(' - ', $state);
-                    //        $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $startDate));
-                    //        $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $endDate));
-
-                    //        $meals_by_date = [];
-                    //        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-                    //            $meals_by_date[] = [
-                    //                'date' => $date->format(config('app.date_format')),
-                    //                'meals' => [
-                    //                    [
-                    //                        'meal_id' => '',
-                    //                        'normal' => 0,
-                    //                        'big' => 0,
-                    //                        'small' => 0,
-                    //                        's_small' => 0,
-                    //                        'no_rice' => 0,
-                    //                    ]
-                    //                ],
-                    //                'total_amount' => 0.00,
-                    //                'notes' => ''
-                    //            ];
-                    //        }
-
-                    //        $set('meals_by_date', $meals_by_date);
-                    //    })
+                    $this->getCustomerAddressGrid(),
+                    $this->getPaymentGrid(),
+                    
                     Flatpickr::make('delivery_date')
                         ->id('delivery_date')
                         ->label('Delivery Dates')
-                        ->multiplePicker() // This enables multiple date selection
+                        ->multiplePicker()
                         ->format(config('app.date_format'))
                         ->displayFormat(config('app.date_format'))
-                        ->conjunction(', ') // Set separator between multiple dates
+                        ->conjunction(', ')
                         ->minDate(fn() => today())
                         ->required()
                         ->live()
-                        ->debounce(0) // Wait 500ms after last change
+                        ->debounce(0)
                         ->afterStateUpdated(function ($state, callable $set, callable $get) {
                             if (empty($state)) {
                                 $set('meals_by_date', []);
@@ -429,7 +257,7 @@ class CreateOrder extends Page
                 ->collapsible()
                 ->itemLabel(function (array $state) {
                     if (isset($state['date'])) {
-                        return new \Illuminate\Support\HtmlString(sprintf(
+                        return new HtmlString(sprintf(
                             '<h3 class="fi-section-header-heading text-sm font-semibold leading-6 text-gray-950 dark:text-white">Order - %s</h3>',
                             \Carbon\Carbon::parse($state['date'])->format(config('app.date_format'))
                         ));
@@ -475,28 +303,10 @@ class CreateOrder extends Page
                         ->addAction(
                             fn($action) => $action
                                 ->label('Add Meal')
-                                ->extraAttributes([
-                                    'class' => '',
-                                ])
+                                ->extraAttributes(['class' => ''])
                         )
                         ->schema([
-                            Select::make('meal_id')
-                                ->label('Meal')
-                                ->placeholder('Select Meal')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options(function () {
-                                    return Meal::query()
-                                        ->where('status_id', 1)
-                                        ->where('category_id', 1)
-                                        ->whereNotNull('name')
-                                        ->where('name', '!=', '')
-                                        ->pluck('name', 'id')
-                                        ->toArray();
-                                })
-                                ->live()
-                                ->columnSpan(2),
+                            $this->getMealSelect(),
                             $this->createMealQuantityField('normal', 'Normal'),
                             $this->createMealQuantityField('big', 'Big'),
                             $this->createMealQuantityField('small', 'Small'),
@@ -519,67 +329,23 @@ class CreateOrder extends Page
                         ->live()
                 ])
                 ->columns(1),
+                
             Section::make('Driver Information')
                 ->collapsible()
                 ->schema([
-                    Grid::make(2)
-                        ->schema([
-                            DateTimePicker::make('arrival_time')
-                                ->withoutDate()
-                                ->label('Arrival Time')
-                                ->placeholder('Select Arrival Time')
-                                ->required()
-                                //->timezone('Asia/Kuala_Lumpur')
-                                ->withoutDate()
-                                ->displayFormat('h:i A') // 12-hour with AM/PM (K = AM/PM)
-                                ->format('H:i')
-                                ->withoutSeconds()
-                                ->live()
-                        ]),
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('driver_id')
-                                ->label('Driver')
-                                ->placeholder('Select Driver')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options(Driver::query()->pluck('name', 'id'))
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('driver_route', null);
-                                }),
-                            Select::make('driver_route')
-                                ->label('Route')
-                                ->placeholder('Select Route')
-                                ->required()
-                                ->searchable()
-                                ->live()
-                                ->options(function (callable $get) {
-                                    $driverId = $get('driver_id');
-
-                                    if (blank($driverId)) {
-                                        return [];
-                                    }
-
-                                    $driver = \App\Models\Driver::find($driverId);
-                                    if (!$driver || !$driver->route) {
-                                        return [];
-                                    }
-                                    return collect($driver->route)->pluck('route_name', 'route_name');
-                                })
-                                ->disabled(fn(callable $get): bool => blank($get('driver_id')))
-                        ]),
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('backup_driver_id')
-                                ->label('Backup Driver')
-                                ->placeholder('Select Backup Driver')
-                                ->searchable()
-                                ->preload()
-                                ->options(Driver::query()->pluck('name', 'id'))
-                                ->live()
-                        ]),
+                    Grid::make(2)->schema([
+                        DateTimePicker::make('arrival_time')
+                            ->withoutDate()
+                            ->label('Arrival Time')
+                            ->placeholder('Select Arrival Time')
+                            ->required()
+                            ->displayFormat('h:i A')
+                            ->format('H:i')
+                            ->withoutSeconds()
+                            ->live()
+                    ]),
+                    $this->getDriverGrid(),
+                    $this->getBackupDriverGrid(),
                     Textarea::make('driver_notes')
                         ->label('Notes')
                         ->rows(5)
@@ -717,7 +483,7 @@ class CreateOrder extends Page
                 $this->form->fill([
                     'customer_id' => '',
                     'address_id' => '',
-                    'payment_status_id' => 3, // Default payment status
+                    'payment_status_id' => $this->getDefaultPaymentStatusId(),
                     'payment_method_id' => '',
                     'delivery_date' => '',
                     'meals_by_date' => [],
@@ -743,49 +509,43 @@ class CreateOrder extends Page
         }
     }
 
-    private function calculateTotalAmount($meals)
-    {
-        $total = 0.00;
-        foreach ($meals as $meal) {
-            $mealData = \App\Models\Meal::find($meal['meal_id']);
-            if ($mealData) {
-                $total += $mealData->price * (
-                    $meal['normal'] +
-                    $meal['big'] +
-                    $meal['small'] +
-                    $meal['s_small'] +
-                    $meal['no_rice']
-                );
-            }
-        }
-        return $total;
-    }
-
     public function getFormattedData()
     {
         $customer = Customer::find($this->data['customer_id'] ?? null);
         $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
-        $driver = Driver::find($this->data['driver_id'] ?? null);
-        $backupDriver = Driver::find($this->data['backup_driver_id'] ?? null);
 
         $meals_by_date = [];
 
         // Handle meals_by_date structure (for Create Order)
         if (isset($this->data['meals_by_date']) && is_array($this->data['meals_by_date'])) {
+            // Collect all meal IDs first
+            $allMealIds = [];
+            foreach ($this->data['meals_by_date'] as $dateData) {
+                if (isset($dateData['meals'])) {
+                    $mealIds = collect($dateData['meals'])->pluck('meal_id')->filter()->toArray();
+                    $allMealIds = array_merge($allMealIds, $mealIds);
+                }
+            }
+            
+            // Single query for all meals
+            $allMeals = Meal::whereIn('id', array_unique($allMealIds))->get()->keyBy('id');
+            
+            // Process each date using cached meals
             foreach ($this->data['meals_by_date'] as $dateData) {
                 if (isset($dateData['date']) && isset($dateData['meals'])) {
-                    $meal_ids = collect($dateData['meals'])->pluck('meal_id')->toArray();
-                    $meals = Meal::whereIn('id', $meal_ids)->get()->keyBy('id');
-
                     $formatted_meals = [];
                     $total_qty = 0;
+                    
                     foreach ($dateData['meals'] as $meal) {
-                        if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
-                            $meal_qty = intval($meal['normal']) + intval($meal['big']) + intval($meal['s_small']) + intval($meal['small']) + intval($meal['no_rice']);
+                        if (isset($meal['meal_id']) && isset($allMeals[$meal['meal_id']])) {
+                            $meal_qty = intval($meal['normal']) + intval($meal['big']) + 
+                                       intval($meal['s_small']) + intval($meal['small']) + 
+                                       intval($meal['no_rice']);
                             $total_qty += $meal_qty;
+                            
                             $formatted_meals[] = [
                                 'meal_id' => $meal['meal_id'],
-                                'name' => $meals[$meal['meal_id']]->name,
+                                'name' => $allMeals[$meal['meal_id']]->name,
                                 'normal' => $meal['normal'],
                                 'big' => $meal['big'],
                                 'small' => $meal['small'],
@@ -795,10 +555,9 @@ class CreateOrder extends Page
                             ];
                         }
                     }
-
-                    // Calculate delivery fee based on address area and total quantity
+                    
                     $delivery_fee = $this->calculateDeliveryFee($address, $total_qty);
-
+                    
                     $meals_by_date[$dateData['date']] = [
                         'meals' => $formatted_meals,
                         'total_amount' => $dateData['total_amount'],
@@ -833,6 +592,9 @@ class CreateOrder extends Page
             }
         }
 
+        $driver = Driver::find($this->data['driver_id'] ?? null);
+        $backupDriver = Driver::find($this->data['backup_driver_id'] ?? null);
+
         return [
             'customer_id' => $this->data['customer_id'],
             'customer_name' => $customer ? $customer->name : '',
@@ -862,98 +624,6 @@ class CreateOrder extends Page
         }
         
         return parent::__call($method, $parameters);
-    }
-
-    //public function updatedDataCustomerId()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataAddressId()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDeliveryDateRange()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataMealsByDate()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataArrivalTime()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDriverId()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDriverRoute()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataBackupDriverId()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDriverNotes()
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    private function createMealQuantityField(string $name, string $label): TextInput
-    {
-        return TextInput::make($name)
-            ->label($label)
-            ->numeric()
-            ->default(0)
-            ->minValue(0)
-            ->maxValue(1000)
-            ->live()
-            ->afterStateUpdated(fn($state, $set, $get) => $this->calculateTotalAmountByMealQty($set, $get))
-            ->rules(['required', 'integer', 'min:0', 'max:1000']);
-    }
-
-
-    private function calculateDeliveryFee($address, $totalQty)
-    {
-        if ($address && $address->mall_id) {
-            return 0;
-        }
-
-        if (!$address || !$address->area_id) {
-            return 0;
-        }
-
-        $area = Area::find($address->area_id);
-        if (!$area || !$area->delivery_fee) {
-            return 0;
-        }
-
-        $deliveryFeeRules = $area->delivery_fee;
-
-        // Sort by qty in descending order to find the highest applicable tier
-        usort($deliveryFeeRules, function ($a, $b) {
-            return $b['qty'] - $a['qty'];
-        });
-
-        // Find the appropriate delivery fee based on total quantity
-        foreach ($deliveryFeeRules as $rule) {
-            if ($totalQty >= $rule['qty']) {
-                return $rule['delivery_fee'];
-            }
-        }
-
-        // If no rule matches, return the fee for the lowest quantity tier
-        return end($deliveryFeeRules)['delivery_fee'] ?? 0;
     }
 
     private function calculateTotalAmountByMealQty(callable $set, callable $get)

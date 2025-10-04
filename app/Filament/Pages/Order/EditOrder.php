@@ -11,7 +11,6 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
@@ -23,13 +22,11 @@ use App\Models\Order;
 use App\Models\OrderStatus;
 use App\Models\Area;
 use App\Models\AttrPaymentMethod;
+use App\Traits\OrderFormTrait;
 
 class EditOrder extends Page
 {
-    use InteractsWithForms;
-
-    private const DEFAULT_PAYMENT_STATUS_ID = 3;
-    private const MEAL_QUANTITY_FIELDS = ['normal', 'big', 'small', 's_small', 'no_rice'];
+    use InteractsWithForms, OrderFormTrait;
 
     protected static ?string $navigationGroup = 'Orders';
     protected static ?string $navigationIcon = 'heroicon-o-pencil';
@@ -81,6 +78,40 @@ class EditOrder extends Page
             ->statePath('data');
     }
 
+    // EditOrder specific handlers
+    public function onCustomerChanged($state, callable $set, callable $get)
+    {
+        // EditOrder specific JavaScript
+        $orderId = $get('id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($state) . ';
+                const addressId = null;
+                const orderId = ' . json_encode($orderId) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId, orderId);
+                }
+            }, 100);
+        ');
+    }
+
+    public function onAddressChanged($state, callable $set, callable $get)
+    {
+        // EditOrder specific JavaScript
+        $customerId = $get('customer_id');
+        $orderId = $get('id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($customerId) . ';
+                const addressId = ' . json_encode($state) . ';
+                const orderId = ' . json_encode($orderId) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId, orderId);
+                }
+            }, 100);
+        ');
+    }
+
     protected function getFormSchema(): array
     {
         return [
@@ -90,153 +121,9 @@ class EditOrder extends Page
                     TextInput::make('id')
                         ->label('Order No')
                         ->readonly(),
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('customer_id')
-                                ->label('Customer Name')
-                                ->placeholder('Select Customer')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->getSearchResultsUsing(function (string $search) {
-                                    // Sanitize search input
-                                    $search = trim($search);
-                                    if (empty($search) || strlen($search) > 100) {
-                                        return [];
-                                    }
-                                    
-                                    // Escape special characters for LIKE query
-                                    $escapedSearch = str_replace(['%', '_'], ['\%', '\_'], $search);
-                                    
-                                    return Customer::query()
-                                        ->where(function ($q) use ($escapedSearch) {
-                                            $q->where('name', 'like', "%{$escapedSearch}%")
-                                              ->orWhere('contact', 'like', "%{$escapedSearch}%");
-                                        })
-                                        ->orderBy('name')
-                                        ->limit(50)
-                                        ->pluck('name', 'id')
-                                        ->toArray();
-                                })
-                                ->options(Customer::query()->pluck('name', 'id'))
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    $set('address_id', null);
-                                    
-                                    // Trigger JavaScript to update disabled dates for Edit Order
-                                    $orderId = $get('id'); // Get current order ID
-                                    $this->js('
-                                        setTimeout(() => {
-                                            const customerId = ' . json_encode($state) . ';
-                                            const addressId = null; // Address is reset when customer changes
-                                            const orderId = ' . json_encode($orderId) . ';
-                                            if (typeof fetchExistingDeliveryDates === "function") {
-                                                fetchExistingDeliveryDates(customerId, addressId, orderId);
-                                            }
-                                        }, 100);
-                                    ');
-                                }),
-
-                            Select::make('address_id')
-                                ->label('Delivery Location')
-                                ->placeholder('Select Company or City')
-                                ->required()
-                                ->searchable()
-                                ->allowHtml()
-                                ->live()
-                                ->disabled(fn(callable $get): bool => blank($get('customer_id')))
-                                ->options(function (callable $get) {
-                                    $customerId = $get('customer_id');
-                                    if (blank($customerId)) {
-                                        return [];
-                                    }
-                                    return CustomerAddressBook::query()
-                                        ->where('customer_id', $customerId)
-                                        ->where('status_id', 1)
-                                        ->orderBy('is_default', 'desc')
-                                        ->orderBy('name', 'asc')
-                                        ->get()
-                                        ->mapWithKeys(function ($address) {
-                                            $address->address_1 = trim($address->address_1);
-                                            $address->address_2 = trim($address->address_2);
-                                            ob_start(); ?>
-                                            <div class="hidden"><?php echo e($address->name) . '|' . e($address->city); ?></div>
-                                            <span class="font-bold"><?php echo e($address->name); ?></span>
-                                            <?php echo $address->is_default ? '<span class="italic text-xs text-gray-400"> (default)</span>' : ""; ?>
-                                            <div><?php echo e($address->address_1); ?><br />
-                                                <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
-                                                <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
-                                            </div>
-                                            <?php
-                                            $displayAddress = trim(ob_get_clean());
-                                            return [$address->id => $displayAddress];
-                                        });
-                                })
-                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    // Load driver information based on selected address
-                                    if ($state) {
-                                        $address = CustomerAddressBook::find($state);
-                                        if ($address) {
-                                            // Use pre-assigned driver information from the address only if current fields are empty
-                                            if ($address->driver_id) {
-                                                $set('driver_id', $address->driver_id);
-                                                if ($address->driver_route) {
-                                                    $set('driver_route', $address->driver_route);
-                                                }
-                                            }
-
-                                            // Use pre-assigned backup driver information from the address only if current fields are empty
-                                            if ($address->backup_driver_id) {
-                                                $set('backup_driver_id', $address->backup_driver_id);
-                                            }
-                                        }
-                                    }
-                                    
-                                    // Trigger JavaScript to update disabled dates for Edit Order
-                                    $customerId = $get('customer_id');
-                                    $orderId = $get('id'); // Get current order ID
-                                    $this->js('
-                                        setTimeout(() => {
-                                            const customerId = ' . json_encode($customerId) . ';
-                                            const addressId = ' . json_encode($state) . ';
-                                            const orderId = ' . json_encode($orderId) . ';
-                                            if (typeof fetchExistingDeliveryDates === "function") {
-                                                fetchExistingDeliveryDates(customerId, addressId, orderId);
-                                            }
-                                        }, 100);
-                                    ');
-                                })
-                        ]),
-
-                    // Payment Information
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('payment_status_id')
-                                ->label('Payment Status')
-                                ->placeholder('Select Payment Status')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options([3 => 'Unpaid', 4 => 'Paid'])
-                                ->live(),
-
-                            Select::make('payment_method_id')
-                                ->label('Payment Method')
-                                ->placeholder('Select Payment Method')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options(AttrPaymentMethod::query()->pluck('label', 'id'))
-                                ->live(),
-                        ]),
-
-                    //DateTimePicker::make('delivery_date')
-                    //    ->label('Delivery Date')
-                    //    ->required()
-                    //    //->minDate(\Carbon\Carbon::now())
-                    //    ->timezone('Asia/Kuala_Lumpur')
-                    //    ->displayFormat('Y/m/d') // 12-hour with AM/PM (K = AM/PM)
-                    //    ->live()
+                    $this->getCustomerAddressGrid(),
+                    $this->getPaymentGrid(),
+                    
                     Flatpickr::make('delivery_date')
                         ->id('delivery_date')
                         ->label('Delivery Date')
@@ -245,10 +132,10 @@ class EditOrder extends Page
                         ->required()
                         ->live()
                 ]),
+                
             Section::make('Add Order')
                 ->collapsible()
                 ->schema([
-                    // Repeater for Meal items
                     Repeater::make('meals')
                         ->label('Meals')
                         ->defaultItems(1)
@@ -259,34 +146,17 @@ class EditOrder extends Page
                         ->addAction(
                             fn($action) => $action
                                 ->label('Add Meal')
-                                ->extraAttributes([
-                                    'class' => '',
-                                ])
+                                ->extraAttributes(['class' => ''])
                         )
                         ->schema([
-                            Select::make('meal_id')
-                                ->label('Meal')
-                                ->placeholder('Select Meal')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options(function () {
-                                    return Meal::query()
-                                        ->where('status_id', 1)
-                                        ->where('category_id', 1)
-                                        ->whereNotNull('name')
-                                        ->where('name', '!=', '')
-                                        ->pluck('name', 'id')
-                                        ->toArray();
-                                })
-                                ->live()
-                                ->columnSpan(2),
+                            $this->getMealSelect(),
                             $this->createMealQuantityField('normal', 'Normal'),
                             $this->createMealQuantityField('big', 'Big'),
                             $this->createMealQuantityField('small', 'Small'),
                             $this->createMealQuantityField('s_small', 'S.Small'),
                             $this->createMealQuantityField('no_rice', 'No Rice'),
                         ]),
+                        
                     TextInput::make('total_amount')
                         ->label('Total')
                         ->placeholder('0.00')
@@ -305,67 +175,23 @@ class EditOrder extends Page
                         ->rows(5)
                         ->live()
                 ]),
+                
             Section::make('Driver Information')
                 ->collapsible()
                 ->schema([
-                    Grid::make(2)
-                        ->schema([
-                            DateTimePicker::make('arrival_time')
-                                ->withoutDate()
-                                ->label('Arrival Time')
-                                ->placeholder('Select Arrival Time')
-                                ->required()
-                                //->timezone('Asia/Kuala_Lumpur')
-                                ->withoutDate()
-                                ->displayFormat('h:i A') // 12-hour with AM/PM (K = AM/PM)
-                                ->format('H:i')
-                                ->withoutSeconds()
-                                ->live()
-                        ]),
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('driver_id')
-                                ->label('Driver')
-                                ->placeholder('Select Driver')
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->options(Driver::query()->pluck('name', 'id'))
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $set('driver_route', null);
-                                }),
-                            Select::make('driver_route')
-                                ->label('Route')
-                                ->placeholder('Select Route')
-                                ->required()
-                                ->searchable()
-                                ->live()
-                                ->options(function (callable $get) {
-                                    $driverId = $get('driver_id');
-
-                                    if (blank($driverId)) {
-                                        return [];
-                                    }
-
-                                    $driver = \App\Models\Driver::find($driverId);
-                                    if (!$driver || !$driver->route) {
-                                        return [];
-                                    }
-                                    return collect($driver->route)->pluck('route_name', 'route_name');
-                                })
-                                ->disabled(fn(callable $get): bool => blank($get('driver_id')))
-                        ]),
-                    Grid::make(2)
-                        ->schema([
-                            Select::make('backup_driver_id')
-                                ->label('Backup Driver')
-                                ->placeholder('Select Backup Driver')
-                                ->searchable()
-                                ->preload()
-                                ->options(Driver::query()->pluck('name', 'id'))
-                                ->live()
-                        ]),
+                    Grid::make(2)->schema([
+                        DateTimePicker::make('arrival_time')
+                            ->withoutDate()
+                            ->label('Arrival Time')
+                            ->placeholder('Select Arrival Time')
+                            ->required()
+                            ->displayFormat('h:i A')
+                            ->format('H:i')
+                            ->withoutSeconds()
+                            ->live()
+                    ]),
+                    $this->getDriverGrid(),
+                    $this->getBackupDriverGrid(),
                     Textarea::make('driver_notes')
                         ->label('Notes')
                         ->rows(5)
@@ -492,8 +318,6 @@ class EditOrder extends Page
         $customer = Customer::find($this->data['customer_id'] ?? null);
         $address = CustomerAddressBook::find($this->data['address_id'] ?? null);
         $meals = Meal::whereIn('id', collect($this->data['meals'])->pluck('meal_id'))->get()->keyBy('id');
-        $driver = Driver::find($this->data['driver_id'] ?? null);
-        $backupDriver = Driver::find($this->data['backup_driver_id'] ?? null);
 
         $temp_meals = [];
         $total_qty = 0;
@@ -527,6 +351,9 @@ class EditOrder extends Page
             <?php
             $display_address = trim(ob_get_clean());
         }
+
+        $driver = Driver::find($this->data['driver_id'] ?? null);
+        $backupDriver = Driver::find($this->data['backup_driver_id'] ?? null);
 
         return [
             'customer_id' => $this->data['customer_id'],
@@ -562,81 +389,7 @@ class EditOrder extends Page
         return parent::__call($method, $parameters);
     }
 
-    //public function updatedDataCustomerId(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataAddressId(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDeliveryDate(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataMeals(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataTotalAmount(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataNotes(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataArrivalTime(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDriverId(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDriverRoute(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataBackupDriverId(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-
-    //public function updatedDataDriverNotes(): void
-    //{
-    //    $this->modalData = $this->getFormattedData();
-    //}
-    
-    private function createMealQuantityField(string $name, string $label): TextInput
-    {
-        return TextInput::make($name)
-            ->label($label)
-            ->numeric()
-            ->default(0)
-            ->minValue(0)
-            ->maxValue(1000)
-            ->live()
-            ->afterStateUpdated(function ($state, callable $set, callable $get) use ($name) {
-                $state = (int)ltrim($state, '0') ?: 0;
-                $set($name, $state);
-                $this->calculateTotalAmountByMealQty($get, $set);
-            })
-            ->step(1)
-            ->rules(['required', 'integer', 'min:0', 'max:1000']);
-    }
-
-
-    private function calculateTotalAmountByMealQty(callable $get, callable $set)
+    private function calculateTotalAmountByMealQty(callable $set, callable $get)
     {
         // Get all meals from the form without validation to avoid validation errors
         $formData = $this->form->getRawState();
@@ -651,46 +404,13 @@ class EditOrder extends Page
                           intval($meal['no_rice'] ?? 0);
         }
         
-        // Get meal_price from config
+        // Get MEAL_PRICE from config
         $mealPrice = config('app.meal_price', 8.00);
         $totalAmount = $totalMeals * $mealPrice;
         
         // Update the form data and refill
         $formData['total_amount'] = number_format($totalAmount, 2);
         $this->form->fill($formData);
-    }
-
-    private function calculateDeliveryFee($address, $totalQty)
-    {
-        if ($address && $address->mall_id) {
-            return 0;
-        }
-
-        if (!$address || !$address->area_id) {
-            return 0;
-        }
-
-        $area = Area::find($address->area_id);
-        if (!$area || !$area->delivery_fee) {
-            return 0;
-        }
-
-        $deliveryFeeRules = $area->delivery_fee;
-
-        // Sort by qty in descending order to find the highest applicable tier
-        usort($deliveryFeeRules, function ($a, $b) {
-            return $b['qty'] - $a['qty'];
-        });
-
-        // Find the appropriate delivery fee based on total quantity
-        foreach ($deliveryFeeRules as $rule) {
-            if ($totalQty >= $rule['qty']) {
-                return $rule['delivery_fee'];
-            }
-        }
-
-        // If no rule matches, return the fee for the lowest quantity tier
-        return end($deliveryFeeRules)['delivery_fee'] ?? 0;
     }
 
     public function getBreadcrumbs(): array
