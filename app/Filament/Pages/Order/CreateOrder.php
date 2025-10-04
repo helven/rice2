@@ -41,6 +41,9 @@ class CreateOrder extends Page
 
     public array $data = [];
     public array $modalData = [];
+    
+    // Dev toggle - set to true to enable autofill in local environment
+    private bool $devAutofill = false;
 
     public function mount(): void
     {
@@ -60,84 +63,7 @@ class CreateOrder extends Page
             'driver_notes' => '',
         ]);
 
-        $devAutofill = false;
-        // For development: Get first active customer, their default address, and first active meal
-        if ($devAutofill && app()->environment('local')) {
-            $customer = Customer::where('status_id', 1)->first();
-            $address = $customer ? CustomerAddressBook::where('customer_id', $customer->id)
-                ->where('status_id', 1)
-                ->where('is_default', true)
-                ->first() : null;
-            $driver = Driver::where('status_id', 1)->first();
-            $driverRoute = $driver && $driver->route && !empty($driver->route) 
-                ? $driver->route[0]['route_name'] 
-                : null;
-
-            // Get a random active meal using Laravel's built-in methods
-            $randomMeal = Meal::where('status_id', 1)->inRandomOrder()->first();
-
-            $orderData = [
-                'customer_id' => $customer ? $customer->id : '',
-                'address_id' => $address ? $address->id : '',
-                'payment_status_id' => $this->getDefaultPaymentStatusId(),
-                'payment_method_id' => $customer ? $customer->payment_method_id : '',
-                'arrival_time' => '08:00',
-                'driver_id' => $driver ? $driver->id : '',
-                'driver_route' => $driverRoute,
-                'backup_driver_id' => '',
-                'driver_notes' => 'Sample driver notes',
-            ];
-
-            $days = 3;
-            $startDate = \Carbon\Carbon::today();
-
-            // Generate individual dates with comma separator
-            $dates = [];
-            for ($i = 0; $i < $days; $i++) {
-                $dates[] = $startDate->copy()->addDays($i)->format(config('app.date_format'));
-            }
-            $orderData['delivery_date'] = $dates;
-
-            // Generate meals_by_date dynamically based on $days
-            $mealsByDate = [];
-            for ($i = 0; $i < $days; $i++) {
-                $currentDate = $startDate->copy()->addDays($i);
-                $dayNumber = $i + 1;
-
-                $tempMeals = [
-                    'date' => $currentDate->format(config('app.date_format')),
-                    'meals' => [
-                        [
-                            'meal_id' => $randomMeal->id,
-                            'normal' => 1,
-                            'big' => 0,
-                            'small' => 0,
-                            's_small' => 0,
-                            'no_rice' => 1
-                        ],
-                    ],
-                    'total_amount' => 0.00,
-                    'notes' => "Sample order notes for day {$dayNumber}"
-                ];
-
-                // Calculate total_amount based on meal quantities
-                $totalMeals = 0;
-                foreach ($tempMeals['meals'] as $meal) {
-                    $totalMeals += intval($meal['normal'] ?? 0) +
-                        intval($meal['big'] ?? 0) +
-                        intval($meal['small'] ?? 0) +
-                        intval($meal['s_small'] ?? 0) +
-                        intval($meal['no_rice'] ?? 0);
-                }
-                $mealPrice = config('app.meal_price', 8.00);
-                $tempMeals['total_amount'] = number_format($totalMeals * $mealPrice, 2);
-
-                $mealsByDate[] = $tempMeals;
-            }
-
-            $orderData['meals_by_date'] = $mealsByDate;
-            $this->form->fill($orderData);
-        }
+        $this->fillDevData();
 
         // Initialize modal data
         $this->modalData = $this->getFormattedData();
@@ -673,5 +599,81 @@ class CreateOrder extends Page
             '/' . config('filament.path', 'backend') . '/orders' => 'Orders',
             '' => 'New Order',
         ];
+    }
+
+    private function fillDevData(): void
+    {
+        if (!$this->devAutofill || !app()->environment('local')) {
+            return;
+        }
+
+        $customer = Customer::where('status_id', 1)->first();
+        $address = $customer ? CustomerAddressBook::where('customer_id', $customer->id)
+            ->where('status_id', 1)
+            ->where('is_default', true)
+            ->first() : null;
+        $driver = Driver::where('status_id', 1)->first();
+        $driverRoute = $driver && $driver->route && !empty($driver->route) 
+            ? $driver->route[0]['route_name'] 
+            : null;
+        $randomMeal = Meal::where('status_id', 1)->inRandomOrder()->first();
+
+        $orderData = [
+            'customer_id' => $customer ? $customer->id : '',
+            'address_id' => $address ? $address->id : '',
+            'payment_status_id' => $this->getDefaultPaymentStatusId(),
+            'payment_method_id' => $customer ? $customer->payment_method_id : '',
+            'arrival_time' => '08:00',
+            'driver_id' => $driver ? $driver->id : '',
+            'driver_route' => $driverRoute,
+            'backup_driver_id' => '',
+            'driver_notes' => 'Sample driver notes',
+        ];
+
+        $days = 3;
+        $startDate = \Carbon\Carbon::today();
+        $dates = [];
+        for ($i = 0; $i < $days; $i++) {
+            $dates[] = $startDate->copy()->addDays($i)->format(config('app.date_format'));
+        }
+        $orderData['delivery_date'] = $dates;
+
+        $mealsByDate = [];
+        for ($i = 0; $i < $days; $i++) {
+            $currentDate = $startDate->copy()->addDays($i);
+            $dayNumber = $i + 1;
+
+            $tempMeals = [
+                'date' => $currentDate->format(config('app.date_format')),
+                'meals' => [
+                    [
+                        'meal_id' => $randomMeal->id,
+                        'normal' => 1,
+                        'big' => 0,
+                        'small' => 0,
+                        's_small' => 0,
+                        'no_rice' => 1
+                    ],
+                ],
+                'total_amount' => 0.00,
+                'notes' => "Sample order notes for day {$dayNumber}"
+            ];
+
+            $totalMeals = 0;
+            foreach ($tempMeals['meals'] as $meal) {
+                $totalMeals += intval($meal['normal'] ?? 0) +
+                    intval($meal['big'] ?? 0) +
+                    intval($meal['small'] ?? 0) +
+                    intval($meal['s_small'] ?? 0) +
+                    intval($meal['no_rice'] ?? 0);
+            }
+            $mealPrice = config('app.meal_price', 8.00);
+            $tempMeals['total_amount'] = number_format($totalMeals * $mealPrice, 2);
+
+            $mealsByDate[] = $tempMeals;
+        }
+
+        $orderData['meals_by_date'] = $mealsByDate;
+        $this->form->fill($orderData);
     }
 }
