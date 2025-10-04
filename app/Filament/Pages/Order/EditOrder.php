@@ -123,80 +123,10 @@ class EditOrder extends Page
                         ->readonly(),
                     $this->getCustomerAddressGrid(),
                     $this->getPaymentGrid(),
-                    
-                    Flatpickr::make('delivery_date')
-                        ->id('delivery_date')
-                        ->label('Delivery Date')
-                        ->format(config('app.date_format'))
-                        ->displayFormat(config('app.date_format'))
-                        ->required()
-                        ->live()
+                    $this->getDateSection('edit_order'),
                 ]),
-                
-            Section::make('Add Order')
-                ->collapsible()
-                ->schema([
-                    Repeater::make('meals')
-                        ->label('Meals')
-                        ->defaultItems(1)
-                        ->reorderable(false)
-                        ->deletable(true)
-                        ->cloneable()
-                        ->columns(7)
-                        ->addAction(
-                            fn($action) => $action
-                                ->label('Add Meal')
-                                ->extraAttributes(['class' => ''])
-                        )
-                        ->schema([
-                            $this->getMealSelect(),
-                            $this->createMealQuantityField('normal', 'Normal'),
-                            $this->createMealQuantityField('big', 'Big'),
-                            $this->createMealQuantityField('small', 'Small'),
-                            $this->createMealQuantityField('s_small', 'S.Small'),
-                            $this->createMealQuantityField('no_rice', 'No Rice'),
-                        ]),
-                        
-                    TextInput::make('total_amount')
-                        ->label('Total')
-                        ->placeholder('0.00')
-                        ->numeric()
-                        ->default(0.00)
-                        ->prefix('RM')
-                        ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-                        ->live()
-                        ->afterStateUpdated(function ($state, callable $set) {
-                            $state = (int)ltrim($state, '0') ?: 0;
-                            $set('total_amount', $state);
-                        }),
-
-                    Textarea::make('notes')
-                        ->label('Notes')
-                        ->rows(5)
-                        ->live()
-                ]),
-                
-            Section::make('Driver Information')
-                ->collapsible()
-                ->schema([
-                    Grid::make(2)->schema([
-                        DateTimePicker::make('arrival_time')
-                            ->withoutDate()
-                            ->label('Arrival Time')
-                            ->placeholder('Select Arrival Time')
-                            ->required()
-                            ->displayFormat('h:i A')
-                            ->format('H:i')
-                            ->withoutSeconds()
-                            ->live()
-                    ]),
-                    $this->getDriverGrid(),
-                    $this->getBackupDriverGrid(),
-                    Textarea::make('driver_notes')
-                        ->label('Notes')
-                        ->rows(5)
-                        ->live()
-                ]),
+            $this->getMealSection('edit_order'),
+            $this->getDriverSection(),
         ];
     }
 
