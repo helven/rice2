@@ -72,14 +72,25 @@ class Order extends Model
 
 
     /**
+     * Get formatted order ID with padding
+     *
+     * @param int $orderId
+     * @return string
+     */
+    public static function getFormattedOrderId($orderId): string
+    {
+        $padding = config('app.order_id_padding', 5);
+        return str_pad($orderId, $padding, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Get the formatted order ID with zero padding and location suffix
      *
      * @return string
      */
     public function getFormattedIdAttribute(): string
     {
-        $padding = config('app.order_id_padding', 5);
-        $formattedId = str_pad($this->id, $padding, '0', STR_PAD_LEFT);
+        $formattedId = self::getFormattedOrderId($this->id);
 
         // Append mall_id or area_id from address if available
         if ($this->address) {
@@ -147,18 +158,23 @@ class Order extends Model
     }
 
     /**
-     * Generate order number in format: [orders.id]-[customers.mall_id]-[daily counter]
-     * Example: 00000001-001-1
+     * Generate order number in format: [orders.id]-[customers.mall_id]-[daily counter] or just [orders.id]
+     * Example: 00000001-001-1 or 00000001
      *
      * @param int $orderId
-     * @param int $mallId
-     * @param string $deliveryDate
+     * @param int|null $mallId
+     * @param string|null $deliveryDate
      * @return string
      */
-    public static function generateOrderNumber($orderId, $mallId, $deliveryDate)
+    public static function generateOrderNumber($orderId, $mallId = null, $deliveryDate = null)
     {
-        // Format order ID with 8 digits padding
-        $formattedOrderId = str_pad($orderId, 8, '0', STR_PAD_LEFT);
+        // Use the formatted order ID method
+        $formattedOrderId = self::getFormattedOrderId($orderId);
+        
+        // If no mall ID, return just the formatted order ID
+        if (!$mallId) {
+            return $formattedOrderId;
+        }
         
         // Format mall ID with 3 digits padding
         $formattedMallId = str_pad($mallId, 3, '0', STR_PAD_LEFT);

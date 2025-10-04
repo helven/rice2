@@ -320,6 +320,14 @@ class CreateOrder extends Page
                     'notes' => $dateData['notes'] ?? '',
                 ]);
 
+                // Generate and set order number
+                $orderNo = \App\Models\Order::generateOrderNumber(
+                    $order->id,
+                    $address->mall_id ?? null,
+                    $dateData['date']
+                );
+                $order->update(['order_no' => $orderNo]);
+
                 // Create delivery record with driver-related fields
                 $deliveryService = app(\App\Services\DeliveryService::class);
                 $deliveryData = [
