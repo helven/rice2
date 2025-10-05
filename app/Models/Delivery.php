@@ -28,6 +28,17 @@ class Delivery extends Model
         'delivery_proof',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($delivery) {
+            if (empty($delivery->delivery_no)) {
+                $delivery->delivery_no = static::generateDeliveryNo();
+            }
+        });
+    }
+
     protected $casts = [
         'delivery_date' => 'date',
         'delivery_proof' => 'array',
@@ -89,15 +100,5 @@ class Delivery extends Model
         return 'D' . $year . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 
-    // Boot method to auto-generate delivery number
-    protected static function boot()
-    {
-        parent::boot();
 
-        static::creating(function ($delivery) {
-            if (empty($delivery->delivery_no)) {
-                $delivery->delivery_no = static::generateDeliveryNo();
-            }
-        });
-    }
 }

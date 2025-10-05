@@ -8,24 +8,7 @@ use App\Models\CustomerAddressBook;
 
 class DeliveryService
 {
-    /**
-     * Create delivery record for an order
-     */
-    public function createOrderDelivery(Order $order): Delivery
-    {
-        return Delivery::create([
-            'deliverable_type' => 'order',
-            'deliverable_id' => $order->id,
-            'customer_id' => $order->customer_id,
-            'address_id' => $order->address_id,
-            'delivery_date' => $order->delivery_date,
-            'arrival_time' => $order->arrival_time,
-            'driver_id' => $order->driver_id,
-            'driver_route' => $order->driver_route,
-            'backup_driver_id' => $order->backup_driver_id ?: null,
-            'driver_notes' => $order->driver_notes,
-        ]);
-    }
+
 
     /**
      * Calculate delivery fee based on address and quantity
@@ -88,19 +71,11 @@ class DeliveryService
     }
 
     /**
-     * Get delivery data for an order
-     */
-    public function getOrderDelivery(Order $order): ?Delivery
-    {
-        return $order->deliveries()->first();
-    }
-
-    /**
      * Get combined delivery data (orders + deliveries)
      */
     public function getCombinedDeliveryData(Order $order): array
     {
-        $delivery = $this->getOrderDelivery($order);
+        $delivery = $order->getDelivery();
         
         return [
             // From orders table
@@ -117,28 +92,25 @@ class DeliveryService
     }
 
     /**
-     * Store delivery data from form input (driver-related fields only)
+     * Store delivery data from form input
      */
     public function storeDeliveryData(Order $order, array $deliveryData): Delivery
     {
-        // Filter to only driver-related fields
-        $driverFields = array_intersect_key($deliveryData, array_flip([
-            'arrival_time', 'driver_id', 'driver_route', 'backup_driver_id', 'driver_notes'
+        // Filter to delivery-related fields including address_id
+        $deliveryFields = array_intersect_key($deliveryData, array_flip([
+            'delivery_date', 'arrival_time', 'driver_id', 'driver_route', 'backup_driver_id', 'driver_notes', 'address_id'
         ]));
         
-        $delivery = $this->getOrderDelivery($order);
+        $delivery = $order->getDelivery();
         
         if ($delivery) {
-            $this->updateDelivery($delivery, $driverFields);
+            $delivery->update($deliveryFields);
             return $delivery;
         }
         
-        return Delivery::create(array_merge($driverFields, [
+        return Delivery::create(array_merge($deliveryFields, [
             'deliverable_type' => 'order',
             'deliverable_id' => $order->id,
-            'customer_id' => $order->customer_id,
-            'address_id' => $order->address_id,
-            'delivery_date' => $order->delivery_date,
         ]));
     }
 }

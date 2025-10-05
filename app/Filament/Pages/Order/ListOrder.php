@@ -114,7 +114,7 @@ class ListOrder extends Page implements HasTable
         return $table
             ->query($this->query())
             ->columns([
-                TextColumn::make('formatted_id')
+                TextColumn::make('order_no')
                     ->label('Order No')
                     ->sortable(),
                 TextColumn::make('customer.name')
@@ -124,8 +124,13 @@ class ListOrder extends Page implements HasTable
                     ->toggleable(true),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
-                    ->dateTime(config('app.date_format'))
-                    ->sortable(),
+                    ->getStateUsing(function (Order $record): string {
+                        $delivery = $record->getDelivery();
+                        return $delivery && $delivery->delivery_date 
+                            ? $delivery->delivery_date->format(config('app.date_format')) 
+                            : '';
+                    })
+                    ->sortable(false),
                 TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->numeric(2, '.', ',')
@@ -145,7 +150,7 @@ class ListOrder extends Page implements HasTable
                 TextColumn::make('driver_name')
                     ->label('Driver')
                     ->getStateUsing(function (Order $record): string {
-                        $delivery = $record->deliveries->first();
+                        $delivery = $record->getDelivery();
                         
                         if (!$delivery || !$delivery->driver_id) {
                             return '';
@@ -159,7 +164,7 @@ class ListOrder extends Page implements HasTable
                 TextColumn::make('arrival_time')
                     ->label('Arrival Time')
                     ->getStateUsing(function (Order $record): string {
-                        $delivery = $record->deliveries->first();
+                        $delivery = $record->getDelivery();
                         if (!$delivery || !$delivery->arrival_time) {
                             return '';
                         }
@@ -378,22 +383,30 @@ class ListOrder extends Page implements HasTable
                         return match ($rangeType) {
                             'daily' => $query->when(
                                 $data['daily_date'],
-                                fn(Builder $query) => $query->whereDate('delivery_date', Carbon::parse($data['daily_date']))
+                                fn(Builder $query) => $query->whereHas('deliveries', function($q) use ($data) {
+                                    $q->whereDate('delivery_date', Carbon::parse($data['daily_date']));
+                                })
                             ),
-                            'this_week' => $query->whereBetween('delivery_date', [
-                                Carbon::now()->startOfWeek(),
-                                Carbon::now()->endOfWeek()
-                            ]),
-                            'this_month' => $query->whereBetween('delivery_date', [
-                                Carbon::now()->startOfMonth(),
-                                Carbon::now()->endOfMonth()
-                            ]),
+                            'this_week' => $query->whereHas('deliveries', function($q) {
+                                $q->whereBetween('delivery_date', [
+                                    Carbon::now()->startOfWeek(),
+                                    Carbon::now()->endOfWeek()
+                                ]);
+                            }),
+                            'this_month' => $query->whereHas('deliveries', function($q) {
+                                $q->whereBetween('delivery_date', [
+                                    Carbon::now()->startOfMonth(),
+                                    Carbon::now()->endOfMonth()
+                                ]);
+                            }),
                             'custom' => $query->when(
                                 $data['start_date'] && $data['end_date'],
-                                fn(Builder $query) => $query->whereBetween('delivery_date', [
-                                    Carbon::parse($data['start_date'])->startOfDay(),
-                                    Carbon::parse($data['end_date'])->endOfDay()
-                                ])
+                                fn(Builder $query) => $query->whereHas('deliveries', function($q) use ($data) {
+                                    $q->whereBetween('delivery_date', [
+                                        Carbon::parse($data['start_date'])->startOfDay(),
+                                        Carbon::parse($data['end_date'])->endOfDay()
+                                    ]);
+                                })
                             ),
                             default => $query
                         };
@@ -471,13 +484,13 @@ class ListOrder extends Page implements HasTable
                         })
                 ]),
             ])
-            ->defaultSort('delivery_date', 'desc');
+            ->defaultSort('created_at', 'desc');
     }
 
     protected function query(): Builder
     {
         return Order::query()
-            ->with(['invoice', 'customer', 'address', 'deliveries.driver'])
+            ->with(['invoice', 'customer', 'deliveries.driver'])
             ->whereIn('status_id', [1, 2]);
     }
 

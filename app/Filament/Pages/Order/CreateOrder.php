@@ -79,15 +79,15 @@ class CreateOrder extends Page
     public function onCustomerChanged($state, callable $set, callable $get)
     {
         // CreateOrder specific JavaScript
-        $this->js('
-            setTimeout(() => {
-                const customerId = ' . json_encode($state) . ';
-                const addressId = null;
-                if (typeof fetchExistingDeliveryDates === "function") {
-                    fetchExistingDeliveryDates(customerId, addressId);
-                }
-            }, 100);
-        ');
+        //$this->js('
+        //    setTimeout(() => {
+        //        const customerId = ' . json_encode($state) . ';
+        //        const addressId = null;
+        //        if (typeof fetchExistingDeliveryDates === "function") {
+        //            fetchExistingDeliveryDates(customerId, addressId);
+        //        }
+        //    }, 100);
+        //');
     }
 
     public function onAddressChanged($state, callable $set, callable $get)
@@ -287,13 +287,11 @@ class CreateOrder extends Page
                 // Calculate delivery fee for this date
                 $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
 
-                // Create order with only order-related fields
+                // Create order with customer and financial data only
                 $order = \App\Models\Order::create([
                     'customer_id' => $data['customer_id'],
-                    'address_id' => $data['address_id'],
                     'payment_status_id' => $data['payment_status_id'],
                     'payment_method_id' => $data['payment_method_id'],
-                    'delivery_date' => $dateData['date'],
                     'total_amount' => $dateData['total_amount'],
                     'delivery_fee' => $deliveryFee,
                     'notes' => $dateData['notes'] ?? '',
@@ -310,11 +308,13 @@ class CreateOrder extends Page
                 // Create delivery record with driver-related fields
                 $deliveryService = app(\App\Services\DeliveryService::class);
                 $deliveryData = [
+                    'delivery_date' => $dateData['date'],
                     'arrival_time' => $data['arrival_time'],
                     'driver_id' => $data['driver_id'],
                     'driver_route' => $data['driver_route'],
                     'backup_driver_id' => $data['backup_driver_id'] ?? null,
                     'driver_notes' => $data['driver_notes'] ?? '',
+                    'address_id' => $data['address_id'],
                 ];
                 $deliveryService->storeDeliveryData($order, $deliveryData);
 

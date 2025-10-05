@@ -11,18 +11,15 @@ class Order extends Model
     protected $fillable = [
         'order_no',
         'customer_id',
-        'address_id',
         'status_id',
         'payment_status_id',
         'payment_method_id',
-        'delivery_date',
         'total_amount',
         'delivery_fee',
         'notes'
     ];
 
     protected $casts = [
-        'delivery_date' => 'date',
         'total_amount' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
     ];
@@ -47,9 +44,13 @@ class Order extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function address(): BelongsTo
+    /**
+     * Get address from delivery record
+     */
+    public function getAddressAttribute()
     {
-        return $this->belongsTo(CustomerAddressBook::class, 'address_id');
+        $delivery = $this->getDelivery();
+        return $delivery ? CustomerAddressBook::find($delivery->address_id) : null;
     }
 
 
@@ -67,6 +68,24 @@ class Order extends Model
     public function deliveries()
     {
         return $this->morphMany(Delivery::class, 'deliverable');
+    }
+
+    /**
+     * Get delivery_date from the first delivery record
+     */
+    public function getDeliveryDateAttribute()
+    {
+        return $this->deliveries->first()?->delivery_date;
+    }
+
+    /**
+     * Get delivery record for this order
+     */
+    public function getDelivery()
+    {
+        return \App\Models\Delivery::where('deliverable_type', 'order')
+            ->where('deliverable_id', $this->id)
+            ->first();
     }
 
 
@@ -203,11 +222,15 @@ class Order extends Model
      */
     private static function getDailyCounter($mallId, $deliveryDate, $excludeOrderId = null)
     {
-        // Use a more direct approach with proper join
+        // Use deliveries table for address filtering
         $query = self::select('orders.id')
-            ->join('customer_address_books', 'orders.address_id', '=', 'customer_address_books.id')
+            ->join('deliveries', function($join) {
+                $join->on('orders.id', '=', 'deliveries.deliverable_id')
+                     ->where('deliveries.deliverable_type', '=', 'order');
+            })
+            ->join('customer_address_books', 'deliveries.address_id', '=', 'customer_address_books.id')
             ->where('customer_address_books.mall_id', $mallId)
-            ->whereDate('orders.delivery_date', $deliveryDate);
+            ->whereDate('deliveries.delivery_date', $deliveryDate);
         
         // Exclude the current order if specified
         if ($excludeOrderId) {

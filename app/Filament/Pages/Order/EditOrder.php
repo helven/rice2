@@ -14,6 +14,7 @@ use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 
 use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\Delivery;
 use App\Models\Meal;
 use App\Models\Order;
 use App\Traits\OrderFormTrait;
@@ -34,16 +35,17 @@ class EditOrder extends Page
 
     public function mount($id): void
     {
-        $this->order = Order::with(['meals', 'customer', 'address', 'deliveries'])->findOrFail($id);
-        
-        // Get delivery data from deliveries table
-        $delivery = $this->order->deliveries->first();
+        $this->order = Order::with(['meals', 'customer', 'deliveries'])->findOrFail($id);
+
+        // Get delivery data from Order model
+        $delivery = $this->order->getDelivery();
 
         $this->form->fill([
             'id' => $this->order->formatted_id,
+            'order_no' => $this->order->order_no,
             'customer_id' => $this->order->customer_id,
-            'address_id' => $this->order->address_id,
-            'delivery_date' => $this->order->delivery_date,
+            'address_id' => $delivery?->address_id,
+            'delivery_date' => $delivery?->delivery_date?->format('Y-m-d'),
             'payment_status_id' => $this->order->payment_status_id,
             'payment_method_id' => $this->order->payment_method_id,
             'meals' => $this->order->meals->map(function ($meal) {
@@ -60,9 +62,9 @@ class EditOrder extends Page
             'notes' => $this->order->notes,
             // Load driver data from deliveries table
             'arrival_time' => $delivery?->arrival_time ?? '',
-            'driver_id' => $delivery?->driver_id ?? '',
+            'driver_id' => ($delivery?->driver_id && $delivery->driver_id > 0) ? $delivery->driver_id : null,
             'driver_route' => $delivery?->driver_route ?? '',
-            'backup_driver_id' => $delivery?->backup_driver_id ?? '',
+            'backup_driver_id' => ($delivery?->backup_driver_id && $delivery->backup_driver_id > 0) ? $delivery->backup_driver_id : null,
             'driver_notes' => $delivery?->driver_notes ?? '',
         ]);
     }
@@ -110,7 +112,7 @@ class EditOrder extends Page
         return [
             $this->getOrderInformationSection()
                 ->schema([
-                    TextInput::make('id')
+                    TextInput::make('order_no')
                         ->label('Order No')
                         ->readonly(),
                     $this->getCustomerAddressGrid(),
@@ -160,11 +162,9 @@ class EditOrder extends Page
             $address = CustomerAddressBook::find($data['address_id']);
             $deliveryFee = $this->calculateDeliveryFee($address, $totalQty);
 
-            // Update order (financial data only)
+            // Update order (customer and financial data only)
             $this->order->update([
                 'customer_id' => $data['customer_id'],
-                'address_id' => $data['address_id'],
-                'delivery_date' => \Carbon\Carbon::parse($data['delivery_date']),
                 'payment_status_id' => $data['payment_status_id'],
                 'payment_method_id' => $data['payment_method_id'],
                 'total_amount' => $data['total_amount'],
@@ -174,6 +174,7 @@ class EditOrder extends Page
 
             // Update delivery data using DeliveryService
             $deliveryService = new DeliveryService();
+            $data['delivery_date'] = $data['delivery_date'];
             $deliveryService->storeDeliveryData($this->order, $data);
 
             // Check if invoice already exists for this order

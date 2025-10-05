@@ -132,6 +132,7 @@ return [
     'order_id_suffix' => '',
     'datetime_format' => env('DATETIME_FORMAT', 'Y-m-d H:i:s'),
     'date_format' => env('DATE_FORMAT', 'Y-m-d'),
+    'time_format' => env('TIME_FORMAT', 'H:i:s'),
     'tax_rate' => env('TAX_RATE', 0.00),
     'meal_price' => env('MEAL_PRICE', 8.00),
 

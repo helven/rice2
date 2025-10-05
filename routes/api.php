@@ -17,16 +17,22 @@ Route::get('/orders/existing-delivery-dates', function (Request $request) {
         return response()->json(['dates' => []]);
     }
     
-    $query = Order::where('customer_id', $customerId)
-        ->where('address_id', $addressId)
-        ->whereNotNull('delivery_date');
+    // First get orders by customer_id
+    $orderIds = Order::where('customer_id', $customerId);
     
     // Exclude the current order if editing
     if ($excludeOrderId) {
-        $query->where('id', '!=', $excludeOrderId);
+        $orderIds->where('id', '!=', $excludeOrderId);
     }
     
-    $existingDates = $query->pluck('delivery_date')
+    $orderIds = $orderIds->pluck('id');
+    
+    // Then get deliveries for those orders with matching address_id
+    $existingDates = \App\Models\Delivery::whereIn('deliverable_id', $orderIds)
+        ->where('deliverable_type', 'order')
+        ->where('address_id', $addressId)
+        ->whereNotNull('delivery_date')
+        ->pluck('delivery_date')
         ->map(function ($date) {
             return \Carbon\Carbon::parse($date)->format('Y-m-d');
         })

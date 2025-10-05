@@ -30,11 +30,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <span class="text-sm font-medium text-gray-500">Pending Deliveries</span>
-                        <p class="text-2xl font-semibold">{{ \App\Models\Order::whereDate('delivery_date', today())->where('dropoff_time', '')->count() }}</p>
+                        <p class="text-2xl font-semibold">{{ \App\Models\Order::whereHas('deliveries', function($q) { $q->whereDate('delivery_date', today())->where('dropoff_time', ''); })->count() }}</p>
                     </div>
                     <div>
                         <span class="text-sm font-medium text-gray-500">Completed Deliveries</span>
-                        <p class="text-2xl font-semibold">{{ \App\Models\Order::whereDate('delivery_date', today())->where('dropoff_time', '!=', '')->count() }}</p>
+                        <p class="text-2xl font-semibold">{{ \App\Models\Order::whereHas('deliveries', function($q) { $q->whereDate('delivery_date', today())->where('dropoff_time', '!=', ''); })->count() }}</p>
                     </div>
                 </div>
             </div>
