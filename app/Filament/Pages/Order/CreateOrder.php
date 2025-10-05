@@ -108,8 +108,7 @@ class CreateOrder extends Page
     protected function getFormSchema(): array
     {
         return [
-            Section::make('Order Information')
-                ->collapsible()
+            $this->getOrderInformationSection()
                 ->schema([
                     $this->getCustomerAddressGrid(),
                     $this->getPaymentGrid(),
@@ -178,7 +177,7 @@ class CreateOrder extends Page
                 ->label('')
                 ->reorderable(false)
                 ->deletable(true)
-                ->disableItemCreation()
+                ->addable(false)
                 ->collapsible()
                 ->itemLabel(function (array $state) {
                     if (isset($state['date'])) {
@@ -218,27 +217,7 @@ class CreateOrder extends Page
                     ');
                 })
                 ->schema([
-                    Repeater::make('meals')
-                        ->label('Meals')
-                        ->defaultItems(1)
-                        ->reorderable(false)
-                        ->deletable(true)
-                        ->cloneable()
-                        ->columns(7)
-                        ->addAction(
-                            fn($action) => $action
-                                ->label('Add Meal')
-                                ->extraAttributes(['class' => ''])
-                        )
-                        ->schema([
-                            $this->getMealSelect(),
-                            $this->createMealQuantityField('normal', 'Normal'),
-                            $this->createMealQuantityField('big', 'Big'),
-                            $this->createMealQuantityField('small', 'Small'),
-                            $this->createMealQuantityField('s_small', 'S.Small'),
-                            $this->createMealQuantityField('no_rice', 'No Rice'),
-                        ]),
-
+                    $this->getMealsRepeater(),
                     $this->getTotalAmountField(),
                     $this->getNotesField()
                 ])

@@ -371,11 +371,7 @@ trait OrderFormTrait
     protected function getOrderInformationSection(): Section
     {
         return Section::make('Order Information')
-            ->collapsible()
-            ->schema([
-                $this->getCustomerAddressGrid(),
-                $this->getPaymentGrid(),
-            ]);
+            ->collapsible();
     }
 
     protected function getCommonValidationRules(): array
