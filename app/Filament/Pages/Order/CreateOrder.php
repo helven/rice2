@@ -289,6 +289,7 @@ class CreateOrder extends Page
 
                 // Create order with customer and financial data only
                 $order = \App\Models\Order::create([
+                    'order_type' => 'single',
                     'customer_id' => $data['customer_id'],
                     'payment_status_id' => $data['payment_status_id'],
                     'payment_method_id' => $data['payment_method_id'],

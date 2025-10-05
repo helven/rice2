@@ -492,6 +492,7 @@ class ListOrder extends Page implements HasTable
     {
         return Order::query()
             ->with(['invoice', 'customer', 'deliveries.driver'])
+            ->where('order_type', 'single')
             ->whereIn('status_id', [1, 2]);
     }
 

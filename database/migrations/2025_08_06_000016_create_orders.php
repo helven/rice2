@@ -22,6 +22,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('order_no', 50)->default('');
+            $table->enum('order_type', ['single', 'meal_plan']);
             $table->unsignedInteger('customer_id')->default(0);
             //$table->unsignedInteger('address_id')->default(0);
             $table->integer('status_id')->default(1);

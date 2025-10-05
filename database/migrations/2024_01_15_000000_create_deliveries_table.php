@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('delivery_no', 20)->unique();
 
             // Polymorphic relationship
-            $table->enum('deliverable_type', ['order', 'meal_plan']);
+            $table->enum('deliverable_type', ['single', 'meal_plan']);
             $table->unsignedBigInteger('deliverable_id');
 
             // Delivery details

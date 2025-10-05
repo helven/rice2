@@ -164,6 +164,7 @@ class EditOrder extends Page
 
             // Update order (customer and financial data only)
             $this->order->update([
+                'order_type' => 'single',
                 'customer_id' => $data['customer_id'],
                 'payment_status_id' => $data['payment_status_id'],
                 'payment_method_id' => $data['payment_method_id'],

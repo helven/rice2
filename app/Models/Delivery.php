@@ -44,29 +44,14 @@ class Delivery extends Model
         'delivery_proof' => 'array',
     ];
 
-    // Polymorphic relationship to Order or MealPlan
-    public function deliverable(): MorphTo
-    {
-        return $this->morphTo()->withDefault();
-    }
 
-    // Direct relationships for easier querying
+
+
+
+    // Simple relationship to Order (regardless of type)
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class, 'deliverable_id')
-            ->where('deliverable_type', 'order');
-    }
-
-    public function mealPlan(): BelongsTo
-    {
-        return $this->belongsTo(MealPlan::class, 'deliverable_id')
-            ->where('deliverable_type', 'meal_plan');
-    }
-
-    // Relationships
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Order::class, 'deliverable_id');
     }
 
     public function address(): BelongsTo

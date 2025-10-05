@@ -10,6 +10,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_no',
+        'order_type',
         'customer_id',
         'status_id',
         'payment_status_id',
@@ -68,7 +69,7 @@ class Order extends Model
     public function deliveries()
     {
         return $this->hasMany(Delivery::class, 'deliverable_id')
-            ->where('deliverable_type', 'order');
+            ->whereIn('deliverable_type', ['single', 'meal_plan']);
     }
 
     /**
@@ -84,8 +85,8 @@ class Order extends Model
      */
     public function getDelivery()
     {
-        return \App\Models\Delivery::where('deliverable_type', 'order')
-            ->where('deliverable_id', $this->id)
+        return \App\Models\Delivery::where('deliverable_id', $this->id)
+            ->whereIn('deliverable_type', ['single', 'meal_plan'])
             ->first();
     }
 
