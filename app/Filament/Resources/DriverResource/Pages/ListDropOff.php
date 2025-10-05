@@ -2,24 +2,20 @@
 
 namespace App\Filament\Resources\DriverResource\Pages;
 
-use App\Filament\Resources\DriverResource;
 use App\Models\Order;
-use Filament\Actions;
+use App\Filament\Resources\DriverResource;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\Action as TableAction;
-use Livewire\Attributes\Url;
 use Carbon\Carbon;
 
 class ListDropOff extends ListRecords
@@ -27,12 +23,6 @@ class ListDropOff extends ListRecords
     protected static string $resource = DriverResource::class;
     protected static ?string $navigationLabel = 'Drop Off';
     protected static ?string $title = 'Drop Off';
-
-    #[Url]
-    public $orderIdFrom = '';
-
-    #[Url]
-    public $orderIdTo = '';
 
     public function table(Table $table): Table
     {
@@ -50,30 +40,34 @@ class ListDropOff extends ListRecords
                 if (isset($dateRangeFilter['range_type']) && $dateRangeFilter['range_type']) {
                     $params['date_range'] = $dateRangeFilter['range_type'];
 
-                    switch ($dateRangeFilter['range_type']) {
+                    switch($dateRangeFilter['range_type']){
                         case 'daily':
                             if (isset($dateRangeFilter['daily_date']) && $dateRangeFilter['daily_date']) {
                                 $params['daily_date'] = $dateRangeFilter['daily_date'];
                             }
                             break;
-                        case 'this_week':
+                        case 'custom':
                             if (isset($dateRangeFilter['start_date']) && $dateRangeFilter['start_date']) {
                                 $params['start_date'] = $dateRangeFilter['start_date'];
                             }
-                            break;
-                        case 'this_month':
                             if (isset($dateRangeFilter['end_date']) && $dateRangeFilter['end_date']) {
                                 $params['end_date'] = $dateRangeFilter['end_date'];
                             }
                             break;
-                            defaut:
+                        default:
+                            break;
                     }
                 }
             }
 
-            $statusFilter = $table->getTableFilterState('payment_status_id');
-            if ($statusFilter && isset($statusFilter['value']) && $statusFilter['value']) {
-                $params['payment_status_id'] = $statusFilter['value'];
+            $orderRangeFilter = $table->getTableFilterState('order_id_range');
+            if ($orderRangeFilter) {
+                if (isset($orderRangeFilter['order_id_from']) && $orderRangeFilter['order_id_from']) {
+                    $params['order_id_from'] = $orderRangeFilter['order_id_from'];
+                }
+                if (isset($orderRangeFilter['order_id_to']) && $orderRangeFilter['order_id_to']) {
+                    $params['order_id_to'] = $orderRangeFilter['order_id_to'];
+                }
             }
 
             $statusFilter = $table->getTableFilterState('status_id');
@@ -81,7 +75,7 @@ class ListDropOff extends ListRecords
                 $params['status_id'] = $statusFilter['value'];
             }
 
-            $customerFilter = $table->getTableFilterState('customer_id');
+            $customerFilter = $table->getTableFilterState('customer');
             if ($customerFilter && isset($customerFilter['value']) && $customerFilter['value']) {
                 $params['customer_id'] = $customerFilter['value'];
             }
@@ -104,7 +98,6 @@ class ListDropOff extends ListRecords
                     ->icon('heroicon-o-printer')
                     ->url(function () {
                         $params = filterParams($this);
-
                         return route('admin.order.print_dropoff', $params);
                     }, true),
             ])
@@ -112,23 +105,27 @@ class ListDropOff extends ListRecords
                 TextColumn::make('formatted_id')
                     ->label('Order No')
                     ->searchable(query: function (Builder $query, string $search): Builder {
-                        // If the search term starts with zeros, make it an exact match after stripping zeros
                         if (str_starts_with($search, '0')) {
                             $searchWithoutLeadingZeros = ltrim($search, '0');
                             return $query->where('id', '=', $searchWithoutLeadingZeros);
                         }
-                        // Otherwise, do a partial match
                         return $query->where('id', 'like', "%{$search}%");
                     })
                     ->sortable(),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
-                    ->dateTime('Y-m-d')
-                    ->sortable(),
+                    ->getStateUsing(function (Order $record): string {
+                        $delivery = $record->getDelivery();
+                        return $delivery && $delivery->delivery_date 
+                            ? $delivery->delivery_date->format(config('app.date_format')) 
+                            : '';
+                    })
+                    ->sortable(false),
                 TextColumn::make('dropoff_time')
                     ->label('DropOff Time')
                     ->state(function ($record) {
-                        return $record->dropoff_time ?: 'NULL';
+                        $delivery = $record->getDelivery();
+                        return $delivery && $delivery->dropoff_time ? $delivery->dropoff_time : 'NULL';
                     })
                     ->formatStateUsing(function ($state): string {
                         if ($state === 'NULL') {
@@ -149,18 +146,27 @@ class ListDropOff extends ListRecords
                                 TimePicker::make('dropoff_time')
                                     ->label('Dropoff Time')
                                     ->required()
-                                    ->seconds(false), // Don't include seconds
+                                    ->seconds(false),
                             ])
                             ->action(function (Order $record, array $data): void {
-                                $record->update(['dropoff_time' => $data['dropoff_time']]);
+                                $delivery = $record->getDelivery();
+                                if ($delivery) {
+                                    $delivery->update(['dropoff_time' => $data['dropoff_time']]);
+                                }
                             })
                             ->fillForm(fn(Order $record): array => [
-                                'dropoff_time' => $record->dropoff_time,
+                                'dropoff_time' => $record->getDelivery()?->dropoff_time,
                             ])
                     ),
                 TextColumn::make('arrival_time')
                     ->label('Arrival Time')
-                    ->dateTime('H:i A')
+                    ->getStateUsing(function (Order $record): string {
+                        $delivery = $record->getDelivery();
+                        if (!$delivery || !$delivery->arrival_time) {
+                            return '';
+                        }
+                        return date(config('app.time_format'), strtotime($delivery->arrival_time));
+                    })
                     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('Customer')
@@ -178,9 +184,17 @@ class ListDropOff extends ListRecords
                         );
                     })
                     ->html(),
-                TextColumn::make('driver.name')
+                TextColumn::make('driver_name')
                     ->label('Driver')
-                    ->searchable()
+                    ->getStateUsing(function (Order $record): string {
+                        $delivery = $record->getDelivery();
+                        if (!$delivery || !$delivery->driver_id) {
+                            return '';
+                        }
+                        return $delivery->driver->name;
+                    })
+                    ->searchable(false)
+                    ->sortable(false)
                     ->toggleable(true),
             ])
             ->filters([
@@ -217,26 +231,6 @@ class ListDropOff extends ListRecords
                             ->selectablePlaceholder(false)
                             ->visible(fn(callable $get) => $get('range_type') === 'daily')
                             ->required(fn(callable $get) => $get('range_type') === 'daily'),
-                        //->extraAttributes([
-                        //    'x-data' => '{ 
-                        //        rangeType: "today",
-                        //        toggleDateFields(type) {
-                        //            const startField = document.querySelector(".fi-fo-field-wrp:has(.from-date-field)");
-                        //            const endFie.d = document.querySelector(".fi-fo-field-wrp:has(.to-date-field)");
-                        //            if (startField && endField) {
-                        //                if (type === "custom") {
-                        //                    startField.style.display = "block";
-                        //                    endField.style.display = "block";
-                        //                } else {
-                        //                    startField.style.display = "none";
-                        //                    endField.style.display = "none";
-                        //                }
-                        //            }
-                        //        }
-                        //    }',
-                        //    'x-init' => '$nextTick(() => toggleDateFields(rangeType))',
-                        //    'x-on:change' => 'rangeType = $event.target.value; toggleDateFields(rangeType)'
-                        //]),
                         DatePicker::make('start_date')
                             ->label('From Date')
                             ->extraAttributes([
@@ -265,22 +259,30 @@ class ListDropOff extends ListRecords
                         return match ($rangeType) {
                             'daily' => $query->when(
                                 $data['daily_date'],
-                                fn(Builder $query) => $query->whereDate('delivery_date', Carbon::parse($data['daily_date']))
+                                fn(Builder $query) => $query->whereHas('deliveries', function($q) use ($data) {
+                                    $q->whereDate('delivery_date', Carbon::parse($data['daily_date']));
+                                })
                             ),
-                            'this_week' => $query->whereBetween('delivery_date', [
-                                Carbon::now()->startOfWeek(),
-                                Carbon::now()->endOfWeek()
-                            ]),
-                            'this_month' => $query->whereBetween('delivery_date', [
-                                Carbon::now()->startOfMonth(),
-                                Carbon::now()->endOfMonth()
-                            ]),
+                            'this_week' => $query->whereHas('deliveries', function($q) {
+                                $q->whereBetween('delivery_date', [
+                                    Carbon::now()->startOfWeek(),
+                                    Carbon::now()->endOfWeek()
+                                ]);
+                            }),
+                            'this_month' => $query->whereHas('deliveries', function($q) {
+                                $q->whereBetween('delivery_date', [
+                                    Carbon::now()->startOfMonth(),
+                                    Carbon::now()->endOfMonth()
+                                ]);
+                            }),
                             'custom' => $query->when(
                                 $data['start_date'] && $data['end_date'],
-                                fn(Builder $query) => $query->whereBetween('delivery_date', [
-                                    Carbon::parse($data['start_date'])->startOfDay(),
-                                    Carbon::parse($data['end_date'])->endOfDay()
-                                ])
+                                fn(Builder $query) => $query->whereHas('deliveries', function($q) use ($data) {
+                                    $q->whereBetween('delivery_date', [
+                                        Carbon::parse($data['start_date'])->startOfDay(),
+                                        Carbon::parse($data['end_date'])->endOfDay()
+                                    ]);
+                                })
                             ),
                             default => $query
                         };
@@ -324,41 +326,35 @@ class ListDropOff extends ListRecords
                                 fn(Builder $query, $value): Builder => $query->where('id', '<=', $value),
                             );
                     }),
-                //Tables\Filters\Filter::make('todays_dropoff')
-                //    ->label("Today's Drop Off")
-                //    ->toggle()
-                //    ->query(fn(Builder $query): Builder => $query->whereDate('delivery_date', now())),
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options([
                         1 => 'Active',
                         2 => 'Inactive',
                     ]),
-                SelectFilter::make('driver')
-                    ->relationship('driver', 'name'),
+                SelectFilter::make('driver_id')
+                    ->label('Driver')
+                    ->options(\App\Models\Driver::where('status_id', 1)->pluck('name', 'id'))
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'],
+                            fn (Builder $query, $value): Builder => $query->whereHas('deliveries', function (Builder $query) use ($value) {
+                                $query->where('driver_id', $value);
+                            })
+                        );
+                    }),
                 SelectFilter::make('customer')
                     ->relationship('customer', 'name'),
             ])
-            ->defaultSort('delivery_date', 'desc');
-        // Removed separate actions column as requested
+            ->defaultSort('id', 'desc');
     }
 
     protected function query(): Builder
     {
         $query = Order::query()
-            ->with(['customer', 'driver'])
-            ->whereNotNull('dropoff_time')
-            ->orderBy('delivery_date', 'desc')
-            ->orderBy('dropoff_time', 'desc');
-
-        //if (!empty($this->orderIdFrom)) {
-        //    $query->where('id', '>=', $this->orderIdFrom);
-        //}
-
-        //if (!empty($this->orderIdTo)) {
-        //    $query->where('id', '<=', $this->orderIdTo);
-        //}
-
+            ->with(['invoice', 'customer', 'deliveries.driver'])
+            ->whereHas('deliveries')
+            ->whereIn('status_id', [1, 2]);
         return $query;
     }
 

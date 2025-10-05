@@ -3,6 +3,8 @@
 namespace App\Filament\Pages\Order;
 
 use App\Models\Order;
+use App\Models\Invoice;
+
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -19,7 +21,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
-use App\Models\Invoice;
 
 class ListOrder extends Page implements HasTable
 {

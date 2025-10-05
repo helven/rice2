@@ -47,7 +47,20 @@ class Delivery extends Model
     // Polymorphic relationship to Order or MealPlan
     public function deliverable(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo()->withDefault();
+    }
+
+    // Direct relationships for easier querying
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'deliverable_id')
+            ->where('deliverable_type', 'order');
+    }
+
+    public function mealPlan(): BelongsTo
+    {
+        return $this->belongsTo(MealPlan::class, 'deliverable_id')
+            ->where('deliverable_type', 'meal_plan');
     }
 
     // Relationships
@@ -99,6 +112,4 @@ class Delivery extends Model
 
         return 'D' . $year . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
-
-
 }

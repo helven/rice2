@@ -67,7 +67,8 @@ class Order extends Model
 
     public function deliveries()
     {
-        return $this->morphMany(Delivery::class, 'deliverable');
+        return $this->hasMany(Delivery::class, 'deliverable_id')
+            ->where('deliverable_type', 'order');
     }
 
     /**
