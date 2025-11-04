@@ -210,12 +210,6 @@ class ListOrder extends Page implements HasTable
                                     ->native()
                                     ->selectablePlaceholder(false)
                                     ->required()
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        if ((string)$state === 3) {
-                                            $set('payment_method_id', null);
-                                        }
-                                    })
                                     ->options([
                                         3 => 'Unpaid',
                                         4 => 'Paid',

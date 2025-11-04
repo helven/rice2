@@ -23,6 +23,7 @@ return new class extends Migration
             $table->id();
             $table->integer('status_id')->default(1);
             $table->string('name')->default('');
+            $table->integer('payment_method_id')->default(0);
             $table->timestamps();
 
             $table->index('status_id');

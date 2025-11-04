@@ -129,7 +129,7 @@ trait OrderFormTrait
                 })
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     if ($state) {
-                        $address = CustomerAddressBook::with(['driver', 'backup_driver'])->find($state);
+                        $address = CustomerAddressBook::with(['driver', 'backup_driver', 'mall'])->find($state);
                         if ($address) {
                             // Clear existing driver data first
                             $set('driver_id', null);
@@ -146,6 +146,23 @@ trait OrderFormTrait
 
                             if ($address->backup_driver_id) {
                                 $set('backup_driver_id', $address->backup_driver_id);
+                            }
+                            
+                            // Handle payment method based on mall_id
+                            if ($address->mall_id && $address->mall_id != 0) {
+                                // Mall has higher priority - use mall's payment method
+                                if ($address->mall && $address->mall->payment_method_id) {
+                                    $set('payment_method_id', $address->mall->payment_method_id);
+                                }
+                            } else {
+                                // No mall or mall_id is 0 - use customer's payment method
+                                $customerId = $get('customer_id');
+                                if ($customerId) {
+                                    $customer = Customer::find($customerId);
+                                    if ($customer && $customer->payment_method_id) {
+                                        $set('payment_method_id', $customer->payment_method_id);
+                                    }
+                                }
                             }
                         }
                     } else {

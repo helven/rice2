@@ -85,6 +85,11 @@ class ListDropOff extends ListRecords
                 $params['driver_id'] = $driverFilter['value'];
             }
 
+            $paymentStatusFilter = $table->getTableFilterState('payment_status_id');
+            if ($paymentStatusFilter && isset($paymentStatusFilter['value']) && $paymentStatusFilter['value']) {
+                $params['payment_status_id'] = $paymentStatusFilter['value'];
+            }
+
             return $params;
         }
 
@@ -164,8 +169,29 @@ class ListDropOff extends ListRecords
                     ->sortable(),
                 TextColumn::make('order.customer.name')
                     ->label('Customer')
+                    ->formatStateUsing(function ($record) {
+                        $paymentStatusId = $record->order->payment_status_id;
+                        $paymentStatus = $record->order->payment_status?->label ?? '';
+                        $color = $paymentStatusId === 4 ? 'success' : ($paymentStatusId === 3 ? 'warning' : 'gray');
+                        $colorClass = match($color) {
+                            'success' => 'text-custom-600 dark:text-custom-400',
+                            'warning' => 'text-custom-600 dark:text-custom-400',
+                            default => 'text-gray-500'
+                        };
+                        $colorstyle = match($color) {
+                            'success' => '--c-400:var(--success-400);--c-600:var(--success-600);',
+                            'warning' => '--c-400:var(--warning-400);--c-600:var(--warning-600);',
+                            default => ''
+                        };
+
+                        return new HtmlString(
+                            e($record->order->customer->name) . '<br />' . 
+                            '<span class="text-xs ' . $colorClass . '" style="' . $colorstyle . '">' . e($paymentStatus) . '</span>'
+                        );
+                    })
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->html(),
                 TextColumn::make('address.name')
                     ->label('Delivery Location')
                     ->formatStateUsing(function ($record) {
@@ -342,7 +368,21 @@ class ListDropOff extends ListRecords
                     ->label('Driver')
                     ->options(\App\Models\Driver::where('status_id', 1)->pluck('name', 'id')),
                 SelectFilter::make('customer')
-                    ->relationship('order.customer', 'name')
+                    ->relationship('order.customer', 'name'),
+                SelectFilter::make('payment_status_id')
+                    ->label('Payment Status')
+                    ->options([
+                        3 => 'Unpaid',
+                        4 => 'Paid',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'],
+                            fn (Builder $query, $value): Builder => $query->whereHas('order', function (Builder $query) use ($value) {
+                                $query->where('payment_status_id', $value);
+                            })
+                        );
+                    })
             ])
             ->defaultSort('id', 'desc');
     }
@@ -350,7 +390,7 @@ class ListDropOff extends ListRecords
     protected function query(): Builder
     {
         return \App\Models\Delivery::query()
-            ->with(['order.customer', 'address', 'driver'])
+            ->with(['order.customer', 'order.payment_status', 'address', 'driver'])
             ->whereHas('order', function($q) {
                 $q->whereIn('status_id', [1, 2]);
             });
