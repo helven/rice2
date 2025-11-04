@@ -21,3 +21,6 @@ yarn-error.log
 /.vscode
 /.zed
 /.ignore
+.amazonq
+db migration.bat
+rename migration.bat
