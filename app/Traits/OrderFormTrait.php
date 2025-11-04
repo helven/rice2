@@ -32,8 +32,12 @@ trait OrderFormTrait
             ->default(0)
             ->minValue(0)
             ->maxValue(1000)
-            ->live()
-            ->afterStateUpdated(fn($state, $set, $get) => $this->calculateTotalAmountByMealQty($set, $get))
+            ->extraInputAttributes([
+                'data-id' => $name,
+                'data-class' => 'meal-qty',
+                'onchange' => 'handleMealQtyChange(this)',
+                'onkeyup' => 'handleMealQtyChange(this)'
+            ])
             ->rules(['required', 'integer', 'min:0', 'max:1000']);
     }
 
@@ -42,6 +46,9 @@ trait OrderFormTrait
         return Grid::make(2)->schema([
             Select::make('customer_id')
                 ->label('Customer Name')
+                ->extraInputAttributes([
+                    'data-id' => 'customer_id'
+                ])
                 ->placeholder('Select Customer')
                 ->required()
                 ->searchable()
@@ -84,6 +91,9 @@ trait OrderFormTrait
 
             Select::make('address_id')
                 ->label('Delivery Location')
+                ->extraInputAttributes([
+                    'data-id' => 'address_id'
+                ])
                 ->placeholder('Select Company or City')
                 ->required()
                 ->searchable()
@@ -158,6 +168,9 @@ trait OrderFormTrait
         return Grid::make(2)->schema([
             Select::make('payment_status_id')
                 ->label('Payment Status')
+                ->extraInputAttributes([
+                    'data-id' => 'payment_status_id'
+                ])
                 ->placeholder('Select Payment Status')
                 ->required()
                 ->searchable()
@@ -168,6 +181,9 @@ trait OrderFormTrait
 
             Select::make('payment_method_id')
                 ->label('Payment Method')
+                ->extraInputAttributes([
+                    'data-id' => 'payment_method_id'
+                ])
                 ->placeholder('Select Payment Method')
                 ->required()
                 ->searchable()
@@ -182,6 +198,9 @@ trait OrderFormTrait
         return Grid::make(2)->schema([
             Select::make('driver_id')
                 ->label('Driver')
+                ->extraInputAttributes([
+                    'data-id' => 'driver_id'
+                ])
                 ->placeholder('Select Driver')
                 ->required()
                 ->searchable()
@@ -195,6 +214,9 @@ trait OrderFormTrait
 
             Select::make('driver_route')
                 ->label('Route')
+                ->extraInputAttributes([
+                    'data-id' => 'driver_route'
+                ])
                 ->placeholder('Select Route')
                 ->required()
                 ->searchable()
@@ -221,6 +243,9 @@ trait OrderFormTrait
         return Grid::make(2)->schema([
             Select::make('backup_driver_id')
                 ->label('Backup Driver')
+                ->extraInputAttributes([
+                    'data-id' => 'backup_driver_id'
+                ])
                 ->placeholder('Select Backup Driver')
                 ->searchable()
                 ->preload()
@@ -234,6 +259,9 @@ trait OrderFormTrait
     {
         return Select::make('meal_id')
             ->label('Meal')
+            ->extraInputAttributes([
+                'data-id' => 'meal_id'
+            ])
             ->placeholder('Select Meal')
             ->required()
             ->searchable()
@@ -302,6 +330,9 @@ trait OrderFormTrait
             ->schema([
                 Grid::make(2)->schema([
                     DateTimePicker::make('arrival_time')
+                        ->extraInputAttributes([
+                            'data-id' => 'payment_status_id'
+                        ])
                         ->withoutDate()
                         ->label('Arrival Time')
                         ->placeholder('Select Arrival Time')
@@ -314,6 +345,9 @@ trait OrderFormTrait
                 $this->getDriverGrid(),
                 $this->getBackupDriverGrid(),
                 Textarea::make('driver_notes')
+                    ->extraInputAttributes([
+                        'data-id' => 'driver_notes'
+                    ])
                     ->label('Notes')
                     ->rows(5)
                     ->live()
@@ -324,6 +358,9 @@ trait OrderFormTrait
     {
         return Repeater::make('meals')
             ->label('Meals')
+            ->extraAttributes([
+                'data-id' => 'meals'
+            ])
             ->defaultItems(1)
             ->reorderable(false)
             ->deletable(true)
@@ -348,24 +385,21 @@ trait OrderFormTrait
     {
         return TextInput::make('total_amount')
             ->label('Total')
+            ->extraInputAttributes([
+                'data-id' => 'total_amount'
+            ])
             ->placeholder('0.00')
             ->numeric()
             ->default(0.00)
             ->prefix('RM')
-            ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/'])
-            ->live()
-            ->afterStateUpdated(function ($state, callable $set) {
-                $state = (int)ltrim($state, '0') ?: 0;
-                $set('total_amount', $state);
-            });
+            ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/']);
     }
 
     protected function getNotesField(): Textarea
     {
         return Textarea::make('notes')
             ->label('Notes')
-            ->rows(5)
-            ->live();
+            ->rows(5);
     }
 
     protected function getOrderInformationSection(): Section
@@ -445,14 +479,21 @@ trait OrderFormTrait
         if (isset($formData['meals_by_date'])) {
             // CreateOrder logic - handle meals_by_date structure
             $currentItem = $get('../../');  // Go up to the meals_by_date item level
+            
+            \Log::info('Debug calculateTotalAmountByMealQty', [
+                'currentItem' => $currentItem,
+                'has_date' => isset($currentItem['date']),
+                'date_value' => $currentItem['date'] ?? 'NOT SET'
+            ]);
 
-            if (!isset($currentItem['date']) || !isset($formData['meals_by_date'])) {
+            if (empty($currentItem['date']) || !isset($formData['meals_by_date'])) {
+                \Log::info('Exiting early - no date or no meals_by_date');
                 return;
             }
 
             // Find the current date item and calculate total for its meals
-            foreach ($formData['meals_by_date'] as $index => &$dateItem) {
-                if ($dateItem['date'] === $currentItem['date']) {
+            foreach ($formData['meals_by_date'] as $index => $dateItem) {
+                if (isset($dateItem['date']) && isset($currentItem['date']) && $dateItem['date'] === $currentItem['date']) {
                     $meals = $dateItem['meals'] ?? [];
 
                     // Calculate total quantity for all meals in this date
@@ -469,11 +510,8 @@ trait OrderFormTrait
                     $mealPrice = config('app.meal_price', 8.00);
                     $totalAmount = $totalMeals * $mealPrice;
 
-                    // Update the total_amount for this date
-                    $dateItem['total_amount'] = number_format($totalAmount, 2);
-
-                    // Refill the form with updated data
-                    $this->form->fill($formData);
+                    // Update only the total_amount field for this date
+                    $set('../../total_amount', number_format($totalAmount, 2));
                     break;
                 }
             }
@@ -494,9 +532,8 @@ trait OrderFormTrait
             $mealPrice = config('app.meal_price', 8.00);
             $totalAmount = $totalMeals * $mealPrice;
             
-            // Update the form data and refill
-            $formData['total_amount'] = number_format($totalAmount, 2);
-            $this->form->fill($formData);
+            // Update only the total_amount field
+            $set('total_amount', number_format($totalAmount, 2));
         }
     }
 

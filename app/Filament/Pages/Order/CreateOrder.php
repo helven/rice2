@@ -137,7 +137,9 @@ class CreateOrder extends Page
                             // Create a lookup array for existing dates
                             $existingDateLookup = [];
                             foreach ($existingMealsByDate as $existingItem) {
-                                $existingDateLookup[$existingItem['date']] = $existingItem;
+                                if (isset($existingItem['date'])) {
+                                    $existingDateLookup[$existingItem['date']] = $existingItem;
+                                }
                             }
 
                             $meals_by_date = [];
@@ -175,6 +177,7 @@ class CreateOrder extends Page
 
             Repeater::make('meals_by_date')
                 ->label('')
+                ->extraAttributes(['data-id' => 'meals_by_date'])
                 ->reorderable(false)
                 ->deletable(true)
                 ->addable(false)
@@ -276,8 +279,8 @@ class CreateOrder extends Page
 
             // Create an order for each date
             foreach ($data['meals_by_date'] as $date => $dateData) {
-                // Skip if no meals for this date
-                if (empty($dateData['meals'])) {
+                // Skip if no date or no meals for this date
+                if (empty($dateData['date']) || empty($dateData['meals'])) {
                     continue;
                 }
 
@@ -471,12 +474,6 @@ class CreateOrder extends Page
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
     }
-
-
-
-
-
-
 
     private function fillDevData(): void
     {

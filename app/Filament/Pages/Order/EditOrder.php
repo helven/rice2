@@ -129,6 +129,7 @@ class EditOrder extends Page
                 
             Section::make('Add Order')
                 ->collapsible()
+                ->extraAttributes(['data-id' => 'meals_by_date'])
                 ->schema([
                     $this->getMealsRepeater(),
                     $this->getTotalAmountField(),

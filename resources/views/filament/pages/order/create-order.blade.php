@@ -2,6 +2,35 @@
     <script>
         // Global variable to store disabled dates
         let disabledDates = [];
+        const MEAL_PRICE = {{ config('app.meal_price', 8.00) }};
+        
+        function handleMealQtyChange(input) {
+            // Find the meals repeater container
+            const mealRepeater = input.closest('[data-id="meals"]');console.log(mealRepeater)
+            if (!mealRepeater) return;
+            
+            // Find all quantity inputs in this meal repeater
+            const quantities = mealRepeater.querySelectorAll('input[data-class="meal-qty"]');
+            let total = 0;
+            
+            quantities.forEach(qty => {
+                const val = parseInt(qty.value) || 0;
+                total += val;
+            });
+            
+            // Calculate total amount
+            const totalAmount = (total * MEAL_PRICE).toFixed(2);
+            
+            // Find the total_amount field in the parent container
+            const parentContainer = mealRepeater.closest('[data-id="meals_by_date"]');
+            if (parentContainer) {
+                const totalField = parentContainer.querySelector('input[data-id="total_amount"]');
+                if (totalField) {
+                    totalField.value = totalAmount;
+                    totalField.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        }
         
         function findTableCellByText(container, labelText) {
             const rows = container.querySelectorAll('tr');
