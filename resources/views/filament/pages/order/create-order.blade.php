@@ -5,12 +5,17 @@
         const MEAL_PRICE = {{ config('app.meal_price', 8.00) }};
         
         function handleMealQtyChange(input) {
-            // Find the meals repeater container
-            const mealRepeater = input.closest('[data-id="meals"]');console.log(mealRepeater)
-            if (!mealRepeater) return;
+            // Find the meals container
+            const mealsContainer = input.closest('[data-id="meals"]');
+            const mealContainer = mealsContainer.querySelector('li');
+            if (!mealsContainer || !mealContainer) return;
+
+            // Find the order container
+            const orderContainer = mealsContainer.closest('li');
+            if (!orderContainer) return;
             
             // Find all quantity inputs in this meal repeater
-            const quantities = mealRepeater.querySelectorAll('input[data-class="meal-qty"]');
+            const quantities = orderContainer.querySelectorAll('input[data-class="meal-qty"]');
             let total = 0;
             
             quantities.forEach(qty => {
@@ -19,12 +24,11 @@
             });
             
             // Calculate total amount
-            const totalAmount = (total * MEAL_PRICE).toFixed(2);
+            const totalAmount = (total * MEAL_PRICE).toFixed(2);console.log(totalAmount)
             
             // Find the total_amount field in the parent container
-            const parentContainer = mealRepeater.closest('[data-id="meals_by_date"]');
-            if (parentContainer) {
-                const totalField = parentContainer.querySelector('input[data-id="total_amount"]');
+            if (orderContainer) {
+                const totalField = orderContainer.querySelector('input[data-id="total_amount"]');
                 if (totalField) {
                     totalField.value = totalAmount;
                     totalField.dispatchEvent(new Event('input', { bubbles: true }));
