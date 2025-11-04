@@ -24,3 +24,6 @@ yarn-error.log
 .amazonq
 db migration.bat
 rename migration.bat
+.env
+.env.example
+vendor.zip
