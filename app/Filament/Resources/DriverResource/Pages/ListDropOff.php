@@ -177,11 +177,12 @@ class ListDropOff extends ListRecords
                                 e($record->address->address_1) . ', ' . e($record->address->city)
                         );
                     })
+                    ->sortable()
                     ->html(),
                 TextColumn::make('driver.name')
                     ->label('Driver')
                     ->searchable(false)
-                    ->sortable(false)
+                    ->sortable()
                     ->toggleable(true),
             ])
             ->filters([
