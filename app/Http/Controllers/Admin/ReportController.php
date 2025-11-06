@@ -36,38 +36,90 @@ class ReportController extends AdminController
         if (request()->has('date_range') && !empty(request()->get('date_range'))) {
             switch (request()->get('date_range')) {
                 case 'daily':
-                    $query->where('delivery_date', '>=', date('Y-m-d 00:00:00', strtotime(request()->get('daily_date'))));
-                    $query->where('delivery_date', '<=', date('Y-m-d 23:59:59', strtotime(request()->get('daily_date'))));
+                    $query->where('orders.order_date', '>=', date('Y-m-d 00:00:00', strtotime(request()->get('daily_date'))));
+                    $query->where('orders.order_date', '<=', date('Y-m-d 23:59:59', strtotime(request()->get('daily_date'))));
                     break;
                 case 'monthly':
                     $month = request()->get('month');
-                    $query->where('delivery_date', '>=', date('Y-m-01', strtotime($month)));
-                    $query->where('delivery_date', '<=', date('Y-m-t', strtotime($month)));
+                    $query->where('orders.order_date', '>=', date('Y-m-01', strtotime($month)));
+                    $query->where('orders.order_date', '<=', date('Y-m-t', strtotime($month)));
                     break;
                 case 'this_week':
-                    $query->where('delivery_date', '>=', date('Y-m-d', strtotime('last sunday')));
-                    $query->where('delivery_date', '<=', date('Y-m-d', strtotime('next sunday')));
+                    $query->where('orders.order_date', '>=', date('Y-m-d', strtotime('last sunday')));
+                    $query->where('orders.order_date', '<=', date('Y-m-d', strtotime('next sunday')));
                     break;
                 case 'this_month':
-                    $query->where('delivery_date', '>=', date('Y-m-01'));
-                    $query->where('delivery_date', '<=', date('Y-m-d'));
+                    $query->where('orders.order_date', '>=', date('Y-m-01'));
+                    $query->where('orders.order_date', '<=', date('Y-m-d'));
                     break;
                 case 'custom':
-                    $query->where('delivery_date', '>=', request()->get('start_date'));
-                    $query->where('delivery_date', '<=', request()->get('end_date'));
+                    $query->where('orders.order_date', '>=', request()->get('start_date'));
+                    $query->where('orders.order_date', '<=', request()->get('end_date'));
                     break;
             }
         }
 
+        if (request()->has('delivery_date') && !empty(request()->get('delivery_date'))) {
+            $query->where('orders.order_date', request()->get('delivery_date'));
+        }
+    }
+
+    /**
+     * Apply common filters to delivery query
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return void
+     */
+    private function applyDeliveryFilters($query)
+    {
+        if (request()->has('date_range') && !empty(request()->get('date_range'))) {
+            switch (request()->get('date_range')) {
+                case 'daily':
+                    $query->where('deliveries.delivery_date', '>=', date('Y-m-d 00:00:00', strtotime(request()->get('daily_date'))));
+                    $query->where('deliveries.delivery_date', '<=', date('Y-m-d 23:59:59', strtotime(request()->get('daily_date'))));
+                    break;
+                case 'monthly':
+                    $month = request()->get('month');
+                    $query->where('deliveries.delivery_date', '>=', date('Y-m-01', strtotime($month)));
+                    $query->where('deliveries.delivery_date', '<=', date('Y-m-t', strtotime($month)));
+                    break;
+                case 'this_week':
+                    $query->where('deliveries.delivery_date', '>=', date('Y-m-d', strtotime('last sunday')));
+                    $query->where('deliveries.delivery_date', '<=', date('Y-m-d', strtotime('next sunday')));
+                    break;
+                case 'this_month':
+                    $query->where('deliveries.delivery_date', '>=', date('Y-m-01'));
+                    $query->where('deliveries.delivery_date', '<=', date('Y-m-d'));
+                    break;
+                case 'custom':
+                    $query->where('deliveries.delivery_date', '>=', request()->get('start_date'));
+                    $query->where('deliveries.delivery_date', '<=', request()->get('end_date'));
+                    break;
+            }
+        }
+
+        if (request()->has('delivery_date') && !empty(request()->get('delivery_date'))) {
+            $query->where('deliveries.delivery_date', request()->get('delivery_date'));
+        }
+    }
+
+    /**
+     * Apply common filters to delivery query
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return void
+     */
+    private function applyGeneralFilters($query)
+    {
         // Driver ID filter
         if (request()->has('driver_id') && !empty(request()->get('driver_id'))) {
             if (is_array(request()->get('driver_id'))) {
                 $driverIds = array_filter(request()->get('driver_id'));
                 if (!empty($driverIds)) {
-                    $query->whereIn('driver_id', $driverIds);
+                    $query->whereIn('deliveries.driver_id', $driverIds);
                 }
             } else {
-                $query->where('driver_id', request()->get('driver_id'));
+                $query->where('deliveries.driver_id', request()->get('driver_id'));
             }
         }
 
@@ -87,10 +139,6 @@ class ReportController extends AdminController
 
             $query->whereBetween('id', [$startOrder, $endOrder]);
         }
-
-        if (request()->has('delivery_date') && !empty(request()->get('delivery_date'))) {
-            $query->where('delivery_date', request()->get('delivery_date'));
-        }
     }
 
     /**
@@ -103,19 +151,23 @@ class ReportController extends AdminController
         $query = Order::query();
 
         $query
+            ->whereHas('deliveries', function($q) {
+                $this->applyOrderFilters($q);
+                $this->applyGeneralFilters($q);
+            })
             ->with([
-                'driver',
                 'customer',
-                'address.mall',
-                'address.area'
-            ])
-            ->orderBy('arrival_time')
-            ->orderBy('id')
-            ->orderBy('address_id');
-
-        $this->applyOrderFilters($query);
+                'deliveries' => function($q) {
+                    $q->orderBy('id')->limit(1);
+                },
+                'deliveries.driver',
+                'deliveries.address.mall',
+                'deliveries.address.area',
+                'payment_method'
+            ]);
 
         $ordersList = $query->get();
+        //dd($ordersList->toArray());
 
         // SPLIT list by payment method
         $this->vData['daily_sales_list'] = array();
@@ -124,7 +176,7 @@ class ReportController extends AdminController
             if ($paymentMethod == '') {
                 $paymentMethod = 'NULL_METHOD';
             }
-            $this->vData['daily_sales_list']['date_'.date('Ymd', strtotime($order->delivery_date))]['payment_' . $paymentMethod][]  = $order;
+            $this->vData['daily_sales_list']['date_'.date('Ymd', strtotime($order->created_at))]['payment_' . $paymentMethod][]  = $order;
             //$this->vData['daily_sales_list']['payment_' . $paymentMethod][]  = $order;
         }
             //dd($this->vData['daily_sales_list']);
@@ -142,18 +194,19 @@ class ReportController extends AdminController
         $query = Order::query();
 
         $query
+            ->whereHas('deliveries', function($q) {
+                $this->applyOrderFilters($q);
+            })
             ->with([
-                'driver',
                 'customer',
-                'address.mall',
-                'address.area',
+                'deliveries' => function($q) {
+                    $q->orderBy('id')->limit(1);
+                },
+                'deliveries.driver',
+                'deliveries.address.mall',
+                'deliveries.address.area',
                 'meals.meal'
-            ])
-            ->orderBy('arrival_time')
-            ->orderBy('id')
-            ->orderBy('address_id');
-
-        $this->applyOrderFilters($query);
+            ]);
 
         $ordersList = $query->get();
 
@@ -187,18 +240,19 @@ class ReportController extends AdminController
         $query = Order::query();
 
         $query
+            ->whereHas('deliveries', function($q) {
+                $this->applyOrderFilters($q);
+            })
             ->with([
-                'driver',
                 'customer',
-                'address.mall',
-                'address.area',
+                'deliveries' => function($q) {
+                    $q->orderBy('id')->limit(1);
+                },
+                'deliveries.driver',
+                'deliveries.address.mall',
+                'deliveries.address.area',
                 'payment_method'
-            ])
-            ->orderBy('arrival_time')
-            ->orderBy('id')
-            ->orderBy('address_id');
-
-        $this->applyOrderFilters($query);
+            ]);
 
         $ordersList = $query->get();
 

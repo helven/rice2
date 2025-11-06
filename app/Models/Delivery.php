@@ -13,7 +13,6 @@ class Delivery extends Model
 
     protected $fillable = [
         'delivery_no',
-        'deliverable_type',
         'deliverable_id',
         'customer_id',
         'address_id',
@@ -43,10 +42,6 @@ class Delivery extends Model
         'delivery_date' => 'date',
         'delivery_proof' => 'array',
     ];
-
-
-
-
 
     // Simple relationship to Order (regardless of type)
     public function order(): BelongsTo

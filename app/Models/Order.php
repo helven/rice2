@@ -54,6 +54,22 @@ class Order extends Model
         return $delivery ? CustomerAddressBook::find($delivery->address_id) : null;
     }
 
+    /**
+     * Get driver from delivery record
+     */
+    public function getDriverAttribute()
+    {
+        return $this->deliveries->first()?->driver;
+    }
+
+    /**
+     * Get arrival_time from delivery record
+     */
+    public function getArrivalTimeAttribute()
+    {
+        return $this->deliveries->first()?->arrival_time;
+    }
+
 
 
     public function meals(): HasMany
@@ -68,8 +84,7 @@ class Order extends Model
 
     public function deliveries()
     {
-        return $this->hasMany(Delivery::class, 'deliverable_id')
-            ->whereIn('deliverable_type', ['single', 'meal_plan']);
+        return $this->hasMany(Delivery::class, 'deliverable_id');
     }
 
     /**
@@ -85,9 +100,7 @@ class Order extends Model
      */
     public function getDelivery()
     {
-        return \App\Models\Delivery::where('deliverable_id', $this->id)
-            ->whereIn('deliverable_type', ['single', 'meal_plan'])
-            ->first();
+        return \App\Models\Delivery::where('deliverable_id', $this->id)->first();
     }
 
 
@@ -226,10 +239,7 @@ class Order extends Model
     {
         // Use deliveries table for address filtering
         $query = self::select('orders.id')
-            ->join('deliveries', function($join) {
-                $join->on('orders.id', '=', 'deliveries.deliverable_id')
-                     ->where('deliveries.deliverable_type', '=', 'order');
-            })
+            ->join('deliveries', 'orders.id', '=', 'deliveries.deliverable_id')
             ->join('customer_address_books', 'deliveries.address_id', '=', 'customer_address_books.id')
             ->where('customer_address_books.mall_id', $mallId)
             ->whereDate('deliveries.delivery_date', $deliveryDate);

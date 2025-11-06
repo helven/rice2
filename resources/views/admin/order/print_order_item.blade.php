@@ -1,4 +1,4 @@
-<div id="div_Order-{{ $order->id }}" class="print_data order-<?php echo ($page_item_ctr + 1); ?>">
+<div id="div_Order-{{ $order->id }}" class="print_data order-<?php echo ($pageItemCtr + 1); ?>">
     <div class="row">
         <div class="order_no">(Order No) <b style="margin-left:10px;">{{ $order->formattedId }}</b></div>
     </div>

@@ -23,12 +23,12 @@ return new class extends Migration
             $table->id();
             $table->string('order_no', 50)->default('');
             $table->enum('order_type', ['single', 'meal_plan']);
+            $table->date('order_date')->nullable();
             $table->unsignedInteger('customer_id')->default(0);
             //$table->unsignedInteger('address_id')->default(0);
             $table->integer('status_id')->default(1);
             $table->integer('payment_status_id')->default(3);
             $table->integer('payment_method_id')->default(0);
-            //$table->date('delivery_date')->nullable();
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->decimal('delivery_fee', 10, 2)->default(0);
             $table->text('notes')->nullable();
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('status_id');
-            //$table->index('delivery_date');
+            $table->index('order_date');
         });
     }
 

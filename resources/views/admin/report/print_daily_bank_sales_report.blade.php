@@ -15,7 +15,7 @@
                 <div id="div_Payment-{{ $orders_list[0]->payment_method->id }}" class="print_payment">
                     <div class="heading">
                         <h3>@lang('Online Order Daily Sales Report')</h3>
-                        <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($orders_list[0]->delivery_date)) }}
+                        <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($orders_list[0]->created_at)) }}
                         <b style="margin-left:20px;">@lang('Payment'):</b> {{ $orders_list[0]->payment_method->name }}
                     </div>
                     
@@ -46,7 +46,7 @@
                             <div id="div_Payment-{{ $order->payment_method->id }}" class="print_payment">
                                 <div class="heading">
                                     <h3>@lang('Sales Online Order Daily Report')</h3>
-                                    <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($order->delivery_date)) }}
+                                    <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($order->created_at)) }}
                                     <b style="margin-left:20px;">@lang('Payment'):</b> {{ $order->payment_method->name }}
                                 </div>
                                 <table class="order_detail" border="0" cellspacing="0" cellpadding="0">
@@ -81,7 +81,7 @@
 
                 <?php ob_start();?>
                     <tr>
-                        <td>{{ date('d/m/Y', strtotime($orders_list[0]->delivery_date)) }}</td>
+                        <td>{{ date('d/m/Y', strtotime($orders_list[0]->created_at)) }}</td>
                         <td>{{ $orders_list[0]->payment_method->name }}</td>
                         <td>{{ format_currency($payment_method_total_amount) }}</td>
                     </tr>

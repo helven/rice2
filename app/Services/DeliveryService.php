@@ -109,7 +109,6 @@ class DeliveryService
         }
         
         return Delivery::create(array_merge($deliveryFields, [
-            'deliverable_type' => 'single',
             'deliverable_id' => $order->id,
         ]));
     }

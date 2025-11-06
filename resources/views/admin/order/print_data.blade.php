@@ -1,25 +1,25 @@
 @extends('admin.layouts.print')
 @section('content')
-<?php if (!$orders_list) { ?>
+<?php if (!$deliveriesList) { ?>
     <div class="print_page_title">No Order found.</div>
 <?php } else { ?>
     <div class="print_page_title">Order Sheet, please select <b>Portrait</b>, A4 paper for best printing result</div>
-    <?php $order_per_page = 4; ?>
-    <?php $page_ctr = 0; ?>
-    <?php $page_item_ctr = 0; ?>
-    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
-        <?php foreach ($orders_list as $order) { ?>
-            <?php if ($page_item_ctr >= $order_per_page) { ?>
-                <?php $page_item_ctr = 0; ?>
-                <?php $page_ctr++; ?>
+    <?php $orderPerPage = 4; ?>
+    <?php $pageCtr = 0; ?>
+    <?php $pageItemCtr = 0; ?>
+    <div id="div_Page-<?php echo ($pageCtr + 1); ?>" class="print_page_portrait">
+        <?php foreach ($deliveriesList  as $delivery) { ?>
+            <?php if ($pageItemCtr >= $orderPerPage) { ?>
+                <?php $pageItemCtr = 0; ?>
+                <?php $pageCtr++; ?>
                 </div>
                 <div class="print_pagebreak"></div>
-                <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
+                <div id="div_Page-<?php echo ($pageCtr + 1); ?>" class="print_page_portrait">
             <?php } ?>
 
-            @include('admin.order.partials.print_data_order_item', ['order' => $order, 'page_item_ctr' => $page_item_ctr])
+            @include('admin.order.partials.print_data_order_item', ['delivery' => $delivery, 'pageItemCtr' => $pageItemCtr])
 
-            <?php $page_item_ctr++; ?>
+            <?php $pageItemCtr++; ?>
         <?php } ?>
     </div>
 <?php } ?>
