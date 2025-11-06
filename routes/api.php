@@ -29,7 +29,6 @@ Route::get('/orders/existing-delivery-dates', function (Request $request) {
     
     // Then get deliveries for those orders with matching address_id
     $existingDates = \App\Models\Delivery::whereIn('deliverable_id', $orderIds)
-        ->where('deliverable_type', 'order')
         ->where('address_id', $addressId)
         ->whereNotNull('delivery_date')
         ->pluck('delivery_date')

@@ -262,13 +262,14 @@ class CreateOrder extends Page
 
     protected function createOrder(bool $createAnother = false)
     {
-        // Validate the form data
+        // Get form state (this also validates)
         $data = $this->form->getState();
 
-        $this->validate(array_merge($this->getCommonValidationRules(), [
-            'data.delivery_date' => ['required', 'string'],
+        // Additional validation
+        $this->validate([
+            'data.delivery_date' => ['required'],
             'data.meals_by_date' => ['required', 'array', 'min:1'],
-        ]));
+        ]);
 
         try {
             // Begin transaction
@@ -293,6 +294,7 @@ class CreateOrder extends Page
                 // Create order with customer and financial data only
                 $order = \App\Models\Order::create([
                     'order_type' => 'single',
+                    'order_date' => $dateData['date'],
                     'customer_id' => $data['customer_id'],
                     'payment_status_id' => $data['payment_status_id'],
                     'payment_method_id' => $data['payment_method_id'],
@@ -504,7 +506,7 @@ class CreateOrder extends Page
             'driver_notes' => 'Sample driver notes',
         ];
 
-        $days = 3;
+        $days = 1;
         $startDate = \Carbon\Carbon::today();
         $dates = [];
         for ($i = 0; $i < $days; $i++) {
@@ -528,8 +530,15 @@ class CreateOrder extends Page
                         's_small' => 0,
                         'no_rice' => 1
                     ],
+                    [
+                        'meal_id' => $randomMeal->id,
+                        'normal' => 1,
+                        'big' => 0,
+                        'small' => 2,
+                        's_small' => 0,
+                        'no_rice' => 0
+                    ],
                 ],
-                'total_amount' => 0.00,
                 'notes' => "Sample order notes for day {$dayNumber}"
             ];
 

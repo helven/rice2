@@ -13,7 +13,6 @@ return new class extends Migration
             $table->string('delivery_no', 20)->unique();
 
             // Polymorphic relationship
-            $table->enum('deliverable_type', ['single', 'meal_plan']);
             $table->unsignedBigInteger('deliverable_id');
 
             // Delivery details
@@ -35,7 +34,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
-            $table->index(['deliverable_type', 'deliverable_id'], 'idx_deliverable');
+            $table->index('deliverable_id', 'idx_deliverable');
             $table->index('delivery_date', 'idx_delivery_date');
             $table->index('driver_id', 'idx_driver');
         });

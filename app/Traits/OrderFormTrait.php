@@ -383,6 +383,7 @@ trait OrderFormTrait
             ->deletable(true)
             ->cloneable()
             ->columns(7)
+            ->live()
             ->addAction(
                 fn($action) => $action
                     ->label('Add Meal')
