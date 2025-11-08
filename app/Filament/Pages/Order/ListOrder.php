@@ -118,6 +118,11 @@ class ListOrder extends Page implements HasTable
                 TextColumn::make('order_no')
                     ->label('Order No')
                     ->sortable(),
+                TextColumn::make('order_type')
+                    ->label('Order Type')
+                    ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state)))
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('customer.name')
                     ->label('Customer')
                     ->searchable()
@@ -425,6 +430,12 @@ class ListOrder extends Page implements HasTable
                             default => null
                         };
                     }),
+                SelectFilter::make('order_type')
+                    ->label('Order Type')
+                    ->options([
+                        'single' => 'Single',
+                        'meal_plan' => 'Meal Plan',
+                    ]),
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options([
@@ -459,7 +470,9 @@ class ListOrder extends Page implements HasTable
                     ->url(fn(Order $record): string => "/backend/orders/print-invoice/{$record->id}")
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()
-                    ->url(fn(Order $record): string => "/backend/orders/{$record->id}/edit"),
+                    ->url(fn(Order $record): string => $record->order_type === 'meal_plan' 
+                        ? "/backend/meal-plans/{$record->id}/edit" 
+                        : "/backend/orders/{$record->id}/edit"),
                 Tables\Actions\DeleteAction::make()
                     ->action(function ($record) {
                         $record->update(['status_id' => 99]);
@@ -486,7 +499,7 @@ class ListOrder extends Page implements HasTable
     {
         return Order::query()
             ->with(['invoice', 'customer', 'deliveries.driver'])
-            ->where('order_type', 'single')
+            //->where('order_type', 'single')
             ->whereIn('status_id', [1, 2]);
     }
 

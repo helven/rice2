@@ -25,6 +25,7 @@ class Delivery extends Model
         'backup_driver_route',
         'driver_notes',
         'delivery_proof',
+        'status_id',
     ];
 
     protected static function boot()
@@ -64,6 +65,11 @@ class Delivery extends Model
         return $this->belongsTo(Driver::class, 'backup_driver_id');
     }
 
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryStatus::class, 'status_id');
+    }
+
     // Scopes
     public function scopeForDate($query, $date)
     {
@@ -73,6 +79,31 @@ class Delivery extends Model
     public function scopeForDriver($query, $driverId)
     {
         return $query->where('driver_id', $driverId);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status_id', '!=', DeliveryStatus::CANCELLED);
+    }
+
+    public function scopeScheduled($query)
+    {
+        return $query->where('status_id', DeliveryStatus::SCHEDULED);
+    }
+
+    public function scopeDelivered($query)
+    {
+        return $query->where('status_id', DeliveryStatus::DELIVERED);
+    }
+
+    public function isDelivered()
+    {
+        return $this->status_id == DeliveryStatus::DELIVERED;
+    }
+
+    public function canBeCancelled()
+    {
+        return $this->status_id == DeliveryStatus::SCHEDULED;
     }
 
     // Generate delivery number

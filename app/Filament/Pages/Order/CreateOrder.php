@@ -294,7 +294,7 @@ class CreateOrder extends Page
                 // Create order with customer and financial data only
                 $order = \App\Models\Order::create([
                     'order_type' => 'single',
-                    'order_date' => $dateData['date'],
+                    'order_date' => today(),
                     'customer_id' => $data['customer_id'],
                     'payment_status_id' => $data['payment_status_id'],
                     'payment_method_id' => $data['payment_method_id'],
@@ -321,6 +321,7 @@ class CreateOrder extends Page
                     'backup_driver_id' => $data['backup_driver_id'] ?? null,
                     'driver_notes' => $data['driver_notes'] ?? '',
                     'address_id' => $data['address_id'],
+                    'status_id' => \App\Models\DeliveryStatus::SCHEDULED,
                 ];
                 $deliveryService->storeDeliveryData($order, $deliveryData);
 

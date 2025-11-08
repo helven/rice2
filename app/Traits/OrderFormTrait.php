@@ -24,8 +24,10 @@ trait OrderFormTrait
         return 3;
     }
 
-    private function createMealQuantityField(string $name, string $label): TextInput
+    private function createMealQuantityField(string $name, string $label, string $orderType = 'single'): TextInput
     {
+        $jsFunction = $orderType === 'meal_plan' ? 'handleMealPlanQtyChange' : 'handleMealQtyChange';
+        
         return TextInput::make($name)
             ->label($label)
             ->numeric()
@@ -35,8 +37,9 @@ trait OrderFormTrait
             ->extraInputAttributes([
                 'data-id' => $name,
                 'data-class' => 'meal-qty',
-                'onchange' => 'handleMealQtyChange(this)',
-                'onkeyup' => 'handleMealQtyChange(this)'
+                'min' => '0',
+                'onchange' => "{$jsFunction}(this)",
+                'onkeyup' => "{$jsFunction}(this)"
             ])
             ->rules(['required', 'integer', 'min:0', 'max:1000']);
     }
@@ -371,7 +374,7 @@ trait OrderFormTrait
             ]);
     }
 
-    protected function getMealsRepeater(): Repeater
+    protected function getMealsRepeater(string $orderType = 'single'): Repeater
     {
         return Repeater::make('meals')
             ->label('Meals')
@@ -391,11 +394,11 @@ trait OrderFormTrait
             )
             ->schema([
                 $this->getMealSelect(),
-                $this->createMealQuantityField('normal', 'Normal'),
-                $this->createMealQuantityField('big', 'Big'),
-                $this->createMealQuantityField('small', 'Small'),
-                $this->createMealQuantityField('s_small', 'S.Small'),
-                $this->createMealQuantityField('no_rice', 'No Rice'),
+                $this->createMealQuantityField('normal', 'Normal', $orderType),
+                $this->createMealQuantityField('big', 'Big', $orderType),
+                $this->createMealQuantityField('small', 'Small', $orderType),
+                $this->createMealQuantityField('s_small', 'S.Small', $orderType),
+                $this->createMealQuantityField('no_rice', 'No Rice', $orderType),
             ]);
     }
 

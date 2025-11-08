@@ -12,6 +12,7 @@ Route::get('/orders/existing-delivery-dates', function (Request $request) {
     $customerId = $request->query('customer_id');
     $addressId = $request->query('address_id');
     $excludeOrderId = $request->query('exclude_order_id'); // Optional parameter for Edit Order
+    $orderType = $request->query('order_type'); // Optional parameter for order type
     
     if (!$customerId || !$addressId) {
         return response()->json(['dates' => []]);
@@ -19,6 +20,11 @@ Route::get('/orders/existing-delivery-dates', function (Request $request) {
     
     // First get orders by customer_id
     $orderIds = Order::where('customer_id', $customerId);
+    
+    // Filter by order_type if provided
+    if ($orderType) {
+        $orderIds->where('order_type', $orderType);
+    }
     
     // Exclude the current order if editing
     if ($excludeOrderId) {

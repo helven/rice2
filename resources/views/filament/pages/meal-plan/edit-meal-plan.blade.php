@@ -4,18 +4,38 @@
         let disabledDates = [];
         const MEAL_PRICE = {{ config('app.meal_price', 8.00) }};
         
-        function handleMealQtyChange(input) {
-            // Find the meals container
-            const mealsContainer = input.closest('[data-id="meals"]');
-            const mealContainer = mealsContainer.querySelector('li');
-            if (!mealsContainer || !mealContainer) return;
+        function handleDeliveryDateChange(el) {
+            const dayCountInput = document.querySelector("[data-id=day_count] input");
+            const dateEle = document.querySelector("[data-id=delivery_dates] input[readonly]");
+            if (dateEle.value && dayCountInput) {
+                const dates = dateEle.value.split(",").filter(d => d.trim());
+                const count = dates.length || 1;
+                dayCountInput.value = count;
+                dayCountInput.dispatchEvent(new Event("input", {bubbles: true}));
 
-            // Find the order container
-            const orderContainer = mealsContainer.closest('li');
-            if (!orderContainer) return;
+                // Update Total
+                const mealsContainers = document.querySelectorAll('[data-id="meals"]');
+
+                mealsContainers.forEach(mealsContainer => {
+                    const quantities = mealsContainer.querySelectorAll('input[data-class="meal-qty"]');
+
+                    let total = 0;
+
+                    quantities.forEach(qty => {
+                        const val = parseInt(qty.value) || 0;
+                        total += val;
+                    });
+                    
+                    calculateTotalAmount(total);
+                });
+            }
+        }
+        
+        function handleMealPlanQtyChange(input) {
+            const mealsContainer = input.closest('[data-id="meals"]');
+            if (!mealsContainer) return;
             
-            // Find all quantity inputs in this meal repeater
-            const quantities = orderContainer.querySelectorAll('input[data-class="meal-qty"]');
+            const quantities = mealsContainer.querySelectorAll('input[data-class="meal-qty"]');
             let total = 0;
             
             quantities.forEach(qty => {
@@ -23,32 +43,25 @@
                 total += val;
             });
             
-            // Calculate total amount
-            const totalAmount = (total * MEAL_PRICE).toFixed(2);console.log(totalAmount)
+            calculateTotalAmount(total);
+        }
+
+        function calculateTotalAmount(total) {
+            // Get number of days from day_count field
+            const dayCountField = document.querySelector('[data-id="day_count"] input');
+            const dayCount = dayCountField ? parseInt(dayCountField.value) || 1 : 1;
             
-            // Find the total_amount field in the parent container
-            if (orderContainer) {
-                const totalField = orderContainer.querySelector('input[data-id="total_amount"]');
-                if (totalField) {
-                    totalField.value = totalAmount;
-                    totalField.dispatchEvent(new Event('input', { bubbles: true }));
-                }
+            const totalAmount = (total * MEAL_PRICE * dayCount).toFixed(2);
+            
+            const totalField = document.querySelector('input[data-id="total_amount"]');
+            if (totalField) {
+                totalField.value = totalAmount;
+                totalField.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }
         
-        function findTableCellByText(container, labelText) {
-            const rows = container.querySelectorAll('tr');
-            for (let row of rows) {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 2 && cells[0].textContent.trim() === labelText) {
-                    return cells[1];
-                }
-            }
-            return null;
-        }
-        
-        // Function to fetch existing delivery dates for customer/address combination
-        async function fetchExistingDeliveryDates(customerId, addressId) {
+        // Function to fetch existing delivery dates for customer/address combination (excluding current order)
+        async function fetchExistingDeliveryDates(customerId, addressId, excludeOrderId = null) {
             if (!customerId || !addressId) {
                 disabledDates = [];
                 updateFlatpickrDisabledDates();
@@ -56,7 +69,12 @@
             }
             
             try {
-                const response = await fetch(`/api/orders/existing-delivery-dates?customer_id=${customerId}&address_id=${addressId}&order_type=single`);
+                let url = `/api/orders/existing-delivery-dates?customer_id=${customerId}&address_id=${addressId}&order_type=meal_plan`;
+                if (excludeOrderId) {
+                    url += `&exclude_order_id=${excludeOrderId}`;
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 disabledDates = data.dates || [];
                 updateFlatpickrDisabledDates();
@@ -69,7 +87,7 @@
         
         // Function to update flatpickr with disabled dates
         function updateFlatpickrDisabledDates() {
-            const deliveryDateInput = document.querySelector('#delivery_date');
+            const deliveryDateInput = document.querySelector('[data-id="delivery_dates"] input');
             if (deliveryDateInput && deliveryDateInput._flatpickr) {
                 const flatpickrInstance = deliveryDateInput._flatpickr;
                 
@@ -98,7 +116,14 @@
         
         // Function to setup event listeners for customer and address changes
         function setupDateDisabling() {
-            // Wait for the DOM to be ready
+            // Get the current order ID from the URL
+            let currentOrderId = null;
+            const pathParts = window.location.pathname.split('/');
+            const ordersIndex = pathParts.indexOf('orders');
+            if (ordersIndex !== -1 && pathParts[ordersIndex + 1]) {
+                currentOrderId = pathParts[ordersIndex + 1];
+            }
+            
             setTimeout(() => {
                 const customerSelect = document.querySelector('[name="data.customer_id"]');
                 const addressSelect = document.querySelector('[name="data.address_id"]');
@@ -107,7 +132,7 @@
                     customerSelect.addEventListener('change', function() {
                         const customerId = this.value;
                         const addressId = addressSelect ? addressSelect.value : null;
-                        fetchExistingDeliveryDates(customerId, addressId);
+                        fetchExistingDeliveryDates(customerId, addressId, currentOrderId);
                     });
                 }
                 
@@ -115,15 +140,15 @@
                     addressSelect.addEventListener('change', function() {
                         const addressId = this.value;
                         const customerId = customerSelect ? customerSelect.value : null;
-                        fetchExistingDeliveryDates(customerId, addressId);
+                        fetchExistingDeliveryDates(customerId, addressId, currentOrderId);
                     });
                 }
                 
-                // Also check for initial values if they exist
+                // Check for initial values
                 const initialCustomerId = customerSelect ? customerSelect.value : null;
                 const initialAddressId = addressSelect ? addressSelect.value : null;
                 if (initialCustomerId && initialAddressId) {
-                    fetchExistingDeliveryDates(initialCustomerId, initialAddressId);
+                    fetchExistingDeliveryDates(initialCustomerId, initialAddressId, currentOrderId);
                 }
             }, 1000);
         }
@@ -138,59 +163,47 @@
             setupDateDisabling();
         });
         
-        function formatDeliveryDateRange(dateRange) {
-            if (!dateRange) return '';
-            try {
-                const [startDate, endDate] = dateRange.split(' - ');
-                const start = new Date(startDate.replace(/\//g, '-'));
-                const end = new Date(endDate.replace(/\//g, '-'));
-                
-                const dates = [];
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    dates.push(d.toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                    }));
+        // Listen for Livewire component updates
+        document.addEventListener('livewire:updated', function() {
+            setupDateDisabling();
+        });
+        
+        function findTableCellByText(container, labelText) {
+            const rows = container.querySelectorAll('tr');
+            for (let row of rows) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 2 && cells[0].textContent.trim() === labelText) {
+                    return cells[1];
                 }
-                return dates.join(', ');
-            } catch (e) {
-                return dateRange;
             }
+            return null;
         }
         
         function populateConfirmModal() {
-            // Get form values
             const customerSelect = document.querySelector('[name="data.customer_id"]');
             const addressSelect = document.querySelector('[name="data.address_id"]');
-            const deliveryDateRange = document.querySelector('[name="data.delivery_date_range"]');
+            const deliveryDates = document.querySelector('[name="data.delivery_dates"]');
             const arrivalTime = document.querySelector('[name="data.arrival_time"]');
             const driverSelect = document.querySelector('[name="data.driver_id"]');
             const driverRoute = document.querySelector('[name="data.driver_route"]');
             const backupDriverSelect = document.querySelector('[name="data.backup_driver_id"]');
-
             const driverNotes = document.querySelector('[name="data.driver_notes"]');
             
-            // Update modal content with form values
             const modal = document.querySelector('#confirm-modal');
             if (modal) {
-                // Update customer name
                 const customerName = customerSelect?.selectedOptions[0]?.text || '';
                 const customerCell = findTableCellByText(modal, 'Customer:');
                 if (customerCell) customerCell.textContent = customerName;
                 
-                // Update address (get selected option text)
                 const addressName = addressSelect?.selectedOptions[0]?.text || '';
                 const addressCell = findTableCellByText(modal, 'Address:');
                 if (addressCell) addressCell.innerHTML = addressName;
                 
-                // Update delivery date
-                const deliveryCell = findTableCellByText(modal, 'Delivery Date:');
-                if (deliveryCell && deliveryDateRange) {
-                    deliveryCell.textContent = formatDeliveryDateRange(deliveryDateRange.value);
+                const deliveryCell = findTableCellByText(modal, 'Delivery Dates:');
+                if (deliveryCell && deliveryDates) {
+                    deliveryCell.textContent = deliveryDates.value;
                 }
                 
-                // Update arrival time
                 const arrivalCell = findTableCellByText(modal, 'Arrival Time:');
                 if (arrivalCell && arrivalTime) {
                     const timeValue = arrivalTime.value;
@@ -208,25 +221,19 @@
                     }
                 }
                 
-                // Update driver name
                 const driverName = driverSelect?.selectedOptions[0]?.text || '';
                 const driverCell = findTableCellByText(modal, 'Driver:');
                 if (driverCell) driverCell.textContent = driverName;
                 
-                // Update driver route
                 const routeCell = findTableCellByText(modal, 'Route:');
                 if (routeCell && driverRoute) {
                     routeCell.textContent = driverRoute.value;
                 }
                 
-                // Update backup driver if exists
                 const backupDriverName = backupDriverSelect?.selectedOptions[0]?.text || '';
                 const backupDriverCell = findTableCellByText(modal, 'Backup Driver:');
                 if (backupDriverCell) backupDriverCell.textContent = backupDriverName;
                 
-
-                
-                // Update driver notes
                 const notesCell = findTableCellByText(modal, 'Driver Notes:');
                 if (notesCell && driverNotes) {
                     notesCell.textContent = driverNotes.value;
@@ -239,52 +246,20 @@
 
         <div class="fi-form-actions">
             <div class="fi-ac gap-3 flex flex-wrap items-center justify-center">
-                <?php /*<x-filament::button
-                    type="submit"
-                    class="mt-4"
-                >
-                    Submit
-                </x-filament::button>*/ ?>
-
                 <x-filament::button
                     x-on:click="
                         () => {
-                            // Client-side form validation
                             const form = document.querySelector('form');
                             if (form.checkValidity()) {
-                                // Populate modal with form data
                                 populateConfirmModal();
                                 $dispatch('open-modal', { id: 'confirm-modal' });
                             } else {
-                                // Show validation errors
                                 form.reportValidity();
                             }
                         }
                     "
                 >
                     Save
-                </x-filament::button>
-
-                <x-filament::button
-                    x-on:click="
-                        () => {
-                            // Client-side form validation
-                            const form = document.querySelector('form');
-                            if (form.checkValidity()) {
-                                // Set a flag to indicate 'Save & Create Another' action
-                                window.createAnotherAction = true;
-                                // Populate modal with form data
-                                populateConfirmModal();
-                                $dispatch('open-modal', { id: 'confirm-modal' });
-                            } else {
-                                // Show validation errors
-                                form.reportValidity();
-                            }
-                        }
-                    "
-                    color="gray"
-                >
-                    Save & Create another
                 </x-filament::button>
 
                 <x-filament::button tag="a" href="/backend/orders" color="gray">
@@ -304,22 +279,17 @@
             wire:ignore.self
         >
             <x-slot name="heading">
-                <div class="text-xl">Confirm Order</div>
+                <div class="text-xl">Confirm Meal Plan</div>
             </x-slot>
 
-            @include('filament.pages.order.partials.confirm-modal')
+            @include('filament.pages.meal-plan.partials.confirm-modal')
 
             <x-slot name="footerActions">
                 <div class="w-full gap-3 flex flex-wrap items-center justify-center">
                     <x-filament::button
                         x-on:click="
                             () => {
-                                if (window.createAnotherAction) {
-                                    $wire.createAnother();
-                                    window.createAnotherAction = false;
-                                } else {
-                                    $wire.create();
-                                }
+                                $wire.save();
                                 $dispatch('close-modal', { id: 'confirm-modal' });
                             }
                         "

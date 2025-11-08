@@ -47,7 +47,7 @@
             }
             
             try {
-                let url = `/api/orders/existing-delivery-dates?customer_id=${customerId}&address_id=${addressId}`;
+                let url = `/api/orders/existing-delivery-dates?customer_id=${customerId}&address_id=${addressId}&order_type=single`;
                 if (excludeOrderId) {
                     url += `&exclude_order_id=${excludeOrderId}`;
                 }

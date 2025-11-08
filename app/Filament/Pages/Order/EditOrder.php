@@ -78,17 +78,17 @@ class EditOrder extends Page
 
     public function onCustomerChanged($state, callable $set, callable $get)
     {
-        $orderId = $get('id');
-        $this->js('
-            setTimeout(() => {
-                const customerId = ' . json_encode($state) . ';
-                const addressId = null;
-                const orderId = ' . json_encode($orderId) . ';
-                if (typeof fetchExistingDeliveryDates === "function") {
-                    fetchExistingDeliveryDates(customerId, addressId, orderId);
-                }
-            }, 100);
-        ');
+        //$orderId = $get('id');
+        //$this->js('
+        //    setTimeout(() => {
+        //        const customerId = ' . json_encode($state) . ';
+        //        const addressId = null;
+        //        const orderId = ' . json_encode($orderId) . ';
+        //        if (typeof fetchExistingDeliveryDates === "function") {
+        //            fetchExistingDeliveryDates(customerId, addressId, orderId);
+        //        }
+        //    }, 100);
+        //');
     }
 
     public function onAddressChanged($state, callable $set, callable $get)
@@ -177,7 +177,6 @@ class EditOrder extends Page
 
             // Update delivery data using DeliveryService
             $deliveryService = new DeliveryService();
-            $data['delivery_date'] = $data['delivery_date'];
             $deliveryService->storeDeliveryData($this->order, $data);
 
             // Check if invoice already exists for this order

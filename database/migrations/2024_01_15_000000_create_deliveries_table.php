@@ -28,15 +28,22 @@ return new class extends Migration
             $table->string('backup_driver_route')->default('')->nullable();
             $table->text('driver_notes')->nullable();
 
+            // Status
+            $table->unsignedBigInteger('status_id')->default(1);
+
             // Status tracking
             $table->json('delivery_proof')->nullable(); // photos, signatures, etc.
 
             $table->timestamps();
 
+            // Foreign keys
+            $table->foreign('status_id')->references('id')->on('delivery_statuses');
+
             // Indexes
             $table->index('deliverable_id', 'idx_deliverable');
             $table->index('delivery_date', 'idx_delivery_date');
             $table->index('driver_id', 'idx_driver');
+            $table->index('status_id', 'idx_status');
         });
     }
 
