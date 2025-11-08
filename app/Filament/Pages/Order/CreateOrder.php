@@ -40,7 +40,7 @@ class CreateOrder extends Page
     protected static string $view = 'filament.pages.order.create-order';
     
     // Dev toggle - set to true to enable autofill in local environment
-    private bool $devAutofill = false;
+    private bool $devAutofill = true;
 
     public function mount(): void
     {
@@ -506,7 +506,7 @@ class CreateOrder extends Page
             'driver_notes' => 'Sample driver notes',
         ];
 
-        $days = 1;
+        $days = 3;
         $startDate = \Carbon\Carbon::today();
         $dates = [];
         for ($i = 0; $i < $days; $i++) {

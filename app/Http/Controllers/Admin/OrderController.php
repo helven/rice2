@@ -186,6 +186,7 @@ class OrderController extends AdminController
         $query
             ->with([
                 'order.customer',
+                'order.meals',
                 'driver',
                 'address.mall',
                 'address.area'
@@ -248,6 +249,7 @@ class OrderController extends AdminController
         $query
             ->with([
                 'order.customer',
+                'order.meals',
                 'driver',
                 'address.mall',
                 'address.area'
@@ -262,13 +264,13 @@ class OrderController extends AdminController
         $deliveries = $query->get();
 
         // SPLIT list by driver
-        $this->vData['orders_list'] = array();
+        $this->vData['orderList'] = array();
         foreach ($deliveries as $delivery) {
-            $this->vData['orders_list']['driver_' . $delivery->driver->id][]  = $delivery->order;
+            $this->vData['orderList']['driver_' . $delivery->driver->id][]  = $delivery->order;
         }
 
         $ordersPerDriver  = 3;
-        foreach ($this->vData['orders_list']  as $driverId => &$driver) {
+        foreach ($this->vData['orderList']  as $driverId => &$driver) {
             if (count($driver) > $ordersPerDriver ) {
                 $aTemp = array();
                 $orderCtr = 0;
@@ -278,7 +280,7 @@ class OrderController extends AdminController
                     if ($orderCtr < $ordersPerDriver ) {
                         array_push($aTemp, $order);
                     } else {
-                        $this->vData['orders_list'][$driverId . '-' . $separateCtr] = $aTemp;
+                        $this->vData['orderList'][$driverId . '-' . $separateCtr] = $aTemp;
                         $separateCtr++;
 
                         // RESET
@@ -288,11 +290,11 @@ class OrderController extends AdminController
                     }
                     $orderCtr++;
                 }
-                $this->vData['orders_list'][$driverId . '-' . $separateCtr] = $aTemp;
-                unset($this->vData['orders_list'][$driverId]);
+                $this->vData['orderList'][$driverId . '-' . $separateCtr] = $aTemp;
+                unset($this->vData['orderList'][$driverId]);
             }
         }
-        ksort($this->vData['orders_list']); // sort by [driver_name]_[driver_id]-ctr
+        ksort($this->vData['orderList']); // sort by [driver_name]_[driver_id]-ctr
 
         return view('admin.order.print_driver_sheet_1', $this->vData);
     }
@@ -309,6 +311,7 @@ class OrderController extends AdminController
         $query
             ->with([
                 'order.customer',
+                'order.meals',
                 'driver',
                 'address.mall',
                 'address.area'
@@ -320,9 +323,9 @@ class OrderController extends AdminController
         $this->applyDeliveryFilters($query);
         $this->applyGeneralFilters($query);
 
-        $deliveries = $query->get();
+        $orderList = $query->get();
 
-        $this->vData['orders_list'] = $ordersList;
+        $this->vData['orderList'] = $orderList;
 
         return view('admin.order.print_driver_sheet_2', $this->vData);
     }

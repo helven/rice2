@@ -1,28 +1,29 @@
 @extends('admin.layouts.print')
 @section('content')
-<?php if (count($orders_list) <= 0) { ?>
+<?php if (count($orderList) <= 0) { ?>
     <div class="print_page_title">No Order found.</div>
 <?php } else { ?>
     <div class="print_page_title">Driver Sheet, please select <b>Landscape</b>, A4 paper for best printing result</div>
-    <?php $order_per_page = 4;?>
+    <?php $stickersPerPage = 4;?>
     <?php $order_per_row = 2;?>
+    <?php $mealsPerSticker = 6;?>
 
-    <?php $page_ctr = 0; ?>
-    <?php $page_item_ctr = 0;?>
-    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
-        <?php foreach ($orders_list as $order) { ?>
-            <?php for($i = 1; $i <= ($order->total_qty / 6); $i++){ // each piece can be used for 6 meal only ?>
-                <?php if($page_item_ctr >= $order_per_page){ ?>
-                    <?php $page_item_ctr = 0;?>
-                    <?php $page_ctr++; ?>
+    <?php $pageCtr = 0; ?>
+    <?php $pageItemCtr = 0;?>
+    <div id="div_Page-<?php echo ($pageCtr + 1); ?>" class="print_page_landscape">
+        <?php foreach ($orderList as $order) { ?>
+            <?php for($i = 1; $i <= ceil($order->total_qty / $mealsPerSticker); $i++){ ?>
+                <?php if($pageItemCtr >= $stickersPerPage){ ?>
+                    <?php $pageItemCtr = 0;?>
+                    <?php $pageCtr++; ?>
                     </div>
                     <div class="print_pagebreak"></div>
-                    <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
+                    <div id="div_Page-<?php echo ($pageCtr + 1); ?>" class="print_page_landscape">
                 <?php } ?>
                 
-                @include('admin.order.partials.print_driver_sheet_2_item', ['order' => $order, 'page_item_ctr' => $page_item_ctr])
+                @include('admin.order.partials.print_driver_sheet_2_item', ['order' => $order, 'pageItemCtr' => $pageItemCtr])
 
-                <?php $page_item_ctr++;?>
+                <?php $pageItemCtr++;?>
             <?php } ?>
         <?php } ?>
     </div>

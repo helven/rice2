@@ -92,4 +92,9 @@ class Delivery extends Model
 
         return 'D' . $year . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
+
+    public function getTotalQtyAttribute()
+    {
+        return $this->order?->total_qty ?? 0;
+    }
 }

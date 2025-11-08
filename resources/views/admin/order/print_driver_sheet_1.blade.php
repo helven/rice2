@@ -1,6 +1,6 @@
 @extends('admin.layouts.print')
 @section('content')
-<?php if (!$orders_list) { ?>
+<?php if (!$orderList) { ?>
     <div class="print_page_title">No Order found.</div>
 <?php } else { ?>
     <div class="print_page_title">Driver Sheet, please select <b>Landscape</b>, A4 paper for best printing result</div>
@@ -12,7 +12,7 @@
     <?php $page_ctr = 0; ?>
     <?php $page_item_ctr = 0;?>
     <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_landscape">
-        <?php foreach ($orders_list as $driver => $orders) { ?>
+        <?php foreach ($orderList as $driver => $orders) { ?>
             <?php $driver_id = str_replace('driver_', '', $driver); ?>
             <?php if($page_item_ctr >= $driver_per_page){ ?>
                 <?php $page_item_ctr = 0;?>
