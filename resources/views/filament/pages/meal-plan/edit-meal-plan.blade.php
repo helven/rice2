@@ -5,8 +5,8 @@
         const MEAL_PRICE = {{ config('app.meal_price', 8.00) }};
         
         function handleDeliveryDateChange(el) {
-            const dayCountInput = document.querySelector("[data-id=day_count] input");
-            const dateEle = document.querySelector("[data-id=delivery_dates] input[readonly]");
+            const dayCountInput = document.querySelector("#day_count");
+            const dateEle = document.querySelector("#delivery_date");
             if (dateEle.value && dayCountInput) {
                 const dates = dateEle.value.split(",").filter(d => d.trim());
                 const count = dates.length || 1;
@@ -87,7 +87,7 @@
         
         // Function to update flatpickr with disabled dates
         function updateFlatpickrDisabledDates() {
-            const deliveryDateInput = document.querySelector('[data-id="delivery_dates"] input');
+            const deliveryDateInput = document.querySelector('#delivery_date');
             if (deliveryDateInput && deliveryDateInput._flatpickr) {
                 const flatpickrInstance = deliveryDateInput._flatpickr;
                 
@@ -182,7 +182,7 @@
         function populateConfirmModal() {
             const customerSelect = document.querySelector('[name="data.customer_id"]');
             const addressSelect = document.querySelector('[name="data.address_id"]');
-            const deliveryDates = document.querySelector('[name="data.delivery_dates"]');
+            const deliveryDates = document.querySelector('[name="data.delivery_date"]');
             const arrivalTime = document.querySelector('[name="data.arrival_time"]');
             const driverSelect = document.querySelector('[name="data.driver_id"]');
             const driverRoute = document.querySelector('[name="data.driver_route"]');

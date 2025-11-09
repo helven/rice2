@@ -199,31 +199,6 @@
             return null;
         }
         
-        function formatDeliveryDateRange(dateRange) {
-            if (!dateRange) return '';
-            try {
-                const [startDate, endDate] = dateRange.split(' - ');
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                
-                const formatDate = (date) => {
-                    return date.toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                    });
-                };
-                
-                if (startDate === endDate) {
-                    return formatDate(start);
-                } else {
-                    return `${formatDate(start)}, ${formatDate(end)}`;
-                }
-            } catch (error) {
-                return dateRange;
-            }
-        }
-        
         function populateConfirmModal() {
             const modal = document.querySelector('.confirm-modal');
             if (!modal) return;
@@ -252,7 +227,7 @@
             const deliveryDateInput = form.querySelector('input[name="delivery_date"]');
             const deliveryDateCell = findTableCellByText(modal, 'Delivery Date:');
             if (deliveryDateCell && deliveryDateInput) {
-                deliveryDateCell.textContent = formatDeliveryDateRange(deliveryDateInput.value);
+                deliveryDateCell.textContent = deliveryDateInput.value;
             }
             
             // Arrival Time

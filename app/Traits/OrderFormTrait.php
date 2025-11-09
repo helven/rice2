@@ -85,11 +85,6 @@ trait OrderFormTrait
                             $set('payment_method_id', $customer->payment_method_id);
                         }
                     }
-                    
-                    // Call the specific handler if it exists
-                    if (method_exists($this, 'onCustomerChanged')) {
-                        $this->onCustomerChanged($state, $set, $get);
-                    }
                 }),
 
             Select::make('address_id')
@@ -176,8 +171,8 @@ trait OrderFormTrait
                     }
                     
                     // Call the specific handler if it exists
-                    if (method_exists($this, 'onAddressChanged')) {
-                        $this->onAddressChanged($state, $set, $get);
+                    if (method_exists($this, 'handleAddressChanged')) {
+                        $this->handleAddressChanged($state, $set, $get);
                     }
                 })
         ]);
@@ -241,7 +236,6 @@ trait OrderFormTrait
                 ->required()
                 ->searchable()
                 ->live()
-                ->reactive()
                 ->options(function (callable $get) {
                     $driverId = $get('driver_id');
                     if (blank($driverId)) {

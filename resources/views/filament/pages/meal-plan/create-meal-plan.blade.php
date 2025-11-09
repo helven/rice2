@@ -5,8 +5,8 @@
         const MEAL_PRICE = {{ config('app.meal_price', 8.00) }};
         
         function handleDeliveryDateChange(el) {
-            const dayCountInput = document.querySelector("[data-id=day_count] input");
-            const dateEle = document.querySelector("[data-id=delivery_dates] input[readonly]");
+            const dayCountInput = document.querySelector("#day_count");
+            const dateEle = document.querySelector("#delivery_date");
             if (dateEle.value && dayCountInput) {
                 const dates = dateEle.value.split(",").filter(d => d.trim());
                 const count = dates.length || 1;
@@ -20,7 +20,7 @@
                     const quantities = mealsContainer.querySelectorAll('input[data-class="meal-qty"]');
 
                     let total = 0;
-            
+
                     quantities.forEach(qty => {
                         const val = parseInt(qty.value) || 0;
                         total += val;
@@ -28,7 +28,6 @@
                     
                     calculateTotalAmount(total);
                 });
-                //console.log(quantities);
             }
         }
         
@@ -83,7 +82,7 @@
         
         // Function to update flatpickr with disabled dates
         function updateFlatpickrDisabledDates() {
-            const deliveryDateInput = document.querySelector('[data-id="delivery_dates"] input');
+            const deliveryDateInput = document.querySelector('#delivery_date');
             if (deliveryDateInput && deliveryDateInput._flatpickr) {
                 const flatpickrInstance = deliveryDateInput._flatpickr;
                 
@@ -112,6 +111,7 @@
         
         // Function to setup event listeners for customer and address changes
         function setupDateDisabling() {
+            // Wait for the DOM to be ready
             setTimeout(() => {
                 const customerSelect = document.querySelector('[name="data.customer_id"]');
                 const addressSelect = document.querySelector('[name="data.address_id"]');
@@ -163,30 +163,37 @@
         }
         
         function populateConfirmModal() {
+            // Get form values
             const customerSelect = document.querySelector('[name="data.customer_id"]');
             const addressSelect = document.querySelector('[name="data.address_id"]');
-            const deliveryDates = document.querySelector('[name="data.delivery_dates"]');
+            const deliveryDates = document.querySelector('[name="data.delivery_date"]');
             const arrivalTime = document.querySelector('[name="data.arrival_time"]');
             const driverSelect = document.querySelector('[name="data.driver_id"]');
             const driverRoute = document.querySelector('[name="data.driver_route"]');
             const backupDriverSelect = document.querySelector('[name="data.backup_driver_id"]');
+
             const driverNotes = document.querySelector('[name="data.driver_notes"]');
             
+            // Update modal content with form values
             const modal = document.querySelector('#confirm-modal');
             if (modal) {
+                // Update customer name
                 const customerName = customerSelect?.selectedOptions[0]?.text || '';
                 const customerCell = findTableCellByText(modal, 'Customer:');
                 if (customerCell) customerCell.textContent = customerName;
                 
+                // Update address (get selected option text)
                 const addressName = addressSelect?.selectedOptions[0]?.text || '';
                 const addressCell = findTableCellByText(modal, 'Address:');
                 if (addressCell) addressCell.innerHTML = addressName;
                 
+                // Update delivery date
                 const deliveryCell = findTableCellByText(modal, 'Delivery Dates:');
                 if (deliveryCell && deliveryDates) {
                     deliveryCell.textContent = deliveryDates.value;
                 }
                 
+                // Update arrival time
                 const arrivalCell = findTableCellByText(modal, 'Arrival Time:');
                 if (arrivalCell && arrivalTime) {
                     const timeValue = arrivalTime.value;
@@ -204,19 +211,23 @@
                     }
                 }
                 
+                // Update driver name
                 const driverName = driverSelect?.selectedOptions[0]?.text || '';
                 const driverCell = findTableCellByText(modal, 'Driver:');
                 if (driverCell) driverCell.textContent = driverName;
                 
+                // Update driver route
                 const routeCell = findTableCellByText(modal, 'Route:');
                 if (routeCell && driverRoute) {
                     routeCell.textContent = driverRoute.value;
                 }
                 
+                // Update backup driver if exists
                 const backupDriverName = backupDriverSelect?.selectedOptions[0]?.text || '';
                 const backupDriverCell = findTableCellByText(modal, 'Backup Driver:');
                 if (backupDriverCell) backupDriverCell.textContent = backupDriverName;
                 
+                // Update driver notes
                 const notesCell = findTableCellByText(modal, 'Driver Notes:');
                 if (notesCell && driverNotes) {
                     notesCell.textContent = driverNotes.value;
@@ -232,17 +243,42 @@
                 <x-filament::button
                     x-on:click="
                         () => {
+                            // Client-side form validation
                             const form = document.querySelector('form');
                             if (form.checkValidity()) {
+                                // Populate modal with form data
                                 populateConfirmModal();
                                 $dispatch('open-modal', { id: 'confirm-modal' });
                             } else {
+                                // Show validation errors
                                 form.reportValidity();
                             }
                         }
                     "
                 >
                     Save
+                </x-filament::button>
+
+                <x-filament::button
+                    x-on:click="
+                        () => {
+                            // Client-side form validation
+                            const form = document.querySelector('form');
+                            if (form.checkValidity()) {
+                                // Set a flag to indicate 'Save & Create Another' action
+                                window.createAnotherAction = true;
+                                // Populate modal with form data
+                                populateConfirmModal();
+                                $dispatch('open-modal', { id: 'confirm-modal' });
+                            } else {
+                                // Show validation errors
+                                form.reportValidity();
+                            }
+                        }
+                    "
+                    color="gray"
+                >
+                    Save & Create another
                 </x-filament::button>
 
                 <x-filament::button tag="a" href="/backend/orders" color="gray">
@@ -272,7 +308,12 @@
                     <x-filament::button
                         x-on:click="
                             () => {
-                                $wire.create();
+                                if (window.createAnotherAction) {
+                                    $wire.createOrder(true);
+                                    window.createAnotherAction = false;
+                                } else {
+                                    $wire.createOrder(false);
+                                }
                                 $dispatch('close-modal', { id: 'confirm-modal' });
                             }
                         "

@@ -19,7 +19,7 @@
                         </tr>
                         <tr>
                             <td class="py-2 font-medium text-gray-700">Delivery Dates:</td>
-                            <td class="py-2">{{ $formattedData['delivery_dates'] }}</td>
+                            <td class="py-2">{{ $formattedData['delivery_date'] }}</td>
                         </tr>
                     </tbody>
                 </table>

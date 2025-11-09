@@ -40,7 +40,7 @@ class CreateMealPlan extends Page
             'address_id' => '',
             'payment_status_id' => $this->getDefaultPaymentStatusId(),
             'payment_method_id' => '',
-            'delivery_dates' => [],
+            'delivery_date' => [],
             'meals' => [
                 [
                     'meal_id' => '',
@@ -78,8 +78,8 @@ class CreateMealPlan extends Page
                     $this->getCustomerAddressGrid(),
                     $this->getPaymentGrid(),
                     
-                    Flatpickr::make('delivery_dates')
-                        ->id('delivery_dates')
+                    Flatpickr::make('delivery_date')
+                        ->id('delivery_date')
                         ->label('Delivery Dates')
                         ->multiplePicker()
                         ->format(config('app.date_format'))
@@ -90,12 +90,13 @@ class CreateMealPlan extends Page
                         ->live()
                         ->debounce(0)
                         ->extraAttributes([
-                            'data-id' => 'delivery_dates',
+                            'data-id' => 'delivery_date',
                             'onchange' => "handleDeliveryDateChange(this)"
                         ]),
 
                     
                     TextInput::make('day_count')
+                        ->id('day_count')
                         //->hidden()
                         ->default(1)
                         ->extraAttributes(['data-id' => 'day_count'])
@@ -116,25 +117,40 @@ class CreateMealPlan extends Page
 
     protected function getFormActions(): array
     {
-        return [
-            Action::make('create')
-                ->label('Save')
-                ->action('create')
-                ->keyBindings(['mod+s'])
-                ->color('primary'),
-            Action::make('cancel')
-                ->label('Cancel')
-                ->url('/' . config('filament.path', 'backend') . '/orders')
-                ->color('gray'),
-        ];
+        //return [
+        //    Action::make('create')
+        //        ->label('Save')
+        //        ->action(fn() => $this->createMealPlan(false))
+        //        ->keyBindings(['mod+s'])
+        //        ->color('primary'),
+        //    Action::make('createAnother')
+        //        ->label('Save & Create another')
+        //        ->action(fn() => $this->createMealPlan(true))
+        //        ->keyBindings(['mod+shift+s'])
+        //        ->color('gray'),
+        //    Action::make('cancel')
+        //        ->label('Cancel')
+        //        ->url('/' . config('filament.path', 'backend') . '/orders')
+        //        ->color('gray'),
+        //];
     }
 
     public function create()
     {
+        $this->createOrder(false);
+    }
+
+    public function createAnother()
+    {
+        $this->createorder(true);
+    }
+
+    protected function createorder(bool $createAnother = false)
+    {
         $data = $this->form->getState();
 
         $this->validate([
-            'data.delivery_dates' => ['required'],
+            'data.delivery_date' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
         ]);
 
@@ -142,7 +158,7 @@ class CreateMealPlan extends Page
             \DB::beginTransaction();
 
             $address = CustomerAddressBook::find($data['address_id']);
-            $dates = is_array($data['delivery_dates']) ? $data['delivery_dates'] : explode(',', $data['delivery_dates']);
+            $dates = is_array($data['delivery_date']) ? $data['delivery_date'] : explode(',', $data['delivery_date']);
 
             // Create 1 order
             $order = \App\Models\Order::create([
@@ -203,6 +219,28 @@ class CreateMealPlan extends Page
                 ->title('Meal plan created successfully')
                 ->send();
 
+            if ($createAnother) {
+                // Reset the form for creating another order
+                $this->form->fill([
+                    'customer_id' => '',
+                    'address_id' => '',
+                    'payment_status_id' => $this->getDefaultPaymentStatusId(),
+                    'payment_method_id' => '',
+                    'delivery_date' => '',
+                    'meals_by_date' => [],
+                    'total_amount' => 0.00,
+                    'notes' => '',
+                    'arrival_time' => '',
+                    'driver_id' => '',
+                    'driver_route' => '',
+                    'backup_driver_id' => '',
+                    'driver_notes' => '',
+                ]);
+                $this->modalData = [];
+            } else {
+                $this->redirect('/' . config('filament.path', 'backend') . '/orders');
+            }
+
             $this->redirect('/' . config('filament.path', 'backend') . '/orders');
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -249,12 +287,12 @@ class CreateMealPlan extends Page
             }
         }
 
-        $delivery_dates = '';
-        if (!empty($this->data['delivery_dates'])) {
-            $dateStrings = is_array($this->data['delivery_dates']) ? $this->data['delivery_dates'] : explode(',', $this->data['delivery_dates']);
+        $delivery_date = '';
+        if (!empty($this->data['delivery_date'])) {
+            $dateStrings = is_array($this->data['delivery_date']) ? $this->data['delivery_date'] : explode(',', $this->data['delivery_date']);
             foreach ($dateStrings as $dateString) {
                 $date = \Carbon\Carbon::parse(trim($dateString));
-                $delivery_dates .= ($delivery_dates != '' ? ', ' : '') . $date->format(config('app.date_format'));
+                $delivery_date .= ($delivery_date != '' ? ', ' : '') . $date->format(config('app.date_format'));
             }
         }
 
@@ -263,7 +301,7 @@ class CreateMealPlan extends Page
             'customer_name' => $customer ? $customer->name : '',
             'address_id' => $this->data['address_id'],
             'address' => $address ? $this->getFormattedAddressDisplay($address) : '',
-            'delivery_dates' => $delivery_dates,
+            'delivery_date' => $delivery_date,
             'meals' => $formatted_meals,
             'total_amount' => $this->data['total_amount'] ?? 0,
             'delivery_fee' => 0,
@@ -280,21 +318,7 @@ class CreateMealPlan extends Page
         ];
     }
 
-    public function onCustomerChanged($state, callable $set, callable $get)
-    {
-        // CreateOrder specific JavaScript
-        //$this->js('
-        //    setTimeout(() => {
-        //        const customerId = ' . json_encode($state) . ';
-        //        const addressId = null;
-        //        if (typeof fetchExistingDeliveryDates === "function") {
-        //            fetchExistingDeliveryDates(customerId, addressId);
-        //        }
-        //    }, 100);
-        //');
-    }
-
-    public function onAddressChanged($state, callable $set, callable $get)
+    public function handleAddressChanged($state, callable $set, callable $get)
     {
         // CreateMealPlan specific JavaScript
         $customerId = $get('customer_id');
@@ -313,7 +337,7 @@ class CreateMealPlan extends Page
     {
         return TextInput::make('total_amount')
             ->label(function (callable $get) {
-                $dates = $get('delivery_dates');
+                $dates = $get('delivery_date');
                 $dayCount = 0;
                 
                 if (!empty($dates)) {
@@ -330,7 +354,7 @@ class CreateMealPlan extends Page
             ->numeric()
             ->default(0.00)
             ->prefix('RM')
-            ->reactive()
+            ->live()
             ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/']);
     }
 }

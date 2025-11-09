@@ -76,22 +76,7 @@ class EditOrder extends Page
             ->statePath('data');
     }
 
-    public function onCustomerChanged($state, callable $set, callable $get)
-    {
-        //$orderId = $get('id');
-        //$this->js('
-        //    setTimeout(() => {
-        //        const customerId = ' . json_encode($state) . ';
-        //        const addressId = null;
-        //        const orderId = ' . json_encode($orderId) . ';
-        //        if (typeof fetchExistingDeliveryDates === "function") {
-        //            fetchExistingDeliveryDates(customerId, addressId, orderId);
-        //        }
-        //    }, 100);
-        //');
-    }
-
-    public function onAddressChanged($state, callable $set, callable $get)
+    public function handleAddressChanged($state, callable $set, callable $get)
     {
         $customerId = $get('customer_id');
         $orderId = $get('id');

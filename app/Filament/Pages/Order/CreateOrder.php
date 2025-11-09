@@ -73,24 +73,7 @@ class CreateOrder extends Page
             ->statePath('data');
     }
 
-
-
-    // CreateOrder specific handlers
-    public function onCustomerChanged($state, callable $set, callable $get)
-    {
-        // CreateOrder specific JavaScript
-        //$this->js('
-        //    setTimeout(() => {
-        //        const customerId = ' . json_encode($state) . ';
-        //        const addressId = null;
-        //        if (typeof fetchExistingDeliveryDates === "function") {
-        //            fetchExistingDeliveryDates(customerId, addressId);
-        //        }
-        //    }, 100);
-        //');
-    }
-
-    public function onAddressChanged($state, callable $set, callable $get)
+    public function handleAddressChanged($state, callable $set, callable $get)
     {
         // CreateOrder specific JavaScript
         $customerId = $get('customer_id');
@@ -192,7 +175,6 @@ class CreateOrder extends Page
                     return null;
                 })
                 ->live()
-                ->reactive()
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     // Extract dates from remaining meals_by_date items
                     $dates = [];

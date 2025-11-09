@@ -141,7 +141,7 @@ class CustomerResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->options(Driver::query()->pluck('name', 'id'))
-                                            ->reactive()
+                                            ->live()
                                             ->afterStateUpdated(function ($state, callable $set) {
                                                 $set('driver_route', null);
                                             }),
@@ -173,7 +173,7 @@ class CustomerResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->options(Driver::query()->pluck('name', 'id'))
-                                            ->reactive()
+                                            ->live()
                                             ->afterStateUpdated(function ($state, callable $set) {
                                                 $set('backup_driver_route', null);
                                             })

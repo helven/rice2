@@ -36,17 +36,6 @@
             }
         }
         
-        function findTableCellByText(container, labelText) {
-            const rows = container.querySelectorAll('tr');
-            for (let row of rows) {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 2 && cells[0].textContent.trim() === labelText) {
-                    return cells[1];
-                }
-            }
-            return null;
-        }
-        
         // Function to fetch existing delivery dates for customer/address combination
         async function fetchExistingDeliveryDates(customerId, addressId) {
             if (!customerId || !addressId) {
@@ -119,7 +108,7 @@
                     });
                 }
                 
-                // Also check for initial values if they exist
+                // Check for initial values
                 const initialCustomerId = customerSelect ? customerSelect.value : null;
                 const initialAddressId = addressSelect ? addressSelect.value : null;
                 if (initialCustomerId && initialAddressId) {
@@ -138,32 +127,22 @@
             setupDateDisabling();
         });
         
-        function formatDeliveryDateRange(dateRange) {
-            if (!dateRange) return '';
-            try {
-                const [startDate, endDate] = dateRange.split(' - ');
-                const start = new Date(startDate.replace(/\//g, '-'));
-                const end = new Date(endDate.replace(/\//g, '-'));
-                
-                const dates = [];
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    dates.push(d.toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                    }));
+        function findTableCellByText(container, labelText) {
+            const rows = container.querySelectorAll('tr');
+            for (let row of rows) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 2 && cells[0].textContent.trim() === labelText) {
+                    return cells[1];
                 }
-                return dates.join(', ');
-            } catch (e) {
-                return dateRange;
             }
+            return null;
         }
         
         function populateConfirmModal() {
             // Get form values
             const customerSelect = document.querySelector('[name="data.customer_id"]');
             const addressSelect = document.querySelector('[name="data.address_id"]');
-            const deliveryDateRange = document.querySelector('[name="data.delivery_date_range"]');
+            const deliveryDates = document.querySelector('[name="data.delivery_dates"]');
             const arrivalTime = document.querySelector('[name="data.arrival_time"]');
             const driverSelect = document.querySelector('[name="data.driver_id"]');
             const driverRoute = document.querySelector('[name="data.driver_route"]');
@@ -186,8 +165,8 @@
                 
                 // Update delivery date
                 const deliveryCell = findTableCellByText(modal, 'Delivery Date:');
-                if (deliveryCell && deliveryDateRange) {
-                    deliveryCell.textContent = formatDeliveryDateRange(deliveryDateRange.value);
+                if (deliveryCell && deliveryDates) {
+                    deliveryCell.textContent = deliveryDates.value;
                 }
                 
                 // Update arrival time
@@ -224,8 +203,6 @@
                 const backupDriverCell = findTableCellByText(modal, 'Backup Driver:');
                 if (backupDriverCell) backupDriverCell.textContent = backupDriverName;
                 
-
-                
                 // Update driver notes
                 const notesCell = findTableCellByText(modal, 'Driver Notes:');
                 if (notesCell && driverNotes) {
@@ -239,13 +216,6 @@
 
         <div class="fi-form-actions">
             <div class="fi-ac gap-3 flex flex-wrap items-center justify-center">
-                <?php /*<x-filament::button
-                    type="submit"
-                    class="mt-4"
-                >
-                    Submit
-                </x-filament::button>*/ ?>
-
                 <x-filament::button
                     x-on:click="
                         () => {
@@ -315,10 +285,10 @@
                         x-on:click="
                             () => {
                                 if (window.createAnotherAction) {
-                                    $wire.createAnother();
+                                    $wire.createOrder(true);
                                     window.createAnotherAction = false;
                                 } else {
-                                    $wire.create();
+                                    $wire.createOrder(false);
                                 }
                                 $dispatch('close-modal', { id: 'confirm-modal' });
                             }

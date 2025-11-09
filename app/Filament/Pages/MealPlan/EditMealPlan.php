@@ -45,7 +45,8 @@ class EditMealPlan extends Page
             'order_no' => $this->order->order_no,
             'customer_id' => $this->order->customer_id,
             'address_id' => $firstDelivery?->address_id,
-            'delivery_dates' => $deliveryDates,
+            'delivery_date' => $deliveryDates,
+            'day_count' => count($deliveryDates),
             'payment_status_id' => $this->order->payment_status_id,
             'payment_method_id' => $this->order->payment_method_id,
             'meals' => $this->order->meals->map(function ($meal) {
@@ -75,22 +76,7 @@ class EditMealPlan extends Page
             ->statePath('data');
     }
 
-    public function onCustomerChanged($state, callable $set, callable $get)
-    {
-        //$orderId = $get('id');
-        //$this->js('
-        //    setTimeout(() => {
-        //        const customerId = ' . json_encode($state) . ';
-        //        const addressId = null;
-        //        const orderId = ' . json_encode($orderId) . ';
-        //        if (typeof fetchExistingDeliveryDates === "function") {
-        //            fetchExistingDeliveryDates(customerId, addressId, orderId);
-        //        }
-        //    }, 100);
-        //');
-    }
-
-    public function onAddressChanged($state, callable $set, callable $get)
+    public function handleAddressChanged($state, callable $set, callable $get)
     {
         // EditMealPlan specific JavaScript
         $customerId = $get('customer_id');
@@ -117,8 +103,8 @@ class EditMealPlan extends Page
                     $this->getCustomerAddressGrid(),
                     $this->getPaymentGrid(),
                     
-                    Flatpickr::make('delivery_dates')
-                        ->id('delivery_dates')
+                    Flatpickr::make('delivery_date')
+                        ->id('delivery_date')
                         ->label('Delivery Dates')
                         ->multiplePicker()
                         ->format(config('app.date_format'))
@@ -131,14 +117,14 @@ class EditMealPlan extends Page
                         ->live()
                         ->debounce(0)
                         ->extraAttributes([
-                            'data-id' => 'delivery_dates',
+                            'data-id' => 'delivery_date',
                             'onchange' => "handleDeliveryDateChange(this)"
                         ]),
 
                     
                     TextInput::make('day_count')
+                        ->id('day_count')
                         //->hidden()
-                        ->default(fn() => $this->order->deliveries->count())
                         ->extraAttributes(['data-id' => 'day_count'])
                         ->dehydrated(false)
                 ]),
@@ -160,7 +146,7 @@ class EditMealPlan extends Page
         $data = $this->form->getState();
 
         $this->validate([
-            'data.delivery_dates' => ['required'],
+            'data.delivery_date' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
         ]);
 
@@ -168,7 +154,7 @@ class EditMealPlan extends Page
             \DB::beginTransaction();
 
             $address = CustomerAddressBook::find($data['address_id']);
-            $dates = is_array($data['delivery_dates']) ? $data['delivery_dates'] : explode(',', $data['delivery_dates']);
+            $dates = is_array($data['delivery_date']) ? $data['delivery_date'] : explode(',', $data['delivery_date']);
 
             // Update order
             $this->order->update([
@@ -264,12 +250,12 @@ class EditMealPlan extends Page
             }
         }
 
-        $delivery_dates = '';
-        if (!empty($this->data['delivery_dates'])) {
-            $dateStrings = is_array($this->data['delivery_dates']) ? $this->data['delivery_dates'] : explode(',', $this->data['delivery_dates']);
+        $delivery_date = '';
+        if (!empty($this->data['delivery_date'])) {
+            $dateStrings = is_array($this->data['delivery_date']) ? $this->data['delivery_date'] : explode(',', $this->data['delivery_date']);
             foreach ($dateStrings as $dateString) {
                 $date = \Carbon\Carbon::parse(trim($dateString));
-                $delivery_dates .= ($delivery_dates != '' ? ', ' : '') . $date->format(config('app.date_format'));
+                $delivery_date .= ($delivery_date != '' ? ', ' : '') . $date->format(config('app.date_format'));
             }
         }
 
@@ -278,7 +264,7 @@ class EditMealPlan extends Page
             'customer_name' => $customer ? $customer->name : '',
             'address_id' => $this->data['address_id'],
             'address' => $address ? $this->getFormattedAddressDisplay($address) : '',
-            'delivery_dates' => $delivery_dates,
+            'delivery_date' => $delivery_date,
             'meals' => $formatted_meals,
             'total_amount' => $this->data['total_amount'] ?? 0,
             'delivery_fee' => 0,
@@ -304,7 +290,7 @@ class EditMealPlan extends Page
     {
         return \Filament\Forms\Components\TextInput::make('total_amount')
             ->label(function (callable $get) {
-                $dates = $get('delivery_dates');
+                $dates = $get('delivery_date');
                 $dayCount = 0;
                 
                 if (!empty($dates)) {
@@ -321,7 +307,7 @@ class EditMealPlan extends Page
             ->numeric()
             ->default(0.00)
             ->prefix('RM')
-            ->reactive()
+            ->live()
             ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/']);
     }
 }
