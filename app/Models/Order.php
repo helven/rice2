@@ -78,9 +78,19 @@ class Order extends Model
         return $this->hasMany(OrderMeal::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function invoice()
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    public function activeInvoice()
+    {
+        return $this->hasOne(Invoice::class)->where('status_id', 1);
     }
 
     public function deliveries()

@@ -76,22 +76,6 @@ class EditOrder extends Page
             ->statePath('data');
     }
 
-    public function handleAddressChanged($state, callable $set, callable $get)
-    {
-        $customerId = $get('customer_id');
-        $orderId = $get('id');
-        $this->js('
-            setTimeout(() => {
-                const customerId = ' . json_encode($customerId) . ';
-                const addressId = ' . json_encode($state) . ';
-                const orderId = ' . json_encode($orderId) . ';
-                if (typeof fetchExistingDeliveryDates === "function") {
-                    fetchExistingDeliveryDates(customerId, addressId, orderId);
-                }
-            }, 100);
-        ');
-    }
-
     protected function getFormSchema(): array
     {
         return [
@@ -164,12 +148,6 @@ class EditOrder extends Page
             $deliveryService = new DeliveryService();
             $deliveryService->storeDeliveryData($this->order, $data);
 
-            // Check if invoice already exists for this order
-            $invoice = \App\Models\Invoice::where('order_id', $this->order->id)->first();
-            if (!$invoice) {
-                $this->createInvoice($this->order, $address);
-            }
-
             // Update meals
             $this->order->meals()->delete();
             foreach ($data['meals'] as $meal) {
@@ -199,6 +177,22 @@ class EditOrder extends Page
                 ->body($e->getMessage())
                 ->send();
         }
+    }
+
+    public function handleAddressChanged($state, callable $set, callable $get)
+    {
+        $customerId = $get('customer_id');
+        $orderId = $get('id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($customerId) . ';
+                const addressId = ' . json_encode($state) . ';
+                const orderId = ' . json_encode($orderId) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId, orderId);
+                }
+            }, 100);
+        ');
     }
 
     public function getFormattedData()
@@ -257,12 +251,6 @@ class EditOrder extends Page
             'driver_notes' => $this->data['driver_notes'] ?? '',
         ];
     }
-
-
-
-
-
-
 
     protected function getRecord(): ?Order
     {

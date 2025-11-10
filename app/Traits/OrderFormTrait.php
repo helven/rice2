@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Customer;
 use App\Models\CustomerAddressBook;
+use App\Models\Invoice;
 use App\Models\Driver;
 use App\Models\Area;
 use App\Models\Meal;
@@ -27,7 +28,7 @@ trait OrderFormTrait
     private function createMealQuantityField(string $name, string $label, string $orderType = 'single'): TextInput
     {
         $jsFunction = $orderType === 'meal_plan' ? 'handleMealPlanQtyChange' : 'handleMealQtyChange';
-        
+
         return TextInput::make($name)
             ->label($label)
             ->numeric()
@@ -61,13 +62,13 @@ trait OrderFormTrait
                     if (empty($search) || strlen($search) > 100) {
                         return [];
                     }
-                    
+
                     $escapedSearch = str_replace(['%', '_'], ['\\%', '\\_'], $search);
-                    
+
                     return Customer::query()
                         ->where(function ($q) use ($escapedSearch) {
                             $q->where('name', 'like', "%{$escapedSearch}%")
-                              ->orWhere('contact', 'like', "%{$escapedSearch}%");
+                                ->orWhere('contact', 'like', "%{$escapedSearch}%");
                         })
                         ->orderBy('name')
                         ->limit(50)
@@ -78,7 +79,7 @@ trait OrderFormTrait
                 ->live()
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     $set('address_id', null);
-                    
+
                     if ($state) {
                         $customer = Customer::find($state);
                         if ($customer && $customer->payment_method_id) {
@@ -133,7 +134,7 @@ trait OrderFormTrait
                             $set('driver_id', null);
                             $set('driver_route', null);
                             $set('backup_driver_id', null);
-                            
+
                             // Set new driver data if available
                             if ($address->driver_id) {
                                 $set('driver_id', $address->driver_id);
@@ -145,7 +146,7 @@ trait OrderFormTrait
                             if ($address->backup_driver_id) {
                                 $set('backup_driver_id', $address->backup_driver_id);
                             }
-                            
+
                             // Handle payment method based on mall_id
                             if ($address->mall_id && $address->mall_id != 0) {
                                 // Mall has higher priority - use mall's payment method
@@ -169,7 +170,7 @@ trait OrderFormTrait
                         $set('driver_route', null);
                         $set('backup_driver_id', null);
                     }
-                    
+
                     // Call the specific handler if it exists
                     if (method_exists($this, 'handleAddressChanged')) {
                         $this->handleAddressChanged($state, $set, $get);
@@ -221,7 +222,7 @@ trait OrderFormTrait
                 ->searchable()
                 ->preload()
                 ->options(Driver::where('status_id', 1)->pluck('name', 'id'))
-                ->getOptionLabelUsing(fn ($value): ?string => Driver::find($value)?->name)
+                ->getOptionLabelUsing(fn($value): ?string => Driver::find($value)?->name)
                 ->live()
                 ->afterStateUpdated(function ($state, callable $set) {
                     $set('driver_route', null);
@@ -264,7 +265,7 @@ trait OrderFormTrait
                 ->searchable()
                 ->preload()
                 ->options(Driver::where('status_id', 1)->pluck('name', 'id'))
-                ->getOptionLabelUsing(fn ($value): ?string => Driver::find($value)?->name)
+                ->getOptionLabelUsing(fn($value): ?string => Driver::find($value)?->name)
                 ->live()
         ]);
     }
@@ -333,7 +334,7 @@ trait OrderFormTrait
             $this->modalData = $this->getFormattedData();
             return;
         }
-        
+
         return parent::__call($method, $parameters);
     }
 
@@ -451,37 +452,17 @@ trait OrderFormTrait
         <?php echo e($address->address_1); ?><br />
         <?php echo ($address->address_2) ? e($address->address_2) . '<br />' : ""; ?>
         <?php echo e($address->postcode); ?> <?php echo e($address->city); ?>
-        <?php
+<?php
         return trim(ob_get_clean());
-    }
-
-    protected function createInvoice($order, $address): void
-    {
-        $customer = Customer::find($order->customer_id);
-        
-        $billingAddress = $customer->name . "\n" .
-            $address->address_1 . "\n" .
-            ($address->address_2 ? $address->address_2 . "\n" : '') .
-            $address->mall_or_area;
-
-        \App\Models\Invoice::create([
-            'order_id' => $order->id,
-            'invoice_no' => $order->invoice_no,
-            'billing_name' => $customer->name,
-            'billing_address' => $billingAddress,
-            'tax_amount' => config('app.tax_rate'),
-            'issue_date' => now(),
-            'due_date' => now()->addDays(30),
-        ]);
     }
 
     protected function calculateTotalQuantity(array $meals): int
     {
         $totalQty = 0;
         foreach ($meals as $meal) {
-            $totalQty += intval($meal['normal']) + intval($meal['big']) + 
-                        intval($meal['small']) + intval($meal['s_small']) + 
-                        intval($meal['no_rice']);
+            $totalQty += intval($meal['normal']) + intval($meal['big']) +
+                intval($meal['small']) + intval($meal['s_small']) +
+                intval($meal['no_rice']);
         }
         return $totalQty;
     }
@@ -490,11 +471,11 @@ trait OrderFormTrait
     {
         // Check if we're in CreateOrder context (has meals_by_date)
         $formData = $this->form->getRawState();
-        
+
         if (isset($formData['meals_by_date'])) {
             // CreateOrder logic - handle meals_by_date structure
             $currentItem = $get('../../');  // Go up to the meals_by_date item level
-            
+
             \Log::info('Debug calculateTotalAmountByMealQty', [
                 'currentItem' => $currentItem,
                 'has_date' => isset($currentItem['date']),
@@ -533,20 +514,20 @@ trait OrderFormTrait
         } else {
             // EditOrder logic - handle direct meals structure
             $meals = $formData['meals'] ?? [];
-            
+
             $totalMeals = 0;
             foreach ($meals as $meal) {
-                $totalMeals += intval($meal['normal'] ?? 0) + 
-                              intval($meal['big'] ?? 0) + 
-                              intval($meal['small'] ?? 0) + 
-                              intval($meal['s_small'] ?? 0) + 
-                              intval($meal['no_rice'] ?? 0);
+                $totalMeals += intval($meal['normal'] ?? 0) +
+                    intval($meal['big'] ?? 0) +
+                    intval($meal['small'] ?? 0) +
+                    intval($meal['s_small'] ?? 0) +
+                    intval($meal['no_rice'] ?? 0);
             }
-            
+
             // Get MEAL_PRICE from config
             $mealPrice = config('app.meal_price', 8.00);
             $totalAmount = $totalMeals * $mealPrice;
-            
+
             // Update only the total_amount field
             $set('total_amount', number_format($totalAmount, 2));
         }
@@ -556,18 +537,17 @@ trait OrderFormTrait
     {
         $record = method_exists($this, 'getRecord') ? $this->getRecord() : null;
         $basePath = '/' . config('filament.path', 'backend') . '/orders';
-        
+
         if ($record) {
             return [
                 $basePath => 'Orders',
                 '' => 'Order ' . $record->formatted_id,
             ];
         }
-        
+
         return [
             $basePath => 'Orders',
             '' => 'New Order',
         ];
     }
-
 }

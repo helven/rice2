@@ -73,21 +73,6 @@ class CreateOrder extends Page
             ->statePath('data');
     }
 
-    public function handleAddressChanged($state, callable $set, callable $get)
-    {
-        // CreateOrder specific JavaScript
-        $customerId = $get('customer_id');
-        $this->js('
-            setTimeout(() => {
-                const customerId = ' . json_encode($customerId) . ';
-                const addressId = ' . json_encode($state) . ';
-                if (typeof fetchExistingDeliveryDates === "function") {
-                    fetchExistingDeliveryDates(customerId, addressId);
-                }
-            }, 100);
-        ');
-    }
-
     protected function getFormSchema(): array
     {
         return [
@@ -212,37 +197,22 @@ class CreateOrder extends Page
         ];
     }
 
-    protected function getFormActions(): array
+    public function handleAddressChanged($state, callable $set, callable $get)
     {
-        return [
-            Action::make('create')
-                ->label('Save')
-                ->action('create')
-                ->keyBindings(['mod+s'])
-                ->color('primary'),
-            Action::make('createAnother')
-                ->label('Save & Create another')
-                ->action('createAnother')
-                ->keyBindings(['mod+shift+s'])
-                ->color('gray'),
-            Action::make('cancel')
-                ->label('Cancel')
-                ->url('/' . config('filament.path', 'backend') . '/orders')
-                ->color('gray'),
-        ];
+        // CreateOrder specific JavaScript
+        $customerId = $get('customer_id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($customerId) . ';
+                const addressId = ' . json_encode($state) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId);
+                }
+            }, 100);
+        ');
     }
 
-    public function create()
-    {
-        $this->createOrder(false);
-    }
-
-    public function createAnother()
-    {
-        $this->createOrder(true);
-    }
-
-    protected function createOrder(bool $createAnother = false)
+    public function createOrder(bool $createAnother = false)
     {
         // Get form state (this also validates)
         $data = $this->form->getState();
@@ -306,9 +276,6 @@ class CreateOrder extends Page
                     'status_id' => \App\Models\DeliveryStatus::SCHEDULED,
                 ];
                 $deliveryService->storeDeliveryData($order, $deliveryData);
-
-                // Create invoice for this order
-                $this->createInvoice($order, $address);
 
                 // Create order meals for this date
                 foreach ($dateData['meals'] as $meal) {

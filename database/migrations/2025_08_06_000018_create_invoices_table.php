@@ -14,21 +14,24 @@ return new class extends Migration
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('order_id');
-            $table->string('invoice_no')->default('')->index();
+            $table->unsignedBigInteger('status_id')->default(1);
+            $table->string('invoice_no')->default('');
             $table->string('ref_no')->default('');
             $table->string('billing_name')->default('');
             $table->text('billing_address')->nullable();
             $table->string('tax_no')->default('');
+            $table->decimal('subtotal', 10, 2)->default(0.00);
+            $table->decimal('delivery_fee', 10, 2)->default(0.00);
+            $table->decimal('tax_rate', 5, 2)->default(0.00);
             $table->decimal('tax_amount', 10, 2)->default(0.00);
+            $table->decimal('total_amount', 10, 2)->default(0.00);
             $table->date('issue_date')->nullable();
             $table->date('due_date')->nullable();
             $table->timestamps();
             
-            // Add unique constraint on order_id
-            $table->unique('order_id');
-            
-            // Add foreign key constraint
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            $table->index('order_id');
+            $table->index('status_id');
+            $table->unique('invoice_no');
         });
     }
 

@@ -32,6 +32,9 @@ class CreateMealPlan extends Page
     protected static ?int $navigationSort = 3;
 
     protected static string $view = 'filament.pages.meal-plan.create-meal-plan';
+    
+    // Dev toggle - set to true to enable autofill in local environment
+    private bool $devAutofill = true;
 
     public function mount(): void
     {
@@ -59,6 +62,8 @@ class CreateMealPlan extends Page
             'backup_driver_id' => '',
             'driver_notes' => '',
         ]);
+
+        $this->fillDevData();
 
         $this->modalData = $this->getFormattedData();
     }
@@ -115,141 +120,19 @@ class CreateMealPlan extends Page
         ];
     }
 
-    protected function getFormActions(): array
+    public function handleAddressChanged($state, callable $set, callable $get)
     {
-        //return [
-        //    Action::make('create')
-        //        ->label('Save')
-        //        ->action(fn() => $this->createMealPlan(false))
-        //        ->keyBindings(['mod+s'])
-        //        ->color('primary'),
-        //    Action::make('createAnother')
-        //        ->label('Save & Create another')
-        //        ->action(fn() => $this->createMealPlan(true))
-        //        ->keyBindings(['mod+shift+s'])
-        //        ->color('gray'),
-        //    Action::make('cancel')
-        //        ->label('Cancel')
-        //        ->url('/' . config('filament.path', 'backend') . '/orders')
-        //        ->color('gray'),
-        //];
-    }
-
-    public function create()
-    {
-        $this->createOrder(false);
-    }
-
-    public function createAnother()
-    {
-        $this->createorder(true);
-    }
-
-    protected function createorder(bool $createAnother = false)
-    {
-        $data = $this->form->getState();
-
-        $this->validate([
-            'data.delivery_date' => ['required'],
-            'data.meals' => ['required', 'array', 'min:1'],
-        ]);
-
-        try {
-            \DB::beginTransaction();
-
-            $address = CustomerAddressBook::find($data['address_id']);
-            $dates = is_array($data['delivery_date']) ? $data['delivery_date'] : explode(',', $data['delivery_date']);
-
-            // Create 1 order
-            $order = \App\Models\Order::create([
-                'order_type' => 'meal_plan',
-                'order_date' => today(),
-                'customer_id' => $data['customer_id'],
-                'payment_status_id' => $data['payment_status_id'],
-                'payment_method_id' => $data['payment_method_id'],
-                'total_amount' => $data['total_amount'],
-                'delivery_fee' => 0,
-                'notes' => $data['notes'] ?? '',
-            ]);
-
-            // Generate order number
-            $orderNo = \App\Models\Order::generateOrderNumber(
-                $order->id,
-                $address->mall_id ?? null,
-                today()
-            );
-            $order->update(['order_no' => $orderNo]);
-
-            // Create N deliveries
-            foreach ($dates as $dateString) {
-                $date = \Carbon\Carbon::parse(trim($dateString));
-                \App\Models\Delivery::create([
-                    'deliverable_id' => $order->id,
-                    'delivery_date' => $date->format(config('app.date_format')),
-                    'arrival_time' => $data['arrival_time'],
-                    'driver_id' => $data['driver_id'],
-                    'driver_route' => $data['driver_route'],
-                    'backup_driver_id' => $data['backup_driver_id'] ?? null,
-                    'driver_notes' => $data['driver_notes'] ?? '',
-                    'address_id' => $data['address_id'],
-                    'status_id' => \App\Models\DeliveryStatus::SCHEDULED,
-                ]);
-            }
-
-            // Create invoice
-            $this->createInvoice($order, $address);
-
-            // Create M order_meals
-            foreach ($data['meals'] as $meal) {
-                \App\Models\OrderMeal::create([
-                    'order_id' => $order->id,
-                    'meal_id' => $meal['meal_id'],
-                    'normal' => $meal['normal'],
-                    'big' => $meal['big'],
-                    'small' => $meal['small'],
-                    's_small' => $meal['s_small'],
-                    'no_rice' => $meal['no_rice'],
-                ]);
-            }
-
-            \DB::commit();
-
-            Notification::make()
-                ->success()
-                ->title('Meal plan created successfully')
-                ->send();
-
-            if ($createAnother) {
-                // Reset the form for creating another order
-                $this->form->fill([
-                    'customer_id' => '',
-                    'address_id' => '',
-                    'payment_status_id' => $this->getDefaultPaymentStatusId(),
-                    'payment_method_id' => '',
-                    'delivery_date' => '',
-                    'meals_by_date' => [],
-                    'total_amount' => 0.00,
-                    'notes' => '',
-                    'arrival_time' => '',
-                    'driver_id' => '',
-                    'driver_route' => '',
-                    'backup_driver_id' => '',
-                    'driver_notes' => '',
-                ]);
-                $this->modalData = [];
-            } else {
-                $this->redirect('/' . config('filament.path', 'backend') . '/orders');
-            }
-
-            $this->redirect('/' . config('filament.path', 'backend') . '/orders');
-        } catch (\Exception $e) {
-            \DB::rollBack();
-            Notification::make()
-                ->danger()
-                ->title('Error creating meal plan')
-                ->body($e->getMessage())
-                ->send();
-        }
+        // CreateMealPlan specific JavaScript
+        $customerId = $get('customer_id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($customerId) . ';
+                const addressId = ' . json_encode($state) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId);
+                }
+            }, 100);
+        ');
     }
 
     public function getFormattedData()
@@ -318,21 +201,6 @@ class CreateMealPlan extends Page
         ];
     }
 
-    public function handleAddressChanged($state, callable $set, callable $get)
-    {
-        // CreateMealPlan specific JavaScript
-        $customerId = $get('customer_id');
-        $this->js('
-            setTimeout(() => {
-                const customerId = ' . json_encode($customerId) . ';
-                const addressId = ' . json_encode($state) . ';
-                if (typeof fetchExistingDeliveryDates === "function") {
-                    fetchExistingDeliveryDates(customerId, addressId);
-                }
-            }, 100);
-        ');
-    }
-
     protected function getMealPlanTotalAmountField()
     {
         return TextInput::make('total_amount')
@@ -356,5 +224,183 @@ class CreateMealPlan extends Page
             ->prefix('RM')
             ->live()
             ->rules(['required', 'numeric', 'min:0', 'regex:/^\d+(\.\d{1,2})?$/']);
+    }
+
+    public function createOrder(bool $createAnother = false)
+    {
+        $data = $this->form->getState();
+
+        $this->validate([
+            'data.delivery_date' => ['required'],
+            'data.meals' => ['required', 'array', 'min:1'],
+        ]);
+
+        try {
+            \DB::beginTransaction();
+
+            $address = CustomerAddressBook::find($data['address_id']);
+            $dates = is_array($data['delivery_date']) ? $data['delivery_date'] : explode(',', $data['delivery_date']);
+
+            // Create 1 order
+            $order = \App\Models\Order::create([
+                'order_type' => 'meal_plan',
+                'order_date' => today(),
+                'customer_id' => $data['customer_id'],
+                'payment_status_id' => $data['payment_status_id'],
+                'payment_method_id' => $data['payment_method_id'],
+                'total_amount' => $data['total_amount'],
+                'delivery_fee' => 0,
+                'notes' => $data['notes'] ?? '',
+            ]);
+
+            // Generate order number
+            $orderNo = \App\Models\Order::generateOrderNumber(
+                $order->id,
+                $address->mall_id ?? null,
+                today()
+            );
+            $order->update(['order_no' => $orderNo]);
+
+            // Create N deliveries
+            foreach ($dates as $dateString) {
+                $date = \Carbon\Carbon::parse(trim($dateString));
+                \App\Models\Delivery::create([
+                    'deliverable_id' => $order->id,
+                    'delivery_date' => $date->format(config('app.date_format')),
+                    'arrival_time' => $data['arrival_time'],
+                    'driver_id' => $data['driver_id'],
+                    'driver_route' => $data['driver_route'],
+                    'backup_driver_id' => $data['backup_driver_id'] ?? null,
+                    'driver_notes' => $data['driver_notes'] ?? '',
+                    'address_id' => $data['address_id'],
+                    'status_id' => \App\Models\DeliveryStatus::SCHEDULED,
+                ]);
+            }
+
+            // Create M order_meals
+            foreach ($data['meals'] as $meal) {
+                \App\Models\OrderMeal::create([
+                    'order_id' => $order->id,
+                    'meal_id' => $meal['meal_id'],
+                    'normal' => $meal['normal'],
+                    'big' => $meal['big'],
+                    'small' => $meal['small'],
+                    's_small' => $meal['s_small'],
+                    'no_rice' => $meal['no_rice'],
+                ]);
+            }
+
+            \DB::commit();
+
+            Notification::make()
+                ->success()
+                ->title('Meal plan created successfully')
+                ->send();
+
+            if ($createAnother) {
+                // Reset the form for creating another order
+                $this->form->fill([
+                    'customer_id' => '',
+                    'address_id' => '',
+                    'payment_status_id' => $this->getDefaultPaymentStatusId(),
+                    'payment_method_id' => '',
+                    'delivery_date' => '',
+                    'meals_by_date' => [],
+                    'total_amount' => 0.00,
+                    'notes' => '',
+                    'arrival_time' => '',
+                    'driver_id' => '',
+                    'driver_route' => '',
+                    'backup_driver_id' => '',
+                    'driver_notes' => '',
+                ]);
+                $this->modalData = [];
+            } else {
+                $this->redirect('/' . config('filament.path', 'backend') . '/orders');
+            }
+
+            $this->redirect('/' . config('filament.path', 'backend') . '/orders');
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            Notification::make()
+                ->danger()
+                ->title('Error creating meal plan')
+                ->body($e->getMessage())
+                ->send();
+        }
+    }
+
+    private function fillDevData(): void
+    {
+        if (!$this->devAutofill || !app()->environment('local')) {
+            return;
+        }
+
+        $customer = Customer::where('status_id', 1)->first();
+        $address = $customer ? CustomerAddressBook::where('customer_id', $customer->id)
+            ->where('status_id', 1)
+            ->where('is_default', true)
+            ->first() : null;
+        $driver = Driver::where('status_id', 1)->first();
+        $driverRoute = $driver && $driver->route && !empty($driver->route) 
+            ? $driver->route[0]['route_name'] 
+            : null;
+        $randomMeal = Meal::where('status_id', 1)->inRandomOrder()->first();
+
+        $days = 5;
+        $startDate = \Carbon\Carbon::today();
+        $dates = [];
+        for ($i = 0; $i < $days; $i++) {
+            $dates[] = $startDate->copy()->addDays($i)->format(config('app.date_format'));
+        }
+
+        $meals = [
+            [
+                'meal_id' => $randomMeal->id,
+                'normal' => 2,
+                'big' => 0,
+                'small' => 1,
+                's_small' => 0,
+                'no_rice' => 1
+            ],
+            [
+                'meal_id' => $randomMeal->id,
+                'normal' => 1,
+                'big' => 1,
+                'small' => 0,
+                's_small' => 0,
+                'no_rice' => 0
+            ],
+        ];
+
+        $totalMeals = 0;
+        foreach ($meals as $meal) {
+            $totalMeals += intval($meal['normal'] ?? 0) +
+                intval($meal['big'] ?? 0) +
+                intval($meal['small'] ?? 0) +
+                intval($meal['s_small'] ?? 0) +
+                intval($meal['no_rice'] ?? 0);
+        }
+        $mealPrice = config('app.meal_price', 8.00);
+        $totalAmount = number_format($totalMeals * $mealPrice * $days, 2);
+
+        $mealPlanData = [
+            'customer_id' => $customer ? $customer->id : '',
+            'address_id' => $address ? $address->id : '',
+            'payment_status_id' => $this->getDefaultPaymentStatusId(),
+            'payment_method_id' => $customer ? $customer->payment_method_id : '',
+            'delivery_date' => $dates,
+            'day_count' => $days,
+            'meals' => $meals,
+            'total_amount' => $totalAmount,
+            'notes' => 'Sample meal plan notes',
+            'arrival_time' => '08:00',
+            'driver_id' => $driver ? $driver->id : '',
+            'driver_route' => $driverRoute,
+            'backup_driver_id' => '',
+            'driver_notes' => 'Sample driver notes for meal plan',
+        ];
+
+        $this->form->fill($mealPlanData);
     }
 }

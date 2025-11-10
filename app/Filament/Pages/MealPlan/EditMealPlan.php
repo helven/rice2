@@ -31,6 +31,7 @@ class EditMealPlan extends Page
     protected static string $view = 'filament.pages.meal-plan.edit-meal-plan';
 
     public ?Order $order = null;
+    public bool $disableDeliveryDate = true;
 
     public function mount($id): void
     {
@@ -76,22 +77,6 @@ class EditMealPlan extends Page
             ->statePath('data');
     }
 
-    public function handleAddressChanged($state, callable $set, callable $get)
-    {
-        // EditMealPlan specific JavaScript
-        $customerId = $get('customer_id');
-        $this->js('
-            setTimeout(() => {
-                const customerId = ' . json_encode($customerId) . ';
-                const addressId = ' . json_encode($state) . ';
-                const excludeOrderId = ' . json_encode($this->order->id) . ';
-                if (typeof fetchExistingDeliveryDates === "function") {
-                    fetchExistingDeliveryDates(customerId, addressId, excludeOrderId);
-                }
-            }, 100);
-        ');
-    }
-
     protected function getFormSchema(): array
     {
         return [
@@ -112,8 +97,7 @@ class EditMealPlan extends Page
                         ->conjunction(', ')
                         ->minDate(fn() => today())
                         ->required()
-                        ->disabled()
-                        ->dehydrated(false)
+                        ->disabled($this->disableDeliveryDate)
                         ->live()
                         ->debounce(0)
                         ->extraAttributes([
@@ -145,16 +129,19 @@ class EditMealPlan extends Page
     {
         $data = $this->form->getState();
 
-        $this->validate([
+        $this->validate(array_merge($this->getCommonValidationRules(), [
             'data.delivery_date' => ['required'],
             'data.meals' => ['required', 'array', 'min:1'],
-        ]);
+            'data.meals.*.meal_id' => ['required', 'exists:meals,id'],
+            'data.meals.*.normal' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.big' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.small' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.s_small' => ['required', 'integer', 'min:0', 'max:1000'],
+            'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
+        ]));
 
         try {
             \DB::beginTransaction();
-
-            $address = CustomerAddressBook::find($data['address_id']);
-            $dates = is_array($data['delivery_date']) ? $data['delivery_date'] : explode(',', $data['delivery_date']);
 
             // Update order
             $this->order->update([
@@ -168,22 +155,49 @@ class EditMealPlan extends Page
                 'notes' => $data['notes'] ?? '',
             ]);
 
-            // Update existing deliveries (dates are read-only)
-            $this->order->deliveries()->update([
-                'arrival_time' => $data['arrival_time'],
-                'driver_id' => $data['driver_id'],
-                'driver_route' => $data['driver_route'],
-                'backup_driver_id' => $data['backup_driver_id'] ?? null,
-                'driver_notes' => $data['driver_notes'] ?? '',
-                'address_id' => $data['address_id'],
-            ]);
-
-            // Check if invoice exists
-            $invoice = \App\Models\Invoice::where('order_id', $this->order->id)->first();
-            if (!$invoice) {
-                $this->createInvoice($this->order, $address);
+            // Update deliveries
+            if (!$this->disableDeliveryDate) {
+                // Dates can be changed - sync deliveries by date
+                $dates = is_array($data['delivery_date']) ? $data['delivery_date'] : explode(',', $data['delivery_date']);
+                $existingDeliveries = $this->order->deliveries->keyBy(fn($d) => $d->delivery_date->format(config('app.date_format')));
+                
+                $deliveryData = [
+                    'arrival_time' => $data['arrival_time'],
+                    'driver_id' => $data['driver_id'],
+                    'driver_route' => $data['driver_route'],
+                    'backup_driver_id' => $data['backup_driver_id'] ?? null,
+                    'driver_notes' => $data['driver_notes'] ?? '',
+                    'address_id' => $data['address_id'],
+                ];
+                
+                // Update or create deliveries for new dates
+                foreach ($dates as $date) {
+                    if (isset($existingDeliveries[$date])) {
+                        $existingDeliveries[$date]->update($deliveryData);
+                        unset($existingDeliveries[$date]);
+                    } else {
+                        $this->order->deliveries()->create(array_merge($deliveryData, ['delivery_date' => $date]));
+                    }
+                }
+                
+                // Delete deliveries for removed dates
+                foreach ($existingDeliveries as $delivery) {
+                    $delivery->delete();
+                }
+            } else {
+                // Dates are disabled - just update other fields for each delivery
+                foreach ($this->order->deliveries as $delivery) {
+                    $delivery->update([
+                        'arrival_time' => $data['arrival_time'],
+                        'driver_id' => $data['driver_id'],
+                        'driver_route' => $data['driver_route'],
+                        'backup_driver_id' => $data['backup_driver_id'] ?? null,
+                        'driver_notes' => $data['driver_notes'] ?? '',
+                        'address_id' => $data['address_id'],
+                    ]);
+                }
             }
-
+            
             // Update meals
             $this->order->meals()->delete();
             foreach ($data['meals'] as $meal) {
@@ -213,6 +227,22 @@ class EditMealPlan extends Page
                 ->body($e->getMessage())
                 ->send();
         }
+    }
+
+    public function handleAddressChanged($state, callable $set, callable $get)
+    {
+        // EditMealPlan specific JavaScript
+        $customerId = $get('customer_id');
+        $this->js('
+            setTimeout(() => {
+                const customerId = ' . json_encode($customerId) . ';
+                const addressId = ' . json_encode($state) . ';
+                const excludeOrderId = ' . json_encode($this->order->id) . ';
+                if (typeof fetchExistingDeliveryDates === "function") {
+                    fetchExistingDeliveryDates(customerId, addressId, excludeOrderId);
+                }
+            }, 100);
+        ');
     }
 
     public function getFormattedData()
