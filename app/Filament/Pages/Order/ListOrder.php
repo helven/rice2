@@ -117,7 +117,11 @@ class ListOrder extends Page implements HasTable
             ->columns([
                 TextColumn::make('order_no')
                     ->label('Order No')
-                    ->sortable(),
+                    ->sortable()
+                    ->url(fn(Order $record): string => $record->order_type === 'meal_plan' 
+                        ? "/backend/meal-plans/{$record->id}" 
+                        : "/backend/orders/{$record->id}")
+                    ->color('primary'),
                 TextColumn::make('order_type')
                     ->label('Order Type')
                     ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state)))

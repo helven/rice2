@@ -31,7 +31,7 @@ class EditMealPlan extends Page
     protected static string $view = 'filament.pages.meal-plan.edit-meal-plan';
 
     public ?Order $order = null;
-    public bool $disableDeliveryDate = true;
+    public bool $disableDeliveryDate = false;
 
     public function mount($id): void
     {

@@ -236,7 +236,6 @@ trait OrderFormTrait
                 ->placeholder('Select Route')
                 ->required()
                 ->searchable()
-                ->live()
                 ->options(function (callable $get) {
                     $driverId = $get('driver_id');
                     if (blank($driverId)) {
@@ -266,7 +265,6 @@ trait OrderFormTrait
                 ->preload()
                 ->options(Driver::where('status_id', 1)->pluck('name', 'id'))
                 ->getOptionLabelUsing(fn($value): ?string => Driver::find($value)?->name)
-                ->live()
         ]);
     }
 
@@ -290,7 +288,6 @@ trait OrderFormTrait
                     ->pluck('name', 'id')
                     ->toArray();
             })
-            ->live()
             ->columnSpan(2);
     }
 
@@ -355,7 +352,6 @@ trait OrderFormTrait
                         ->displayFormat('h:i A')
                         ->format('H:i')
                         ->withoutSeconds()
-                        ->live()
                 ]),
                 $this->getDriverGrid(),
                 $this->getBackupDriverGrid(),
@@ -365,7 +361,6 @@ trait OrderFormTrait
                     ])
                     ->label('Notes')
                     ->rows(5)
-                    ->live()
             ]);
     }
 
@@ -381,7 +376,7 @@ trait OrderFormTrait
             ->deletable(true)
             ->cloneable()
             ->columns(7)
-            ->live()
+            //->live()
             ->addAction(
                 fn($action) => $action
                     ->label('Add Meal')
