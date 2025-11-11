@@ -58,7 +58,7 @@
                             <?php $pageItemCtr++; ?>
                         <?php } ?>
                         <tr>
-                            <td class="total" colspan="3">Total: {{ ($order->total_amount + $order->calculated_delivery_fee) * (1 + $order->invoice->tax_rate) }}</td>
+                            <td class="total" colspan="3">Total: {{ $order->invoice->total_amount }}</td>
                         </tr>
                     </tbody>
                 </table>

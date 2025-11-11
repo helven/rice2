@@ -54,10 +54,24 @@ class InvoiceService
     
     private function createInvoice(Order $order, array $data): Invoice
     {
+        $delivery = \App\Models\Delivery::where('deliverable_id', $order->id)->first();
+        $address = $delivery ? \App\Models\CustomerAddressBook::find($delivery->address_id) : null;
+        
+        $billingAddress = null;
+        if ($address) {
+            $billingAddress = trim(implode("\n", array_filter([
+                $address->address_1,
+                $address->address_2,
+                $address->postal_code . ' ' . $address->city,
+            ])));
+        }
+        
         $invoice = Invoice::create([
             'order_id' => $order->id,
             'status_id' => 1,
             'invoice_no' => 'TEMP',
+            'billing_name' => $order->customer?->name,
+            'billing_address' => $billingAddress,
             'subtotal' => $data['subtotal'],
             'delivery_fee' => $data['delivery_fee'],
             'tax_rate' => $data['tax_rate'],

@@ -343,9 +343,9 @@ class OrderController extends AdminController
                 'meals.meal',
                 'customer',
                 'payment_method',
+                'invoice',
             ])
-            ->leftjoin('invoices', 'invoices.order_id', '=', 'orders.id')
-            ->where('orders.id', $order_id);
+            ->where('id', $order_id);
 
         $order = $query->first();
 
