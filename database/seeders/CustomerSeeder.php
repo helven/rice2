@@ -36,8 +36,8 @@ class CustomerSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        Customer::factory()
-            ->count(3)  // This will create 10 customers, each with 1-3 addresses
-            ->create();
+        // Customer::factory()
+        //     ->count(5)  // This will create 10 customers, each with 1-3 addresses
+        //     ->create();
     }
 }

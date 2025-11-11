@@ -18,7 +18,7 @@ class AreaFactory extends Factory
         ];
 
         return [
-            'name' => 'Area: '.fake()->randomElement($malaysianCities), // Using Malaysian cities
+            'name' => fake()->randomElement($malaysianCities), // Using Malaysian cities
             'status_id' => fake()->randomElement([1, 2]),
             'postal' => fake()->numerify('#####'), // Maintaining 5-digit numeric format
             'delivery_fee' => [

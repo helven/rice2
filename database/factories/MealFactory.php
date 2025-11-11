@@ -14,8 +14,10 @@ class MealFactory extends Factory
     {
         return $this->afterCreating(function ($meal) {
             $prefix = $meal->category_id == 1 ? '[Daily]' : '[Cater]';
+            $baseName = fake()->randomElement(['Nasi Lemak', 'Nasi Goreng', 'Mee Goreng', 'Char Kuey Teow', 'Roti Canai', 'Laksa', 'Rendang', 'Satay', 'Ayam Percik', 'Nasi Kerabu', 'Mee Rebus', 'Curry Mee', 'Nasi Dagang', 'Ikan Bakar', 'Ayam Penyet']);
+            $variant = fake()->optional(0.3)->randomElement([' Spicy', ' Special', ' Deluxe', ' Original', ' Premium']);
             $meal->update([
-                'name' => $prefix . '[' . $meal->id . '] ' . ucwords(fake()->words(1, true)),
+                'name' => $baseName . ($variant ?? ''),
             ]);
         });
     }

@@ -36,7 +36,7 @@ class DriverSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $numberOfDrivers = 5; // You can adjust this number
-        Driver::factory()->count($numberOfDrivers)->create();
+        // $numberOfDrivers = 5; // You can adjust this number
+        // Driver::factory()->count($numberOfDrivers)->create();
     }
 }

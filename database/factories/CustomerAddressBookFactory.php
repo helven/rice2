@@ -12,7 +12,7 @@ class CustomerAddressBookFactory extends Factory
     public function definition(): array
     {
         $isMall = fake()->boolean(); // Randomly decide between mall and area
-        $isMall = false;
+
         // Malaysian cities list
         $malaysianCities = [
             'Kuala Lumpur', 'George Town', 'Ipoh', 'Shah Alam', 'Subang Jaya',
@@ -22,12 +22,12 @@ class CustomerAddressBookFactory extends Factory
         return [
             'status_id' => fake()->randomElement([1]),
             'is_default' => false,
-            'name' => ucwords(fake()->word()) . ' ' . fake()->companySuffix(),
+            'name' => fake()->randomElement(['Restoran', 'Kedai', 'Kafe', 'Warung']) . ' ' . fake()->lastName() . ' ' . fake()->randomElement(['Sdn Bhd', 'Enterprise', 'Trading', '']),
             'contact' => '',
             'email' => '',
             'mall_id' => $isMall ? fake()->numberBetween(1, 5) : 0,
             'area_id' => !$isMall ? fake()->numberBetween(1, 5) : 0,
-            'address_1' => fake()->streetAddress(),
+            'address_1' => fake()->numerify('##') . ', Jalan ' . fake()->lastName() . ' ' . fake()->numerify('#/#'),
             'address_2' => fake()->boolean(30) ? fake()->secondaryAddress() : '',
             'postal_code' => fake()->numerify('#####'), // Ensures 5-digit numeric postcode
             'city' => fake()->randomElement($malaysianCities), // Selects random Malaysian city

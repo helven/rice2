@@ -19,8 +19,8 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'Cust: '.fake()->firstName(),
-            'contact' => fake()->phoneNumber(),
+            'name' => fake()->randomElement(['Ahmad', 'Ali', 'Tan', 'Lee', 'Kumar', 'Siti', 'Nurul', 'Wong', 'Lim', 'Raj']) . ' ' . fake()->randomElement(['Abdullah', 'Hassan', 'Wei', 'Ying', 'Muthu', 'Aziz', 'Chong', 'Singh', 'Binti', 'Bin']),
+            'contact' => '01' . fake()->randomElement(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) . '-' . fake()->numerify('### ####'),
             'status_id' => fake()->randomElement([1]),
             'payment_method_id' => fake()->randomElement([1, 2, 3, 4]),
         ];

@@ -36,8 +36,8 @@ class MallSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        Mall::factory()
-            ->count(5)
-            ->create();
+        // Mall::factory()
+        //     ->count(5)
+        //     ->create();
     }
 }

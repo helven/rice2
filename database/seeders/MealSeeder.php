@@ -52,7 +52,7 @@ class MealSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $numberOfMeals = 15; // You can adjust this number
-        Meal::factory()->count($numberOfMeals)->create();
+        // $numberOfMeals = 15; // You can adjust this number
+        // Meal::factory()->count($numberOfMeals)->create();
     }
 }
