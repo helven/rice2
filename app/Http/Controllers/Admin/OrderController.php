@@ -158,9 +158,9 @@ class OrderController extends AdminController
                 'address.mall',
                 'address.area'
             ])
-            ->whereHas('order', function($q) {
-                $q->where('order_type', 'single');
-            })
+            //->whereHas('order', function($q) {
+            //    $q->where('order_type', 'single');
+            //})
             ->orderBy('arrival_time')
             ->orderBy('deliverable_id')
             ->orderBy('address_id');

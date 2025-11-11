@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Order;
 
 use App\Models\Order;
+use App\Models\Delivery;
 use App\Models\Invoice;
 
 use Filament\Pages\Page;
@@ -118,40 +119,35 @@ class ListOrder extends Page implements HasTable
                 TextColumn::make('order_no')
                     ->label('Order No')
                     ->sortable()
-                    ->url(fn(Order $record): string => $record->order_type === 'meal_plan' 
-                        ? "/backend/meal-plans/{$record->id}" 
-                        : "/backend/orders/{$record->id}")
+                    ->url(fn($record): string => $record->order_type === 'meal_plan' 
+                        ? "/backend/meal-plans/{$record->order_id}" 
+                        : "/backend/orders/{$record->order_id}")
                     ->color('primary'),
                 TextColumn::make('order_type')
                     ->label('Order Type')
                     ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state)))
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('customer.name')
+                TextColumn::make('customer_name')
                     ->label('Customer')
                     ->searchable()
                     ->sortable()
                     ->toggleable(true),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
-                    ->getStateUsing(function (Order $record): string {
-                        $delivery = $record->getDelivery();
-                        return $delivery && $delivery->delivery_date 
-                            ? $delivery->delivery_date->format(config('app.date_format')) 
-                            : '';
-                    })
-                    ->sortable(false),
+                    ->date(config('app.date_format'))
+                    ->sortable(),
                 TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->numeric(2, '.', ',')
                     ->prefix('RM ')
                     ->sortable(),
-                TextColumn::make('status.label')
+                TextColumn::make('status_label')
                     ->label('Status')
                     ->searchable()
                     ->sortable()
                     ->badge()
-                    ->color(function (Order $record): string {
+                    ->color(function ($record): string {
                         if ($record->status_id === 1) return 'success';
                         if ($record->status_id === 2) return 'warning';
                         return 'gray';
@@ -159,54 +155,38 @@ class ListOrder extends Page implements HasTable
                     ->toggleable(true),
                 TextColumn::make('driver_name')
                     ->label('Driver')
-                    ->getStateUsing(function (Order $record): string {
-                        $delivery = $record->getDelivery();
-                        
-                        if (!$delivery || !$delivery->driver_id) {
-                            return '';
-                        }
-
-                        return $delivery->driver->name;
-                    })
-                    ->searchable(false)
-                    ->sortable(false)
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(true),
                 TextColumn::make('arrival_time')
                     ->label('Arrival Time')
-                    ->getStateUsing(function (Order $record): string {
-                        $delivery = $record->getDelivery();
-                        if (!$delivery || !$delivery->arrival_time) {
-                            return '';
-                        }
-                        return date(config('app.time_format'), strtotime($delivery->arrival_time));
-                    })
-                    ->searchable(false)
-                    ->sortable(false)
+                    ->time(config('app.time_format'))
+                    ->sortable()
                     ->toggleable(true),
                     //->toggledHiddenByDefault(),
-                TextColumn::make('created_at')
+                TextColumn::make('order_created_at')
                     ->label('Ordered On')
                     ->dateTime(config('app.date_format'))
                     ->sortable()
                     ->toggleable(true),
-                TextColumn::make('updated_at')
+                TextColumn::make('order_updated_at')
                     ->label('Last Modified')
                     ->dateTime(config('app.datetime_format'))
                     ->sortable()
                     ->toggleable(true)
                     ->toggledHiddenByDefault(),
-                TextColumn::make('payment_status.label')
+                TextColumn::make('payment_status_label')
                     ->label('Payment')
-                    ->formatStateUsing(function (Order $record): string {
-                        $status = $record->payment_status->label ?? '';
-                        $method = $record->payment_method->label ?? '';
+                    ->formatStateUsing(function ($record): string {
+                        $status = $record->payment_status_label ?? '';
+                        $method = $record->payment_method_label ?? '';
                         return $method ? "{$status} <span class='text-gray-950'>({$method})</span>" : $status;
                     })
                     ->html()
                     ->searchable()
                     ->sortable()
                     ->toggleable(true)
-                    ->color(function (Order $record): string {
+                    ->color(function ($record): string {
                         if ($record->payment_status_id === 4) return 'success';
                         if ($record->payment_status_id === 3) return 'warning';
                         return 'gray';
@@ -223,34 +203,34 @@ class ListOrder extends Page implements HasTable
                                         3 => 'Unpaid',
                                         4 => 'Paid',
                                     ])
-                                    ->default(function (Order $record): int {
+                                    ->default(function ($record): int {
                                         return $record->payment_status_id;
                                     }),
                                 Select::make('payment_method_id')
                                     ->label('Payment Method')
                                     ->native()
                                     ->placeholder('Select Payment Method')
-                                    ->relationship('payment_method', 'label')
+                                    ->options(\App\Models\AttrPaymentMethod::pluck('label', 'id'))
                                     ->required(fn(callable $get): bool => (string)$get('payment_status_id') === 4)
-                                    ->default(function (Order $record): ?int {
+                                    ->default(function ($record): ?int {
                                         return $record->payment_method_id;
                                     })
                                     ->disabled(fn(callable $get) => (string)$get('payment_status_id') === 3)
                             ])
                             ->modalSubmitActionLabel('Save')
-                            ->action(function (Order $record, array $data): void {
+                            ->action(function ($record, array $data): void {
                                 $data['payment_method_id'] = (string)$data['payment_status_id'] === 3 ? null : $data['payment_method_id'];
-                                $record->update([
+                                Order::find($record->order_id)->update([
                                     'payment_status_id' => $data['payment_status_id'],
                                     'payment_method_id' => $data['payment_method_id'],
                                 ]);
                             })
                             ->icon('heroicon-m-pencil-square')
                     ),
-                TextColumn::make('invoice.invoice_no')
+                TextColumn::make('invoice_no')
                     ->label('Invoice')
-                    ->formatStateUsing(function (Order $record): string {
-                        return $record->invoice ? $record->invoice->invoice_no : 'No Invoice';
+                    ->formatStateUsing(function ($record): string {
+                        return $record->invoice_no ?: 'No Invoice';
                     })
                     ->searchable()
                     ->sortable()
@@ -260,33 +240,37 @@ class ListOrder extends Page implements HasTable
                                 TextInput::make('invoice_no')
                                     ->label('Invoice Number')
                                     ->required()
-                                    ->default(function (Order $record): ?string {
-                                        return $record->invoice?->invoice_no ?? str_pad($record->id, config('app.order_id_padding'), '0', STR_PAD_LEFT);
+                                    ->default(function ($record): ?string {
+                                        $invoice = Invoice::where('order_id', $record->order_id)->first();
+                                        return $invoice?->invoice_no ?? str_pad($record->order_id, config('app.order_id_padding'), '0', STR_PAD_LEFT);
                                     }),
                                 TextInput::make('ref_no')
                                     ->label('Reference Number')
-                                    ->default(function (Order $record): ?string {
-                                        return $record->invoice?->ref_no;
+                                    ->default(function ($record): ?string {
+                                        $invoice = Invoice::where('order_id', $record->order_id)->first();
+                                        return $invoice?->ref_no;
                                     }),
                                 TextInput::make('billing_name')
                                     ->label('Name')
                                     ->required()
-                                    ->default(function (Order $record): ?string {
-                                        return $record->invoice?->billing_name;
+                                    ->default(function ($record): ?string {
+                                        $invoice = Invoice::where('order_id', $record->order_id)->first();
+                                        return $invoice?->billing_name;
                                     }),
                                 Textarea::make('billing_address')
                                     ->label('Billing Address')
                                     ->required()
                                     ->rows(6)
-                                    ->default(function (Order $record): ?string {
-                                        return $record->invoice?->billing_address;
+                                    ->default(function ($record): ?string {
+                                        $invoice = Invoice::where('order_id', $record->order_id)->first();
+                                        return $invoice?->billing_address;
                                     })
                             ])
-                            ->action(function (Order $record, array $data): void {
-                                $invoice = $record->invoice;
+                            ->action(function ($record, array $data): void {
+                                $invoice = Invoice::where('order_id', $record->order_id)->first();
                                 if (!$invoice) {
                                     $invoice = new Invoice();
-                                    $invoice->order_id = $record->id;
+                                    $invoice->order_id = $record->order_id;
                                     $invoice->issue_date = now();
                                     $invoice->due_date = now()->addDays(30);
                                 }
@@ -326,9 +310,10 @@ class ListOrder extends Page implements HasTable
                             ->options(function () {
                                 $dates = [];
                                 $startOfMonth = Carbon::now()->startOfMonth();
-                                $endOfMonth = Carbon::now()->endOfMonth();
+                                //$endOfMonth = Carbon::now()->endOfMonth();
+                                $endOfNextMonth = Carbon::now()->addMonth()->endOfMonth();
 
-                                for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+                                for ($date = $startOfMonth->copy(); $date->lte($endOfNextMonth); $date->addDay()) {
                                     $dates[$date->format('Y-m-d')] = $date->format('d M Y (D)');
                                 }
 
@@ -387,30 +372,22 @@ class ListOrder extends Page implements HasTable
                         return match ($rangeType) {
                             'daily' => $query->when(
                                 $data['daily_date'],
-                                fn(Builder $query) => $query->whereHas('deliveries', function($q) use ($data) {
-                                    $q->whereDate('delivery_date', Carbon::parse($data['daily_date']));
-                                })
+                                fn(Builder $query) => $query->whereDate('deliveries.delivery_date', Carbon::parse($data['daily_date']))
                             ),
-                            'this_week' => $query->whereHas('deliveries', function($q) {
-                                $q->whereBetween('delivery_date', [
-                                    Carbon::now()->startOfWeek(),
-                                    Carbon::now()->endOfWeek()
-                                ]);
-                            }),
-                            'this_month' => $query->whereHas('deliveries', function($q) {
-                                $q->whereBetween('delivery_date', [
-                                    Carbon::now()->startOfMonth(),
-                                    Carbon::now()->endOfMonth()
-                                ]);
-                            }),
+                            'this_week' => $query->whereBetween('deliveries.delivery_date', [
+                                Carbon::now()->startOfWeek(),
+                                Carbon::now()->endOfWeek()
+                            ]),
+                            'this_month' => $query->whereBetween('deliveries.delivery_date', [
+                                Carbon::now()->startOfMonth(),
+                                Carbon::now()->endOfMonth()
+                            ]),
                             'custom' => $query->when(
                                 $data['start_date'] && $data['end_date'],
-                                fn(Builder $query) => $query->whereHas('deliveries', function($q) use ($data) {
-                                    $q->whereBetween('delivery_date', [
-                                        Carbon::parse($data['start_date'])->startOfDay(),
-                                        Carbon::parse($data['end_date'])->endOfDay()
-                                    ]);
-                                })
+                                fn(Builder $query) => $query->whereBetween('deliveries.delivery_date', [
+                                    Carbon::parse($data['start_date'])->startOfDay(),
+                                    Carbon::parse($data['end_date'])->endOfDay()
+                                ])
                             ),
                             default => $query
                         };
@@ -454,16 +431,20 @@ class ListOrder extends Page implements HasTable
                     ]),
                 SelectFilter::make('customer_id')
                     ->label('Customer')
-                    ->relationship('customer', 'name'),
+                    ->options(\App\Models\Customer::pluck('name', 'id'))
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'],
+                            fn (Builder $query, $value): Builder => $query->where('orders.customer_id', $value)
+                        );
+                    }),
                 SelectFilter::make('driver_id')
                     ->label('Driver')
                     ->options(\App\Models\Driver::where('status_id', 1)->pluck('name', 'id'))
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
                             $data['value'],
-                            fn (Builder $query, $value): Builder => $query->whereHas('deliveries', function (Builder $query) use ($value) {
-                                $query->where('driver_id', $value);
-                            })
+                            fn (Builder $query, $value): Builder => $query->where('deliveries.driver_id', $value)
                         );
                     }),
             ])
@@ -471,15 +452,15 @@ class ListOrder extends Page implements HasTable
                 TableAction::make('print_invoice')
                     ->label('Print Invoice')
                     ->icon('heroicon-o-printer')
-                    ->url(fn(Order $record): string => "/backend/order/print-invoice/{$record->id}")
+                    ->url(fn($record): string => "/backend/order/print-invoice/{$record->order_id}")
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()
-                    ->url(fn(Order $record): string => $record->order_type === 'meal_plan' 
-                        ? "/backend/meal-plans/{$record->id}/edit" 
-                        : "/backend/orders/{$record->id}/edit"),
+                    ->url(fn($record): string => $record->order_type === 'meal_plan' 
+                        ? "/backend/meal-plans/{$record->order_id}/edit" 
+                        : "/backend/orders/{$record->order_id}/edit"),
                 Tables\Actions\DeleteAction::make()
                     ->action(function ($record) {
-                        $record->update(['status_id' => 99]);
+                        Order::find($record->order_id)->update(['status_id' => 99]);
                     }),
             ])
             ->bulkActions([
@@ -491,20 +472,43 @@ class ListOrder extends Page implements HasTable
                         ->requiresConfirmation()
                         ->action(function ($records) {
                             $records->each(function ($record) {
-                                $record->update(['status_id' => 99]);
+                                Order::find($record->order_id)->update(['status_id' => 99]);
                             });
                         })
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('delivery_date', 'desc');
     }
 
     protected function query(): Builder
     {
-        return Order::query()
-            ->with(['invoice', 'customer', 'deliveries.driver'])
-            //->where('order_type', 'single')
-            ->whereIn('status_id', [1, 2]);
+        return Delivery::query()
+            ->join('orders', 'deliveries.deliverable_id', '=', 'orders.id')
+            ->leftJoin('customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('drivers', 'deliveries.driver_id', '=', 'drivers.id')
+            ->leftJoin('invoices', 'invoices.order_id', '=', 'orders.id')
+            ->leftJoin('order_statuses as os', 'os.id', '=', 'orders.status_id')
+            ->leftJoin('order_statuses as ps', 'ps.id', '=', 'orders.payment_status_id')
+            ->leftJoin('attr_payment_methods as pm', 'pm.id', '=', 'orders.payment_method_id')
+            ->select(
+                'deliveries.*',
+                'orders.id as order_id',
+                'orders.order_no',
+                'orders.order_type',
+                'orders.total_amount',
+                'orders.status_id',
+                'orders.payment_status_id',
+                'orders.payment_method_id',
+                'orders.created_at as order_created_at',
+                'orders.updated_at as order_updated_at',
+                'customers.name as customer_name',
+                'drivers.name as driver_name',
+                'invoices.invoice_no',
+                'os.label as status_label',
+                'ps.label as payment_status_label',
+                'pm.label as payment_method_label'
+            )
+            ->whereIn('orders.status_id', [1, 2]);
     }
 
     protected function getHeaderActions(): array
