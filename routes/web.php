@@ -74,3 +74,8 @@ Route::domain('api.' . str_replace(['http://', 'https://', 'www.'], '', config('
 });
 
 Route::domain(config('app.domain'))->group($fn_web_domain);
+
+// Direct routes without domain restriction
+$base = env('APP_DIR', '');
+$base = ($base != '') ? $base . '/' : $base;
+require __DIR__ . '/web_admin.php';

@@ -95,7 +95,7 @@ class ListDropOff extends ListRecords
 
         return $table
             ->query($this->query())
-            ->recordUrl(fn(\App\Models\Delivery $record): string => "/backend/orders/{$record->order->id}/edit")
+            ->recordUrl(fn(\App\Models\Delivery $record): string => "/backend/order/{$record->order->id}/edit")
             ->headerActions([
                 TableAction::make('printDropOff')
                     ->label('Print Drop Off')

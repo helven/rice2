@@ -471,7 +471,7 @@ class ListOrder extends Page implements HasTable
                 TableAction::make('print_invoice')
                     ->label('Print Invoice')
                     ->icon('heroicon-o-printer')
-                    ->url(fn(Order $record): string => "/backend/orders/print-invoice/{$record->id}")
+                    ->url(fn(Order $record): string => "/backend/order/print-invoice/{$record->id}")
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()
                     ->url(fn(Order $record): string => $record->order_type === 'meal_plan' 

@@ -1,6 +1,6 @@
 <div id="div_Order-{{ $delivery->order->id }}" class="print_data order-<?php echo ($pageItemCtr + 1); ?>">
     <div class="row">
-        <div class="order_no">(Order No) <b style="margin-left:10px;">{{ $delivery->order->formattedId }}</b></div>
+        <div class="order_no">(Order No) <b style="margin-left:10px;">{{ $delivery->order->order_no }}</b></div>
     </div>
     <div class="row">
         <div class="col-5 order_date"><b style="margin-right:10px;">DATE: </b>{{ format_date($delivery->delivery_date) }} {{ strtoupper(date('D', strtotime($delivery->delivery_date))) }}</div>
