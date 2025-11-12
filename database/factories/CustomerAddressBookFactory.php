@@ -25,8 +25,8 @@ class CustomerAddressBookFactory extends Factory
             'name' => fake()->randomElement(['Restoran', 'Kedai', 'Kafe', 'Warung']) . ' ' . fake()->lastName() . ' ' . fake()->randomElement(['Sdn Bhd', 'Enterprise', 'Trading', '']),
             'contact' => '',
             'email' => '',
-            'mall_id' => $isMall ? fake()->numberBetween(1, 5) : 0,
-            'area_id' => !$isMall ? fake()->numberBetween(1, 5) : 0,
+            'mall_id' => $isMall ? fake()->numberBetween(1, 5) : null,
+            'area_id' => fake()->numberBetween(1, 5),
             'address_1' => fake()->numerify('##') . ', Jalan ' . fake()->lastName() . ' ' . fake()->numerify('#/#'),
             'address_2' => fake()->boolean(30) ? fake()->secondaryAddress() : '',
             'postal_code' => fake()->numerify('#####'), // Ensures 5-digit numeric postcode

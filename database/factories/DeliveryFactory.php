@@ -10,6 +10,7 @@ class DeliveryFactory extends Factory
     public function definition(): array
     {
         return [
+            'delivery_no' => \App\Models\Delivery::generateDeliveryNo(),
             'delivery_date' => fake()->dateTimeBetween('now', '+30 days'),
             'arrival_time' => fake()->randomElement(['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00']),
             'driver_id' => Driver::inRandomOrder()->first()?->id ?? Driver::factory(),

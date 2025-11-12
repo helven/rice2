@@ -19,7 +19,7 @@ class OrderFactory extends Factory
             'order_type' => fake()->randomElement(['meal_plan', 'single']),
             'order_date' => $orderDate,
             'customer_id' => Customer::inRandomOrder()->first()?->id ?? Customer::factory(),
-            'payment_status_id' => fake()->randomElement([1, 3, 4]), // active, unpaid, paid
+            'payment_status_id' => fake()->randomElement([3, 4]), // active, unpaid, paid
             'payment_method_id' => fake()->randomElement([1, 2, 3, 4]),
             'total_amount' => fake()->randomFloat(2, 50, 500),
             'delivery_fee' => fake()->randomElement([0, 5, 10, 15]),
@@ -29,7 +29,10 @@ class OrderFactory extends Factory
 
     public function configure()
     {
-        return $this->afterCreating(function (Order $order) {
+        return $this->afterMaking(function (Order $order) {
+            Order::unsetEventDispatcher();
+            \App\Models\Delivery::unsetEventDispatcher();
+        })->afterCreating(function (Order $order) {
             $customer = $order->customer;
             $address = $customer->addressBooks()->where('is_default', true)->first() 
                 ?? $customer->addressBooks()->first();
@@ -59,6 +62,12 @@ class OrderFactory extends Factory
                 $firstDelivery?->delivery_date
             );
             $order->update(['order_no' => $orderNo]);
+            
+            // Manually trigger invoice creation after deliveries exist
+            $dispatcher = new \Illuminate\Events\Dispatcher(app());
+            Order::setEventDispatcher($dispatcher);
+            \App\Models\Delivery::setEventDispatcher($dispatcher);
+            app(\App\Services\InvoiceService::class)->handleOrderSaved($order);
         });
     }
 

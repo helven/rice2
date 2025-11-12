@@ -16,7 +16,7 @@ class DummyDataSeeder extends Seeder
     // php artisan db:seed --class=DummyDataSeeder
 
     // Remove Dummy Data
-    // php artisan tinker --execute="DB::table('order_meals')->truncate(); DB::table('deliveries')->truncate(); DB::table('invoices')->truncate(); DB::table('orders')->truncate();"
+    // php artisan tinker --execute="DB::table('order_meals')->truncate(); DB::table('deliveries')->truncate(); DB::table('invoices')->truncate(); DB::table('orders')->truncate(); DB::table('customer_address_books')->truncate(); DB::table('customers')->truncate(); DB::table('drivers')->truncate(); DB::table('malls')->truncate(); DB::table('meals')->truncate(); DB::table('areas')->truncate();"
 
     public function run(): void
     {
