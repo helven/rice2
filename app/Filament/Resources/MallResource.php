@@ -6,7 +6,6 @@ use App\Filament\Resources\MallResource\Pages;
 use App\Filament\Resources\MallResource\RelationManagers;
 use App\Models\Mall;
 use App\Models\MallStatus;
-use App\Models\AttrPaymentMethod;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -63,12 +62,7 @@ class MallResource extends Resource
                                     ->label('Status')
                                     ->options(MallStatus::pluck('label', 'id'))
                                     ->default(1)
-                                    ->required(),
-                                Select::make('payment_method_id')
-                                    ->label('Payment Method')
-                                    ->options(AttrPaymentMethod::query()->pluck('label', 'id'))
                                     ->required()
-                                    ->searchable(),
                             ])
                     ]),
             ]);
@@ -84,10 +78,6 @@ class MallResource extends Resource
                     ->searchable(),
                 TextColumn::make('name')
                     ->label('Mall Name')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('paymentMethod.label')
-                    ->label('Payment Method')
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('status.label')
@@ -117,9 +107,6 @@ class MallResource extends Resource
                 SelectFilter::make('status_id')
                     ->label('Status')
                     ->options(MallStatus::pluck('label', 'id')),
-                SelectFilter::make('payment_method_id')
-                    ->label('Payment Method')
-                    ->options(AttrPaymentMethod::pluck('label', 'id')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

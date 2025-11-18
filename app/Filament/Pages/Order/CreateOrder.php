@@ -40,7 +40,7 @@ class CreateOrder extends Page
     protected static string $view = 'filament.pages.order.create-order';
     
     // Dev toggle - set to true to enable autofill in local environment
-    private bool $devAutofill = true;
+    private bool $devAutofill = false;
 
     public function mount(): void
     {

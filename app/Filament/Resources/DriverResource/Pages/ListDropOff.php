@@ -95,7 +95,7 @@ class ListDropOff extends ListRecords
 
         return $table
             ->query($this->query())
-            ->recordUrl(fn(\App\Models\Delivery $record): string => "/backend/order/{$record->order->id}/edit")
+            ->recordUrl(null)
             ->headerActions([
                 TableAction::make('printDropOff')
                     ->label('Print Drop Off')
@@ -107,19 +107,13 @@ class ListDropOff extends ListRecords
                     }, true),
             ])
             ->columns([
-                TextColumn::make('order.formatted_id')
+                TextColumn::make('order.order_no')
                     ->label('Order No')
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        if (str_starts_with($search, '0')) {
-                            $searchWithoutLeadingZeros = ltrim($search, '0');
-                            return $query->whereHas('order', function($q) use ($searchWithoutLeadingZeros) {
-                                $q->where('id', '=', $searchWithoutLeadingZeros);
-                            });
-                        }
-                        return $query->whereHas('order', function($q) use ($search) {
-                            $q->where('id', 'like', "%{$search}%");
-                        });
-                    })
+                    ->url(fn($record): string => $record->order->order_type === 'meal_plan' 
+                        ? "/backend/meal-plans/{$record->order->id}" 
+                        : "/backend/orders/{$record->order->id}")
+                    ->color('primary')
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('delivery_date')
                     ->label('Delivery Date')
@@ -207,7 +201,7 @@ class ListDropOff extends ListRecords
                     ->html(),
                 TextColumn::make('driver.name')
                     ->label('Driver')
-                    ->searchable(false)
+                    ->searchable()
                     ->sortable()
                     ->toggleable(true),
             ])

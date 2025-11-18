@@ -218,26 +218,18 @@ class Order extends Model
     {
         // Use the formatted order ID method
         $formattedOrderId = self::getFormattedOrderId($orderId);
-        
+
         // If no mall ID, return just the formatted order ID
         if (!$mallId) {
             return $formattedOrderId;
         }
-        
+
         // Format mall ID with 3 digits padding
         $formattedMallId = str_pad($mallId, 3, '0', STR_PAD_LEFT);
-        
+
         // Get daily counter for this mall and delivery date, excluding current order
         $dailyCounter = self::getDailyCounter($mallId, $deliveryDate, $orderId);
-        
-        // Log the daily counter value for debugging
-        \Log::info("Daily Counter Debug", [
-            'order_id' => $orderId,
-            'mall_id' => $mallId,
-            'delivery_date' => $deliveryDate,
-            'daily_counter' => $dailyCounter
-        ]);
-        
+
         return "{$formattedOrderId}-{$formattedMallId}-{$dailyCounter}";
     }
 
