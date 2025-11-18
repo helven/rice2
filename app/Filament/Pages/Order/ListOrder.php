@@ -177,6 +177,7 @@ class ListOrder extends Page implements HasTable
                     ->toggledHiddenByDefault(),
                 TextColumn::make('payment_status_label')
                     ->label('Payment')
+                    ->icon('heroicon-m-pencil-square')
                     ->formatStateUsing(function ($record): string {
                         $status = $record->payment_status_label ?? '';
                         $method = $record->payment_method_label ?? '';
@@ -229,6 +230,7 @@ class ListOrder extends Page implements HasTable
                     ),
                 TextColumn::make('invoice_no')
                     ->label('Invoice')
+                    ->icon('heroicon-m-pencil-square')
                     ->formatStateUsing(function ($record): string {
                         return $record->invoice_no ?: 'No Invoice';
                     })
@@ -465,14 +467,24 @@ class ListOrder extends Page implements HasTable
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('delete')
-                        ->label('Delete selected')
-                        ->color('danger')
-                        ->icon('heroicon-o-trash')
+                    Tables\Actions\BulkAction::make('mark_paid')
+                        ->label('Mark as Paid')
+                        ->color('success')
+                        ->icon('heroicon-o-check-circle')
                         ->requiresConfirmation()
                         ->action(function ($records) {
                             $records->each(function ($record) {
-                                Order::find($record->order_id)->update(['status_id' => 99]);
+                                Order::find($record->order_id)->update(['payment_status_id' => 4]);
+                            });
+                        }),
+                    Tables\Actions\BulkAction::make('mark_unpaid')
+                        ->label('Mark as Unpaid')
+                        ->color('warning')
+                        ->icon('heroicon-o-x-circle')
+                        ->requiresConfirmation()
+                        ->action(function ($records) {
+                            $records->each(function ($record) {
+                                Order::find($record->order_id)->update(['payment_status_id' => 3]);
                             });
                         })
                 ]),

@@ -26,6 +26,11 @@ class Report extends Page implements HasForms
     
     protected static string $view = 'filament.pages.report';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     // Form properties
     public $daily_bank_sales_date;
     public $monthly_sales_month;
