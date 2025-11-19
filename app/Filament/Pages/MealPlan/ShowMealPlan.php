@@ -51,7 +51,7 @@ class ShowMealPlan extends Page
             'delivery_location' => $deliveryLocation,
             'payment_status' => $this->order->payment_status->label ?? '',
             'payment_method' => $this->order->payment_method->label ?? '',
-            'delivery_date' => $this->order->deliveries->pluck('delivery_date')->map(fn($d) => $d->format(config('app.date_format')))->join(', '),
+            'delivery_date' => $this->order->deliveries->pluck('delivery_date')->map(fn($d) => $d->format(config('app.date_format')))->toArray(),
         ];
     }
 
@@ -63,7 +63,6 @@ class ShowMealPlan extends Page
                 'normal' => $meal->normal,
                 'big' => $meal->big,
                 'small' => $meal->small,
-                's_small' => $meal->s_small,
                 'no_rice' => $meal->no_rice,
             ];
         })->toArray();

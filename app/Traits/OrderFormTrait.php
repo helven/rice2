@@ -375,7 +375,7 @@ trait OrderFormTrait
             ->reorderable(false)
             ->deletable(true)
             ->cloneable()
-            ->columns(7)
+            ->columns(6)
             //->live()
             ->addAction(
                 fn($action) => $action
@@ -387,7 +387,6 @@ trait OrderFormTrait
                 $this->createMealQuantityField('normal', 'Normal', $orderType),
                 $this->createMealQuantityField('big', 'Big', $orderType),
                 $this->createMealQuantityField('small', 'Small', $orderType),
-                $this->createMealQuantityField('s_small', 'S.Small', $orderType),
                 $this->createMealQuantityField('no_rice', 'No Rice', $orderType),
             ]);
     }
@@ -456,7 +455,7 @@ trait OrderFormTrait
         $totalQty = 0;
         foreach ($meals as $meal) {
             $totalQty += intval($meal['normal']) + intval($meal['big']) +
-                intval($meal['small']) + intval($meal['s_small']) +
+                intval($meal['small']) +
                 intval($meal['no_rice']);
         }
         return $totalQty;
@@ -493,7 +492,6 @@ trait OrderFormTrait
                         $totalMeals += intval($meal['normal'] ?? 0) +
                             intval($meal['big'] ?? 0) +
                             intval($meal['small'] ?? 0) +
-                            intval($meal['s_small'] ?? 0) +
                             intval($meal['no_rice'] ?? 0);
                     }
 
@@ -515,7 +513,6 @@ trait OrderFormTrait
                 $totalMeals += intval($meal['normal'] ?? 0) +
                     intval($meal['big'] ?? 0) +
                     intval($meal['small'] ?? 0) +
-                    intval($meal['s_small'] ?? 0) +
                     intval($meal['no_rice'] ?? 0);
             }
 

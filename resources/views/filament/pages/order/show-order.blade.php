@@ -50,7 +50,6 @@
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">Normal</th>
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">Big</th>
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">Small</th>
-                            <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">S.Small</th>
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">No Rice</th>
                         </tr>
                     </thead>
@@ -61,7 +60,6 @@
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['normal'] }}</td>
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['big'] }}</td>
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['small'] }}</td>
-                            <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['s_small'] }}</td>
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['no_rice'] }}</td>
                         </tr>
                         @endforeach

@@ -33,7 +33,13 @@
                 <div class="grid grid-cols-1 gap-2">
                     <div>
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Delivery Date:</span>
-                        <span class="text-sm text-gray-900 dark:text-white ml-2">{{ $this->getOrderData()['delivery_date'] }}</span>
+                        <div class="inline-flex flex-wrap gap-1 ml-2">
+                            @foreach($this->getOrderData()['delivery_date'] as $date)
+                            <span style="--c-50:var(--gray-50);--c-400:var(--gray-400);--c-600:var(--gray-600);" class="fi-badge flex items-center justify-center gap-x-1 rounded-md text-xs font-medium ring-1 ring-inset px-2 min-w-[theme(spacing.6)] py-1 fi-color-custom bg-custom-50 text-custom-600 ring-custom-600/10 dark:bg-custom-400/10 dark:text-custom-400 dark:ring-custom-400/30 fi-color-gray">
+                                <span class="grid"><span class="truncate">{{ $date }}</span></span>
+                            </span>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </div>
@@ -50,7 +56,6 @@
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">Normal</th>
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">Big</th>
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">Small</th>
-                            <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">S.Small</th>
                             <th class="text-center py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">No Rice</th>
                         </tr>
                     </thead>
@@ -61,7 +66,6 @@
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['normal'] }}</td>
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['big'] }}</td>
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['small'] }}</td>
-                            <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['s_small'] }}</td>
                             <td class="py-2 px-3 text-center text-gray-900 dark:text-white">{{ $meal['no_rice'] }}</td>
                         </tr>
                         @endforeach

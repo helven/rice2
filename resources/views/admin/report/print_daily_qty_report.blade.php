@@ -22,7 +22,6 @@
                 <th class="screen_60px print_50px">Normal</th>
                 <th class="screen_60px print_50px">Big</th>
                 <th class="screen_60px print_50px">Small</th>
-                <th class="screen_60px print_50px">S.Small</th>
                 <th class="screen_60px print_50px">N.Rice</th>
                 <th class="screen_60px print_50px">Quantity</th>
             </tr>
@@ -46,7 +45,6 @@
                             <th class="screen_60px print_50px">Normal</th>
                             <th class="screen_60px print_50px">Big</th>
                             <th class="screen_60px print_50px">Small</th>
-                            <th class="screen_60px print_50px">S.Small</th>
                             <th class="screen_60px print_50px">N.Rice</th>
                             <th class="screen_60px print_50px">Quantity</th>
                         </tr>
@@ -54,13 +52,12 @@
                     <tbody>
             <?php } ?>
             <tr>
-                <?php $total = $meal['normal'] + $meal['big'] + $meal['small'] + $meal['s_small'] + $meal['no_rice']; ?>
+                <?php $total = $meal['normal'] + $meal['big'] + $meal['small'] + $meal['no_rice']; ?>
                 <td>{{ $meal['code'] }}</td>
                 <td>{{ $meal['meal'] }}</td>
                 <td>{{ $meal['normal'] }}</td>
                 <td>{{ $meal['big'] }}</td>
                 <td>{{ $meal['small'] }}</td>
-                <td>{{ $meal['s_small'] }}</td>
                 <td>{{ $meal['no_rice'] }}</td>
                 <td>{{ $total }}</td>
             </tr>

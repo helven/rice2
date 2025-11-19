@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedInteger('normal')->default(0);
             $table->unsignedInteger('big')->default(0);
             $table->unsignedInteger('small')->default(0);
-            $table->unsignedInteger('s_small')->default(0);
+
             $table->unsignedInteger('no_rice')->default(0);
             $table->timestamps();
 

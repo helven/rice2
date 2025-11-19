@@ -54,7 +54,6 @@ class EditOrder extends Page
                     'normal' => $meal->normal,
                     'big' => $meal->big,
                     'small' => $meal->small,
-                    's_small' => $meal->s_small,
                     'no_rice' => $meal->no_rice,
                 ];
             })->toArray(),
@@ -121,7 +120,6 @@ class EditOrder extends Page
             'data.meals.*.normal' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.big' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.small' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.s_small' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
         ]));
 
@@ -156,7 +154,6 @@ class EditOrder extends Page
                     'normal' => $meal['normal'],
                     'big' => $meal['big'],
                     'small' => $meal['small'],
-                    's_small' => $meal['s_small'],
                     'no_rice' => $meal['no_rice'],
                 ]);
             }
@@ -205,7 +202,7 @@ class EditOrder extends Page
         $total_qty = 0;
         foreach ($this->data['meals'] as $meal) {
             if (isset($meal['meal_id']) && isset($meals[$meal['meal_id']])) {
-                $meal_qty = $meal['normal'] + $meal['big'] + $meal['small'] + $meal['s_small'] + $meal['no_rice'];
+                $meal_qty = $meal['normal'] + $meal['big'] + $meal['small'] + $meal['no_rice'];
                 $total_qty += $meal_qty;
                 $temp_meals[] = [
                     'meal_id' => $meal['meal_id'],
@@ -213,7 +210,6 @@ class EditOrder extends Page
                     'normal' => $meal['normal'],
                     'big' => $meal['big'],
                     'small' => $meal['small'],
-                    's_small' => $meal['s_small'],
                     'no_rice' => $meal['no_rice'],
                     'qty' => $meal_qty
                 ];

@@ -56,7 +56,6 @@ class EditMealPlan extends Page
                     'normal' => $meal->normal,
                     'big' => $meal->big,
                     'small' => $meal->small,
-                    's_small' => $meal->s_small,
                     'no_rice' => $meal->no_rice,
                 ];
             })->toArray(),
@@ -136,7 +135,6 @@ class EditMealPlan extends Page
             'data.meals.*.normal' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.big' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.small' => ['required', 'integer', 'min:0', 'max:1000'],
-            'data.meals.*.s_small' => ['required', 'integer', 'min:0', 'max:1000'],
             'data.meals.*.no_rice' => ['required', 'integer', 'min:0', 'max:1000'],
         ]));
 
@@ -206,7 +204,6 @@ class EditMealPlan extends Page
                     'normal' => $meal['normal'],
                     'big' => $meal['big'],
                     'small' => $meal['small'],
-                    's_small' => $meal['s_small'],
                     'no_rice' => $meal['no_rice'],
                 ]);
             }
@@ -262,7 +259,7 @@ class EditMealPlan extends Page
             foreach ($this->data['meals'] as $meal) {
                 if (isset($meal['meal_id']) && isset($allMeals[$meal['meal_id']])) {
                     $meal_qty = intval($meal['normal']) + intval($meal['big']) + 
-                               intval($meal['s_small']) + intval($meal['small']) + 
+                               intval($meal['small']) + 
                                intval($meal['no_rice']);
                     $total_qty += $meal_qty;
                     
@@ -272,7 +269,6 @@ class EditMealPlan extends Page
                         'normal' => $meal['normal'],
                         'big' => $meal['big'],
                         'small' => $meal['small'],
-                        's_small' => $meal['s_small'],
                         'no_rice' => $meal['no_rice'],
                         'qty' => $meal_qty,
                     ];

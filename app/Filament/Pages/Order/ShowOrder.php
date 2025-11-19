@@ -63,7 +63,6 @@ class ShowOrder extends Page
                 'normal' => $meal->normal,
                 'big' => $meal->big,
                 'small' => $meal->small,
-                's_small' => $meal->s_small,
                 'no_rice' => $meal->no_rice,
             ];
         })->toArray();
@@ -129,6 +128,15 @@ class ShowOrder extends Page
             'status' => $delivery->status->label ?? '',
             'status_id' => $delivery->status_id,
             'is_today' => $delivery->delivery_date->format('Y-m-d') === $today,
+        ];
+    }
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('edit')
+                ->label('Edit Order')
+                ->url(EditOrder::getUrl(['id' => $this->order->id]))
+                ->color('primary'),
         ];
     }
 }

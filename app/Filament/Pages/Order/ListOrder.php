@@ -530,6 +530,10 @@ class ListOrder extends Page implements HasTable
                 ->label('New Order')
                 ->url('/' . config('filament.path', 'backend') . '/orders/create')
                 ->icon('heroicon-m-plus'),
+            Action::make('create_meal_plan')
+                ->label('New Meal Plan')
+                ->url('/' . config('filament.path', 'backend') . '/meal-plans/create')
+                ->icon('heroicon-m-plus'),
         ];
     }
 

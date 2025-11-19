@@ -221,7 +221,7 @@ class ReportController extends AdminController
                     'normal' => $orderMeal->normal,
                     'big' => $orderMeal->big,
                     'small' => $orderMeal->small,
-                    's_small' => $orderMeal->s_small,
+
                     'no_rice' => $orderMeal->no_rice,
                 );
             }

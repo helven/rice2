@@ -17,7 +17,6 @@ class OrderMeal extends Model
         'normal',
         'big',
         'small',
-        's_small',
         'no_rice',
     ];
 
@@ -25,7 +24,6 @@ class OrderMeal extends Model
         'normal' => 'integer',
         'big' => 'integer',
         'small' => 'integer',
-        's_small' => 'integer',
         'no_rice' => 'integer',
     ];
 
@@ -51,6 +49,6 @@ class OrderMeal extends Model
      */
     public function getTotalQtyAttribute(): int
     {
-        return $this->normal + $this->big + $this->small + $this->s_small + $this->no_rice;
+        return $this->normal + $this->big + $this->small + $this->no_rice;
     }
 }

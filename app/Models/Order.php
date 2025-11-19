@@ -171,7 +171,7 @@ class Order extends Model
     public function getTotalQtyAttribute(): int
     {
         return $this->meals->sum(function ($meal) {
-            return $meal->normal + $meal->big + $meal->small + $meal->s_small + $meal->no_rice;
+            return $meal->normal + $meal->big + $meal->small + $meal->no_rice;
         });
     }
 
@@ -187,7 +187,7 @@ class Order extends Model
         }
 
         $totalQuantity = $this->meals->sum(function ($meal) {
-            return $meal->normal + $meal->big + $meal->small + $meal->s_small + $meal->no_rice;
+            return $meal->normal + $meal->big + $meal->small + $meal->no_rice;
         });
 
         $deliveryFeeRules = $this->address->area->delivery_fee;

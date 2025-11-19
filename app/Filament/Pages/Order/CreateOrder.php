@@ -129,7 +129,6 @@ class CreateOrder extends Page
                                                 'normal' => 0,
                                                 'big' => 0,
                                                 'small' => 0,
-                                                's_small' => 0,
                                                 'no_rice' => 0,
                                             ]
                                         ],
@@ -285,7 +284,6 @@ class CreateOrder extends Page
                         'normal' => $meal['normal'],
                         'big' => $meal['big'],
                         'small' => $meal['small'],
-                        's_small' => $meal['s_small'],
                         'no_rice' => $meal['no_rice'],
                     ]);
                 }
@@ -358,8 +356,9 @@ class CreateOrder extends Page
                     
                     foreach ($dateData['meals'] as $meal) {
                         if (isset($meal['meal_id']) && isset($allMeals[$meal['meal_id']])) {
-                            $meal_qty = intval($meal['normal']) + intval($meal['big']) + 
-                                       intval($meal['s_small']) + intval($meal['small']) + 
+                            $meal_qty = intval($meal['normal']) + 
+                                       intval($meal['big']) + 
+                                       intval($meal['small']) + 
                                        intval($meal['no_rice']);
                             $total_qty += $meal_qty;
                             
@@ -369,7 +368,6 @@ class CreateOrder extends Page
                                 'normal' => $meal['normal'],
                                 'big' => $meal['big'],
                                 'small' => $meal['small'],
-                                's_small' => $meal['s_small'],
                                 'no_rice' => $meal['no_rice'],
                                 'qty' => $meal_qty,
                             ];
@@ -477,7 +475,6 @@ class CreateOrder extends Page
                         'normal' => 1,
                         'big' => 0,
                         'small' => 0,
-                        's_small' => 0,
                         'no_rice' => 1
                     ],
                     [
@@ -485,7 +482,6 @@ class CreateOrder extends Page
                         'normal' => 1,
                         'big' => 0,
                         'small' => 2,
-                        's_small' => 0,
                         'no_rice' => 0
                     ],
                 ],
@@ -497,7 +493,6 @@ class CreateOrder extends Page
                 $totalMeals += intval($meal['normal'] ?? 0) +
                     intval($meal['big'] ?? 0) +
                     intval($meal['small'] ?? 0) +
-                    intval($meal['s_small'] ?? 0) +
                     intval($meal['no_rice'] ?? 0);
             }
             $mealPrice = config('app.meal_price', 8.00);
