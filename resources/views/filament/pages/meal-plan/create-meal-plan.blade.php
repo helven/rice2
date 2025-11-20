@@ -40,7 +40,7 @@
             
             quantities.forEach(qty => {
                 qty.value = parseInt(qty.value) || 0;
-                const val = qty.value;
+                const val = parseInt(qty.value);
                 total += val;
             });
             
