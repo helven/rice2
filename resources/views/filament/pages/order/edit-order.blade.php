@@ -4,7 +4,7 @@
         let disabledDates = [];
         const MEAL_PRICE = {{ config('app.meal_price', 8.00) }};
         
-        function handleMealQtyChange(input) {
+        function handleOrderMealQtyChange(input) {
             // Find the meals repeater container
             const mealsContainer = input.closest('[data-id="meals"]');
             const mealContainer = mealsContainer.querySelector('li');
@@ -21,7 +21,8 @@
             let total = 0;
             
             quantities.forEach(qty => {
-                const val = parseInt(qty.value) || 0;
+                qty.value = parseInt(qty.value) || 0;
+                const val = qty.value;
                 total += val;
             });
             

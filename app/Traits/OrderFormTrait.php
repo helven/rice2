@@ -27,7 +27,7 @@ trait OrderFormTrait
 
     private function createMealQuantityField(string $name, string $label, string $orderType = 'single'): TextInput
     {
-        $jsFunction = $orderType === 'meal_plan' ? 'handleMealPlanQtyChange' : 'handleMealQtyChange';
+        $jsFunction = $orderType === 'meal_plan' ? 'handleMealPlanMealQtyChange' : 'handleOrderMealQtyChange';
 
         return TextInput::make($name)
             ->label($label)
@@ -39,8 +39,7 @@ trait OrderFormTrait
                 'data-id' => $name,
                 'data-class' => 'meal-qty',
                 'min' => '0',
-                'onchange' => "{$jsFunction}(this)",
-                'onkeyup' => "{$jsFunction}(this)"
+                'oninput' => "{$jsFunction}(this)",
             ])
             ->rules(['required', 'integer', 'min:0', 'max:1000']);
     }
