@@ -6,78 +6,71 @@
     <div class="print_page_title">Order Sheet, please select <b>Portrait</b>, A4 paper for best printing result</div>
     <?php $order_per_page = 5; ?>
     <?php $page_ctr = 0; ?>
-    <?php $page_item_ctr = 0; ?>
+    <?php $current_page_items = 0; ?>
     <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
         <?php $grand_total = 0;?>
         <?php $HTML_grand_total = '';?>
         <?php foreach ($daily_sales_list as $date => $payments_method_list) { ?>
             <?php foreach ($payments_method_list as $payment_method => $orders_list) { ?>
-                <div id="div_Payment-{{ $orders_list[0]->payment_method->id }}" class="print_payment">
-                    <div class="heading">
-                        <h3>@lang('Online Order Daily Sales Report')</h3>
-                        <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($orders_list[0]->created_at)) }}
-                        <b style="margin-left:20px;">@lang('Payment'):</b> {{ $orders_list[0]->payment_method->name }}
-                    </div>
-                    
-                    <table class="order_detail" border="0" cellspacing="0" cellpadding="0">
-                    <thead>
-                        <tr class="thead">
-                            <th class="screen_30px print_20px">@lang('No')</th>
-                            <th class="screen_90px print_90px">@lang('Order No')</th>
-                            <th>@lang('Company') &amp; @lang('Address')</th>
-                            <th class="screen_100px print_100px">@lang('Name')</th>
-                            <th class="screen_90px print_80px">@lang('HP')</th>
-                            <th class="screen_30px print_30px">@lang('Total') (RM)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <?php $payment_method_total_amount = 0;?>
-                    <?php $row_ctr = 0;?>
-                    <?php foreach($orders_list as $order){ ?>
-                        <?php if ($page_item_ctr >= $order_per_page) { ?>
-                            <?php $page_item_ctr = 0; ?>
-                            <?php $page_ctr++; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
+                <?php 
+                $group_size = count($orders_list);
+                // Break if adding this group exceeds limit
+                if ($current_page_items > 0 && ($current_page_items + $group_size) > $order_per_page) {
+                    $current_page_items = 0;
+                    $page_ctr++;
+                    echo '</div><div class="print_pagebreak"></div>';
+                    echo '<div id="div_Page-' . ($page_ctr + 1) . '" class="print_page_portrait">';
+                }
+                ?>
+                <?php $payment_method_total_amount = 0;?>
+                <?php $row_ctr = 0;?>
+                <?php foreach($orders_list as $order){ ?>
+                    <?php if ($current_page_items >= $order_per_page) { ?>
+                        <?php $current_page_items = 0; ?>
+                        <?php $page_ctr++; ?>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="print_pagebreak"></div>
-                            <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
-                            <div id="div_Payment-{{ $order->payment_method->id }}" class="print_payment">
-                                <div class="heading">
-                                    <h3>@lang('Sales Online Order Daily Report')</h3>
-                                    <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($order->created_at)) }}
-                                    <b style="margin-left:20px;">@lang('Payment'):</b> {{ $order->payment_method->name }}
-                                </div>
-                                <table class="order_detail" border="0" cellspacing="0" cellpadding="0">
-                                <thead>
-                                    <tr class="thead">
-                                        <th class="screen_30px print_20px">@lang('No')</th>
-                                        <th class="screen_90px print_90px">@lang('Order No')</th>
-                                        <th>@lang('Company') &amp; @lang('Address')</th>
-                                        <th class="screen_100px print_100px">@lang('Name')</th>
-                                        <th class="screen_90px print_80px">@lang('HP')</th>
-                                        <th class="screen_30px print_30px">@lang('Total') (RM)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                        <?php } ?>
-                        <tr>
-                            <td>{{ $row_ctr + 1 }}</td>
-                            <td>{{ $order->formattedId }}</td>
-                            <td>{{ $order->address?->name }}. {{ $order->address->mall?->name ?: $order->address->area?->name.', '.$order->address->area?->postal }}</td>
-                            <td>{{ $order->customer->name }}</td>
-                            <td>{{ $order->customer->contact }}</td>
-                            <td>{{ $order->total_amount }}</td>
-                        </tr>
-                        <?php $payment_method_total_amount += $order->total_amount;?>
-                        <?php $row_ctr++; ?>
-                        <?php $page_item_ctr++; ?>
+                        </div>
+                        <div class="print_pagebreak"></div>
+                        <div id="div_Page-<?php echo ($page_ctr + 1); ?>" class="print_page_portrait">
                     <?php } ?>
-                    <?php $grand_total += $payment_method_total_amount;?>
+                    <?php if ($current_page_items == 0 || $row_ctr == 0) { ?>
+                        <div id="div_Payment-{{ $order->payment_method->id }}" class="print_payment">
+                            <div class="heading">
+                                <h3>@lang('Online Order Daily Sales Report')</h3>
+                                <b>@lang ('Date'):</b> {{ date('d/m/Y', strtotime($order->created_at)) }}
+                                <b style="margin-left:20px;">@lang('Payment'):</b> {{ $order->payment_method->name }}
+                            </div>
+                            <table class="order_detail" border="0" cellspacing="0" cellpadding="0">
+                            <thead>
+                                <tr class="thead">
+                                    <th class="screen_30px print_20px">@lang('No')</th>
+                                    <th class="screen_90px print_90px">@lang('Order No')</th>
+                                    <th>@lang('Company') &amp; @lang('Address')</th>
+                                    <th class="screen_100px print_100px">@lang('Name')</th>
+                                    <th class="screen_90px print_80px">@lang('HP')</th>
+                                    <th class="screen_30px print_30px">@lang('Total') (RM)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    <?php } ?>
+                    <tr>
+                        <td>{{ $row_ctr + 1 }}</td>
+                        <td>{{ $order->formattedId }}</td>
+                        <td>{{ $order->address?->name }}. {{ $order->address->mall?->name ?: $order->address->area?->name.', '.$order->address->area?->postal }}</td>
+                        <td>{{ $order->customer->name }}</td>
+                        <td>{{ $order->customer->contact }}</td>
+                        <td>{{ $order->total_amount }}</td>
+                    </tr>
+                    <?php $payment_method_total_amount += $order->total_amount;?>
+                    <?php $row_ctr++; ?>
+                    <?php $current_page_items++; ?>
+                <?php } ?>
+                <?php $grand_total += $payment_method_total_amount; ?>
                     </tbody>
-                    </table>
-                </div>
+                </table>
+            </div>
 
                 <?php ob_start();?>
                     <tr>
@@ -120,6 +113,7 @@ body {
     font-family: 'Calibri';
 }
 div.print_payment {
+    margin: 40px 0;
     width: 790px;
 }
     .order_no {

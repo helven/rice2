@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminController;
 use App\Models\AttrPaymentMethod;
 use App\Models\Order;
 use App\Models\Driver;
+use App\Models\Delivery;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\DataTables;
@@ -150,21 +151,40 @@ class ReportController extends AdminController
     {
         $query = Order::query();
 
+        // $query
+        //     ->whereHas('deliveries', function($q) {
+        //         $this->applyOrderFilters($q);
+        //         $this->applyGeneralFilters($q);
+        //     })
+        //     ->with([
+        //         'customer',
+        //         'deliveries' => function($q) {
+        //             $q->orderBy('id')->limit(1);
+        //         },
+        //         'deliveries.driver',
+        //         'deliveries.address.mall',
+        //         'deliveries.address.area',
+        //         'payment_method'
+        //     ]);
+
         $query
-            ->whereHas('deliveries', function($q) {
-                $this->applyOrderFilters($q);
-                $this->applyGeneralFilters($q);
-            })
             ->with([
-                'customer',
                 'deliveries' => function($q) {
                     $q->orderBy('id')->limit(1);
                 },
+                'customer',
+                'meals.meal',
                 'deliveries.driver',
                 'deliveries.address.mall',
-                'deliveries.address.area',
-                'payment_method'
+                'deliveries.address.area'
             ]);
+            //->whereHas('order', function($q) {
+            //    $q->where('order_type', 'single');
+            //})
+        $query->where('status_id', 1);
+
+        $this->applyOrderFilters($query);
+        $this->applyGeneralFilters($query);
 
         $ordersList = $query->get();
         //dd($ordersList->toArray());
@@ -179,7 +199,7 @@ class ReportController extends AdminController
             $this->vData['daily_sales_list']['date_'.date('Ymd', strtotime($order->created_at))]['payment_' . $paymentMethod][]  = $order;
             //$this->vData['daily_sales_list']['payment_' . $paymentMethod][]  = $order;
         }
-            //dd($this->vData['daily_sales_list']);
+        // dd($this->vData['daily_sales_list']);
 
         return view('admin.report.print_daily_bank_sales_report', $this->vData);
     }

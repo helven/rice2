@@ -165,6 +165,10 @@ class OrderController extends AdminController
             ->orderBy('deliverable_id')
             ->orderBy('address_id');
 
+        $query->whereHas('order', function($q) {
+            $q->where('status_id', 1);
+        });
+
         $this->applyDeliveryFilters($query);
 
         $deliveriesList = $query->get();
@@ -194,6 +198,10 @@ class OrderController extends AdminController
             ->orderBy('arrival_time')
             ->orderBy('deliverable_id')
             ->orderBy('address_id');
+
+        $query->whereHas('order', function($q) {
+            $q->where('status_id', 1);
+        });
 
         $this->applyDeliveryFilters($query);
         $this->applyGeneralFilters($query);
@@ -258,6 +266,10 @@ class OrderController extends AdminController
             ->orderBy('deliverable_id')
             ->orderBy('address_id');
 
+        $query->whereHas('order', function($q) {
+            $q->where('status_id', 1);
+        });
+
         $this->applyDeliveryFilters($query);
         $this->applyGeneralFilters($query);
 
@@ -319,6 +331,10 @@ class OrderController extends AdminController
             ->orderBy('arrival_time')
             ->orderBy('deliverable_id')
             ->orderBy('address_id');
+
+        $query->whereHas('order', function($q) {
+            $q->where('status_id', 1);
+        });
 
         $this->applyDeliveryFilters($query);
         $this->applyGeneralFilters($query);

@@ -641,7 +641,7 @@ class ListOrder extends Page implements HasTable
         $this->js("window.open('$url', '_blank')");
     }
 
-    public function PrintDailyBankSalesReport()
+    public function printDailyBankSalesReport()
     {
         $params = [];
         
@@ -657,7 +657,7 @@ class ListOrder extends Page implements HasTable
         $this->js("window.open('$url', '_blank')");
     }
 
-    public function PrintDailyOrderQuantityReport()
+    public function printDailyOrderQuantityReport()
     {
         $params = [];
         

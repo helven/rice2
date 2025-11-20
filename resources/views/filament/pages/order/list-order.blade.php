@@ -43,7 +43,7 @@
             </x-filament::button>
             
             <x-filament::button 
-                wire:click="PrintDailyBankSalesReport" 
+                wire:click="printDailyBankSalesReport" 
                 icon="heroicon-o-printer" 
                 color="primary" 
             > 
@@ -51,11 +51,11 @@
             </x-filament::button>
             
             <x-filament::button 
-                wire:click="PrintDailyOrderQuantityReport" 
+                wire:click="printDailyOrderQuantityReport" 
                 icon="heroicon-o-printer" 
                 color="primary" 
             > 
-                Print DailyOrderQuantityReport 
+                Print Daily Order Quantity Report 
             </x-filament::button>
         </div>
     </div>
