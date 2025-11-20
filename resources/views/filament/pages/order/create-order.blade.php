@@ -25,7 +25,7 @@
             });
             
             // Calculate total amount
-            const totalAmount = (total * MEAL_PRICE).toFixed(2);console.log(totalAmount)
+            const totalAmount = (total * MEAL_PRICE).toFixed(2);
             
             // Find the total_amount field in the parent container
             if (orderContainer) {
