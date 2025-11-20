@@ -130,7 +130,9 @@ class ListOrder extends Page implements HasTable
                     ->toggleable(),
                 TextColumn::make('customer_name')
                     ->label('Customer')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('customers.name', 'like', "%{$search}%");
+                    })
                     ->sortable()
                     ->toggleable(true),
                 TextColumn::make('delivery_date')
@@ -144,7 +146,9 @@ class ListOrder extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('status_label')
                     ->label('Status')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('os.label', 'like', "%{$search}%");
+                    })
                     ->sortable()
                     ->badge()
                     ->color(function ($record): string {
@@ -155,7 +159,9 @@ class ListOrder extends Page implements HasTable
                     ->toggleable(true),
                 TextColumn::make('driver_name')
                     ->label('Driver')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('drivers.name', 'like', "%{$search}%");
+                    })
                     ->sortable()
                     ->toggleable(true),
                 TextColumn::make('arrival_time')
@@ -184,7 +190,9 @@ class ListOrder extends Page implements HasTable
                         return $method ? "{$status} <span class='text-gray-950'>({$method})</span>" : $status;
                     })
                     ->html()
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('ps.label', 'like', "%{$search}%");
+                    })
                     ->sortable()
                     ->toggleable(true)
                     ->color(function ($record): string {
@@ -234,7 +242,9 @@ class ListOrder extends Page implements HasTable
                     ->formatStateUsing(function ($record): string {
                         return $record->invoice_no ?: 'No Invoice';
                     })
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('invoices.invoice_no', 'like', "%{$search}%");
+                    })
                     ->sortable()
                     ->action(
                         TableAction::make('editInvoice')

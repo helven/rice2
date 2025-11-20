@@ -192,6 +192,13 @@ class EditOrder extends Page
         ');
     }
 
+    public function openModal()
+    {
+        $this->form->getState();
+        $this->data = array_merge($this->data, $this->form->getRawState());
+        $this->dispatch('open-modal', id: 'confirm-modal');
+    }
+
     public function getFormattedData()
     {
         $customer = Customer::find($this->data['customer_id'] ?? null);

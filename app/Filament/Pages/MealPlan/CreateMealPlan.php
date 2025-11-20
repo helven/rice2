@@ -134,6 +134,18 @@ class CreateMealPlan extends Page
         ');
     }
 
+    public function openModal(bool $createAnother = false)
+    {
+        $this->form->getState();
+        $this->data = array_merge($this->data, $this->form->getRawState());
+        
+        if ($createAnother) {
+            $this->js('window.createAnotherAction = true;');
+        }
+        
+        $this->dispatch('open-modal', id: 'confirm-modal');
+    }
+
     public function getFormattedData()
     {
         $customer = Customer::find($this->data['customer_id'] ?? null);

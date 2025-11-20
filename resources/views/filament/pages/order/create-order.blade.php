@@ -127,133 +127,18 @@
             setupDateDisabling();
         });
         
-        function findTableCellByText(container, labelText) {
-            const rows = container.querySelectorAll('tr');
-            for (let row of rows) {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 2 && cells[0].textContent.trim() === labelText) {
-                    return cells[1];
-                }
-            }
-            return null;
-        }
-        
-        function populateConfirmModal() {
-            // Get form values
-            const customerSelect = document.querySelector('[name="data.customer_id"]');
-            const addressSelect = document.querySelector('[name="data.address_id"]');
-            const deliveryDates = document.querySelector('[name="data.delivery_dates"]');
-            const arrivalTime = document.querySelector('[name="data.arrival_time"]');
-            const driverSelect = document.querySelector('[name="data.driver_id"]');
-            const driverRoute = document.querySelector('[name="data.driver_route"]');
-            const backupDriverSelect = document.querySelector('[name="data.backup_driver_id"]');
 
-            const driverNotes = document.querySelector('[name="data.driver_notes"]');
-            
-            // Update modal content with form values
-            const modal = document.querySelector('#confirm-modal');
-            if (modal) {
-                // Update customer name
-                const customerName = customerSelect?.selectedOptions[0]?.text || '';
-                const customerCell = findTableCellByText(modal, 'Customer:');
-                if (customerCell) customerCell.textContent = customerName;
-                
-                // Update address (get selected option text)
-                const addressName = addressSelect?.selectedOptions[0]?.text || '';
-                const addressCell = findTableCellByText(modal, 'Address:');
-                if (addressCell) addressCell.innerHTML = addressName;
-                
-                // Update delivery date
-                const deliveryCell = findTableCellByText(modal, 'Delivery Date:');
-                if (deliveryCell && deliveryDates) {
-                    deliveryCell.textContent = deliveryDates.value;
-                }
-                
-                // Update arrival time
-                const arrivalCell = findTableCellByText(modal, 'Arrival Time:');
-                if (arrivalCell && arrivalTime) {
-                    const timeValue = arrivalTime.value;
-                    if (timeValue) {
-                        try {
-                            const time12 = new Date(`1970-01-01T${timeValue}:00`).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                            });
-                            arrivalCell.textContent = time12;
-                        } catch (e) {
-                            arrivalCell.textContent = timeValue;
-                        }
-                    }
-                }
-                
-                // Update driver name
-                const driverName = driverSelect?.selectedOptions[0]?.text || '';
-                const driverCell = findTableCellByText(modal, 'Driver:');
-                if (driverCell) driverCell.textContent = driverName;
-                
-                // Update driver route
-                const routeCell = findTableCellByText(modal, 'Route:');
-                if (routeCell && driverRoute) {
-                    routeCell.textContent = driverRoute.value;
-                }
-                
-                // Update backup driver if exists
-                const backupDriverName = backupDriverSelect?.selectedOptions[0]?.text || '';
-                const backupDriverCell = findTableCellByText(modal, 'Backup Driver:');
-                if (backupDriverCell) backupDriverCell.textContent = backupDriverName;
-                
-                // Update driver notes
-                const notesCell = findTableCellByText(modal, 'Driver Notes:');
-                if (notesCell && driverNotes) {
-                    notesCell.textContent = driverNotes.value;
-                }
-            }
-        }
     </script>
     <form class="fi-form grid gap-y-6" enctype="multipart/form-data">
         {{ $this->form }}
 
         <div class="fi-form-actions">
             <div class="fi-ac gap-3 flex flex-wrap items-center justify-center">
-                <x-filament::button
-                    x-on:click="
-                        () => {
-                            // Client-side form validation
-                            const form = document.querySelector('form');
-                            if (form.checkValidity()) {
-                                // Populate modal with form data
-                                populateConfirmModal();
-                                $dispatch('open-modal', { id: 'confirm-modal' });
-                            } else {
-                                // Show validation errors
-                                form.reportValidity();
-                            }
-                        }
-                    "
-                >
+                <x-filament::button wire:click="openModal(false)">
                     Save
                 </x-filament::button>
 
-                <x-filament::button
-                    x-on:click="
-                        () => {
-                            // Client-side form validation
-                            const form = document.querySelector('form');
-                            if (form.checkValidity()) {
-                                // Set a flag to indicate 'Save & Create Another' action
-                                window.createAnotherAction = true;
-                                // Populate modal with form data
-                                populateConfirmModal();
-                                $dispatch('open-modal', { id: 'confirm-modal' });
-                            } else {
-                                // Show validation errors
-                                form.reportValidity();
-                            }
-                        }
-                    "
-                    color="gray"
-                >
+                <x-filament::button wire:click="openModal(true)" color="gray">
                     Save & Create another
                 </x-filament::button>
 
@@ -271,7 +156,7 @@
             x-on:close-modal.window="if ($event.detail.id === 'confirm-modal') showModal = false"
             x-on:keydown.escape.window="showModal = false"
             x-trap.inert.noscroll="showModal"
-            wire:ignore.self
+
         >
             <x-slot name="heading">
                 <div class="text-xl">Confirm Order</div>
