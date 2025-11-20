@@ -36,12 +36,20 @@
         table.order_detail td {
             font-size: 0.9rem !important;
         }
+        table.order_detail th {
+            font-weight: 700;
+        }
     }
 
     @media print {
         div.print_data {
             padding-top: 40px;
-            height: 25%;
+            height: 25vh
+        }
+
+        table.order_detail th,
+        table.order_detail td {
+            font-size: 1.1rem !important;
         }
     }
 
@@ -53,11 +61,9 @@
         font-size: 1.6rem;
     }
 
-    .order_date {
-        line-height: 2rem;
-    }
-
-    .order_driver {
+    .order_date,
+    .order_driver,
+    .arrival_time {
         font-size: 1.1rem;
         line-height: 2rem;
     }
@@ -76,6 +82,9 @@
         font-size: 0.9rem;
         border: 1px solid #666;
         padding: 3px 5px;
+    }
+    .text-center {
+        text-align: center;
     }
 </style>
 @endsection

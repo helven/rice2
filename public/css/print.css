@@ -113,7 +113,7 @@ table.order_detail tbody tr:last-child td {
   }
 
   .screen_100px {
-    width: 120px;
+    width: 100px;
   }
 
   .screen_110px {
@@ -122,6 +122,14 @@ table.order_detail tbody tr:last-child td {
 
   .screen_120px {
     width: 120px;
+  }
+
+  .screen_150px {
+    width: 150px;
+  }
+
+  .screen_250px {
+    width: 250px;
   }
 
   .screen_350px {
@@ -185,8 +193,17 @@ table.order_detail tbody tr:last-child td {
     width: 120px;
   }
 
+  .print_150px {
+    width: 150px;
+  }
+
+
+  .print_250px {
+    width: 250px;
+  }
+
   .print_350px {
-    width: 320px;
+    width: 350px;
   }
 
   div.driver_sheet_container {
